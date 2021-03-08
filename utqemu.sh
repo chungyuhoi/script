@@ -4,6 +4,8 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	新增qcow2与vmdk格式转换选项
+	新增vmdk空磁盘创建
 	修正virtio驱动光盘链接
 	增加5.0以上版本可加载双光盘模式(该模式下分区加载选项会被替代)
 	增加优先硬盘或光盘启动的顺序选择
@@ -289,13 +291,23 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
 ##################
 QEMU_ETC() {
 
-	echo -e "\n1) 创建空磁盘
-2) 修改设备标识(手机、平板、电脑)
+	echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
+2) 转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
+3) 修改设备标识(手机、平板、电脑)
 9) 返回
 0) 退出\n"
 	read -r -p "请选择: " input
 	case $input in
-		1)
+		1) read -r -p "请选择格式 1)qcow2 2)vmdk :" input
+			case $input in
+				1|"") echo -e "${YELLOW}qcow2${RES}"
+					FORMAT=qcow2	;;
+				2) echo -e "${YELLOW}vmdk${RES}"
+					FORMAT=vmdk ;;
+				*) INVALID_INPUT
+					QEMU_ETC ;;
+			esac
+			sleep 1
 			while [ ! -n "$disk_name" ]
 			do
 				echo -e -n "\n请为磁盘起个名字(不能为空): "
@@ -303,14 +315,58 @@ QEMU_ETC() {
 done
 echo -n "请输入你拟创建的磁盘容量，以G为单位(例如4g则输4): "
 	read capacity
-	qemu-img create -f qcow2 ${DIRECT}/xinhao/windows/${disk_name}.qcow2 ${capacity}G
-	if [ -f ${DIRECT}/xinhao/windows/${disk_name}.qcow2 ]; then
-	echo -e "${GREEN}已为你创建qcow2格式磁盘${disk_name}.qcow2 容量${capacity}G，仍需你登录系统，在控制面板通过磁盘管理进行格式化并分区方可正常使用${RES}"
+	qemu-img create -f $FORMAT ${DIRECT}/xinhao/windows/${disk_name}.$FORMAT ${capacity}G
+	if [ -f ${DIRECT}/xinhao/windows/${disk_name}.$FORMAT ]; then
+	echo -e "${GREEN}已为你创建$FORMAT格式磁盘${disk_name}.$FORMAT 容量${capacity}G，仍需你登录系统，在控制面板通过磁盘管理进行格式化并分区方可正常使用${RES}"
 else
 	echo -e "${RED}创建失败，请重试${RES}"
 	fi
 	CONFIRM ;;
-2) read -r -p "1)手机平板 2)电脑 " input
+2) 	echo ""
+	read -r -p "请选择转换后格式 1)qcow2 2)vmdk :" input
+	case $input in
+	1) echo -e "转换为${YELLOW}qcow2${RES}格式"
+		FORMAT=qcow2 ;;
+	2) echo -e "转换为${YELLOW}vmdk${RES}格式"
+		FORMAT=vmdk ;;
+	*) INVALID_INPUT
+		QEMU_ETC ;;
+esac
+echo -e "\n已为你列出镜像文件夹中的文件（仅供参考）\n"
+ls ${DIRECT}/xinhao/windows
+sleep 1
+	while ( [ "$FORMAT_" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$FORMAT_" ] ) 
+do
+	if [ -n "$FORMAT_" ]; then
+		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
+		sleep 1
+		fi
+		echo -en "\n请输入原镜像格式全名(例如andows.img) ,退出请输0 "
+		read  FORMAT_
+	done
+	if [ $FORMAT_ == '0' ]; then
+		exit 0
+	fi
+	if [ -f ${DIRECT}/xinhao/windows/${FORMAT_%%.*}.$FORMAT ]; then
+		echo -e "\n${RED}检测到目录下已有转换后同名文件名，请确认，以免造成误操作${RES}"
+		read -r -p "任意键)继续 9)返回 0)退出 " input
+		case $input in
+			9) unset FORMAT_
+				unset FORMAT
+				QEMU_ETC ;;
+			0) exit 0 ;;
+			*) ;;
+		esac
+		fi
+	echo -e "\e[33m转换过程需要点时间，请耐心等待...${RES}"
+	qemu-img convert -f "${FORMAT_##*.}" ${DIRECT}/xinhao/windows/$FORMAT_ -O $FORMAT ${DIRECT}/xinhao/windows/${FORMAT_%%.*}.$FORMAT
+	if [ -f ${DIRECT}/xinhao/windows/${FORMAT_%%.*}.$FORMAT ]; then
+		echo -e "\n${GREEN}已转换，${FORMAT_%%.*}.$FORMAT${RES}\n"
+	else
+		echo -e "\n${RED}转换失败${RES}\n"
+	fi
+		sleep 1 ;;
+3) read -r -p "1)手机平板 2)电脑 " input
 	case $input in
 		1) echo "tablet" >${HOME}/.utqemu_ ;;
 		2) echo "computer" >${HOME}/.utqemu_ ;;
@@ -322,7 +378,9 @@ else
 		0) exit 1 ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
 esac
-	QEMU_SYSTEM
+	unset FORMAT_
+	unset FORMAT
+	QEMU_ETC
 }
 ##################
 QEMU_SYSTEM() {
@@ -332,7 +390,7 @@ echo -e "
 1) 安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}
 2) 创建windows镜像目录
 3) 启动qemu-system-x86_64模拟器
-4) 让termux成为网页服务器\n(使模拟系统可以通过浏览器访问手机内容)
+4) 让termux成为网页服务器\n(使模拟系统可以通过浏览器访问本机内容)
 5) virtio驱动相关
 6) 应用维护
 7) 查看日志
@@ -440,6 +498,12 @@ SELECT_EMU_MODE() {
 esac
 }
 ##################
+LIST() {
+	echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
+	ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso"
+	sleep 1
+}
+##################
 SELECT_EMU() {
 	echo -e "\n请选择启动哪个模拟器\n
         1) qemu-system-x86_64
@@ -454,9 +518,10 @@ SELECT_EMU() {
 			case $input in
 				1) QEMU_MODE=VIRTIO_MODE
 				       	SELECT_EMU_MODE ;;
-				9|"") echo "返回"
-					QEMU_SYSTEM ;;
 				0) exit 1 ;;
+				*) echo "返回"
+					sleep 1
+					QEMU_SYSTEM ;;
 			esac ;;
                 *) INVALID_INPUT
 			SELECT_EMU ;;
@@ -481,16 +546,16 @@ esac
 		read -r -p "1)pc默认 2)q35 " input
 		case $input in
 			1|"") case $(dpkg --print-architecture) in
-			arm*|aarch64) set -- "${@}" "--accel" "tcg" ;;
-                *) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg" ;;
+			arm*|aarch64) 
+			set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
+#			set -- "${@}" "--accel" "tcg" ;;
+                *) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
 	esac ;;
 			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}\n"
-				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg" ;;
+				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
 		esac
 		fi
-echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso"
-sleep 1
+		LIST
 while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
 do
 	if [ -n "$hda_name" ]; then

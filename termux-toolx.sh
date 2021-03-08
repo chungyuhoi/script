@@ -27,14 +27,16 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210209${RES}\n"
+${YELLOW}更新日期20210224${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
-if [ `whoami` == "root" ];then
+uname -a | grep Android -q
+if [ $? != 0 ]; then
+	if [ `whoami` == "root" ];then
 	echo -e "${BLUE}当前用户为root${RES}"
 else
 	echo -e "${RED}当前用户为$(whoami)，建议切换root用户${RES}\n"
 	sleep 1
-
+	fi
 fi
 if [ ! -e "/etc/os-release" ]; then
 uname -a | grep 'Android' -q
@@ -63,6 +65,7 @@ cat <<'EOF'
           oNMm-  -mMNs
 EOF
 echo -e "${RES}"
+SYS=android
 elif grep -q 'ID=debian' "/etc/os-release"; then
 	printf '你的系统是'
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
@@ -89,6 +92,7 @@ cat <<'EOF'
 
 EOF
 echo -e "${RES}"
+SYS=debian
 elif grep -q 'ID=ubuntu' "/etc/os-release"; then
 printf "你的系统是"
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
@@ -117,6 +121,7 @@ ossyNMMMNyMMhsssssssssssssshmmmhssssssso
             .-/+oossssoo+/-.
 EOF
 echo -e "${RES}"
+SYS=ubuntu
 elif grep -q 'ID=kali' "/etc/os-release"; then
 	printf "你的系统是"
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
@@ -145,6 +150,7 @@ cat <<'EOF'
                                              .
 EOF
 echo -e "${RES}"
+SYS=kali
 fi
 echo -e "你的架构为" $(dpkg --print-architecture)
 #####################
@@ -223,13 +229,13 @@ case $input in
 	3)
 		echo -n "请输入普通用户名name:"
 		read name
-		if grep -q "$name" "/etc/passwd"; then
+		if grep -qw "$name" "/etc/passwd"; then
 			echo -e "${RED}你的普通用户名貌似已经有了，起个其他名字吧${RES}"
 			sleep 2
 			if [ ! $(command -v sudo) ]; then
 echo -e "${BLUE}先帮你把这个用户的sudo功能装上。${RES}"
 sleep 2
-       	apt --reinstall install sudo
+       	apt --reinstall install sudo -y
 else
 	read -r -p "sudo是否能用，如不能用请选择重新安装
 
@@ -257,7 +263,7 @@ else
 		echo "done"
 fi
 echo "是否修改sudo临时生效时间，默认5分钟"
-read -r -p "1)自定义时间 2)不修改" input
+read -r -p "1)自定义时间 2)免密 3)不修改" input
 case $input in
 	1) echo -n "请输入时间数字，以分钟为单位(例如20)sudo_time:"
 		read sudo_time
@@ -268,6 +274,7 @@ case $input in
 		sed -i "s/env_reset/env_reset,timestamp_timeout=$sudo_time/g" /etc/sudoers
 	fi
 	;;
+	2) sed -i "/execute/a\\$name ALL=(ALL:ALL) NOPASSWD:ALL" /etc/sudoers ;;
 *)
 	echo ""
 	;;
@@ -536,7 +543,7 @@ case $input in
 		echo "Yes"
 		dpkg -l | grep gnupg -q
 		if [ "$?" != "0" ]; then
-		apt install gnupg2
+		$sudo_t apt install gnupg2 -y
 		fi
 		echo "deb https://bintray.proxy.ustclug.org/debianopt/debianopt buster main" > /etc/apt/sources.list.d/debianopt.list && curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add - && apt update && SETTLE
 		sleep 1
@@ -576,25 +583,35 @@ export PULSE_SERVER=127.0.0.1
 export XKL_XMODMAP_DISABLE=1
 #vncconfig -iconic &
 startxfce4 &" >${HOME}/.vnc/xstartup && chmod +x ${HOME}/.vnc -R
-echo -e "${GREEN}请选择使用哪个图形界面,xfce4 or lxde${RES}"
-        read -r -p "1)xfce4 2)lxde" input
+echo -e "${GREEN}请选择使用哪个图形界面${RES}"
+read -r -p "1)xfce4 2)lxde 3)mate" input
 case $input in
-        1) echo -e "done" && sleep 2 && VNCSERVER ;;
-        2) sed -i "s/startxfce4/startlxde/g" ${HOME}/.vnc/xstartup
+        1) echo -e "done" && sleep 2 ;;
+        2) sed -i "s/startxfce4/startlxde/g" ${HOME}/.vnc/xstartup 
+		$sudo_t apt purge --allow-change-held-packages gvfs -y && $sudo_t apt purge --allow-change-held-packages udisk2 -y 
+		echo -e "done" && sleep 2 ;;
+		3)
+echo '#!/usr/bin/env bash
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+export PULSE_SERVER=127.0.0.1
+export XKL_XMODMAP_DISABLE=1
+x-window-manager
+mate-panel
+mate-session
+thunar' >${HOME}/.vnc/xstartup
                 $sudo_t apt purge --allow-change-held-packages gvfs -y && $sudo_t apt purge --allow-change-held-packages udisk2 -y
-                echo -e "done"
-                sleep 2
-                VNCSERVER
+                echo -e "done" && sleep 2
                 ;;
         *)
                 INVALID_INPUT
-                VNCSERVER
                 ;;
 esac
+VNCSERVER
 }
 ###################
 VNCSERVER(){
-	echo -e "\n${YELLOW}1) 安装tightvncserver
+	echo -e "\n1) 安装tightvncserver
 2) 安装tigervncserver (推荐)
 3) 安装vnc4server
 4) 配置vnc的xstartup参数
@@ -706,8 +723,9 @@ dbus-launch xfce4-session
 else
 dbus-launch startxfce4
 fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
-cat >/dev/null<< EOF
-echo '#!/usr/bin/env bashunset SESSION_MANAGER
+cat >/dev/null <<EOF
+echo '#!/usr/bin/env bash
+unset SESSION_MANAGER
 unset DBUS_SESSION_BUS_ADDRESS
 if [ $(command -v x-terminal-emulator) ]; then
 x-terminal-emulator &
@@ -722,9 +740,9 @@ $sudo_t apt purge --allow-change-held-packages gvfs -y && $sudo_t apt purge --al
 U_ID=`id | cut -d '(' -f 2 | cut -d ')' -f 1`
 GROUP_ID=`id | cut -d '(' -f 4 | cut -d ')' -f 1`
 touch .ICEauthority .Xauthority 2>/dev/null
-sudo -E chown -R $U_ID:$GROUP_ID ".ICEauthority" ".Xauthority"
-echo -e "${GREEN}请选择你已安装的图形界面,xfce4 or lxde${RES}"
-	read -r -p "1)xfce4 2)lxde" input
+sudo -E chown -Rv $U_ID:$GROUP_ID ".ICEauthority" ".Xauthority"
+echo -e "${GREEN}请选择你已安装的图形界面${RES}"
+read -r -p "1)xfce4 2)lxde 3)mate" input
 	case $input in
 	1) echo -e "done" && sleep 2 && VNCSERVER ;;
 	2) sed -i "s/startxfce4/startlxde/g" /etc/X11/xinit/Xsession
@@ -733,6 +751,17 @@ echo -e "Done\n打开vnc viewer地址输127.0.0.1:0\nvnc的退出，在系统输
 sleep 2
 VNCSERVER
 ;;
+3) echo '#!/usr/bin/env bash
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+x-window-manager
+mate-panel
+mate-session
+thunar' >/etc/X11/xinit/Xsession
+		echo -e "Done\n打开vnc viewer地址输127.0.0.1:0\nvnc的退出，在系统输exit即可"
+		sleep 2
+		VNCSERVER
+		;;
 *) echo -e "${RED}输入无效，已中止${RES}"
 	sleep 2
 VNCSERVER
@@ -746,11 +775,13 @@ esac
 $sudo_t apt install xserver-xorg x11-utils
 echo -e "${YELLOW}请选择你的桌面
 1) startxfce4
-2) startlxde${RES}"
+2) startlxde
+3) mate${RES}"
 read -r -p "请选择:" input
 case $input in
 1) XWIN="x-window-manager & dbus-launch startxfce4" ;;
 2) XWIN="x-window-manager & dbus-launch startlxde" ;;
+3) XWIN="x-window-manager & dbus-launch mate-session" ;;
 *) echo -e "\e[1;31m输入无效，已退出\e[0m" ;;
 esac
 # ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1' | sed "s@\$@:5901@"
@@ -897,8 +928,17 @@ fi
 		sleep 2
 		WEB_BROWSER
 	fi
-	echo -e "${YELLOW}done..${RES}"
-	sleep 1
+	if grep -q '^ex.*MOZ_FAKE_NO_SANDBOX=1' /etc/environment; then
+		printf "%s\n" "MOZ_FAKE_NO_SANDBOX=1" /etc/environment
+	else
+		echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
+export MOZ_FAKE_NO_SANDBOX=1' >/etc/environment
+	fi
+	echo -e "\n\e[0;32m因firefox限制，已帮你修正设置。如仍然无法上网，请打开firefox，在地址栏输about:config，搜索并修改如下信息:
+	media.cubeb.sandbox的值改成false
+	security.sandbox.content.level的值改成0
+	修改完成后重新打开vnc才能正常使用${RES}"
+	CONFIRM
 	WEB_BROWSER
 	;;
 3)
@@ -940,18 +980,16 @@ esac
 DM() {
 	echo -e "安装桌面图形界面
 	1) 安装xfce4
-	2) 安装lxde\n"
+	2) 安装lxde
+	3) 安装mate(有bug，请勿选)\n"
 	read -r -p "E(exit) M(main)请选择:" input
 	case $input in
-		1) $sudo_t apt install xfce4 xfce4-terminal ristretto -y
-			echo -e "${YELLOW}done${RES}"
-			sleep 1
-			DM ;;
-		2) echo "安装lxde"
-			$sudo_t apt install lxde-core lxterminal dbus-x11 -y
-			echo -e "${YELLOW}done${RES}"
-			sleep 1
-			DM ;;
+		1) $sudo_t apt install xfce4 xfce4-terminal ristretto -y ;;
+		2) $sudo_t apt install lxde-core lxterminal dbus-x11 -y ;;
+		3) 
+#			$sudo_t apt install mate-desktop-environment mate-terminal -y
+			$sudo_t apt install --no-install-recommends mate-session-manager mate-settings-daemon marco mate-terminal mate-panel dbus-x11 thunar -y && apt purge ^libfprint -y
+			;;
 		[eE]) echo "exit"
 			exit 1 ;;
 		[Mm]) echo "back to main"
@@ -959,6 +997,9 @@ DM() {
 		*) INVALID_INPUT
 			DM ;;
 	esac
+	echo -e "${YELLOW}done${RES}"
+                        sleep 1
+                        INSTALL_SOFTWARE
 }
 #######################
 DM_VNC() {
@@ -1507,7 +1548,7 @@ sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/
                                pkg install curl tar wget vim proot unstable-repo x11-repo -y
                                echo -e "${GREEN}安装配置声音pulseaudio${RES}"
 			       sleep 1
-                               pkg in pulseaudio
+                               pkg in pulseaudio -y
                                if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
 then
         echo "module already present"
@@ -1567,7 +1608,7 @@ TERMUX
 	echo -e "安装并配置pulseaudio\n如果安装失效，请选择另一种安装方式\n1)直接安装\n2)通过setup-audio脚本安装"
 	read -r -p ":" input
 	case $input in
-		1|"") pkg in pulseaudio
+		1|"") pkg in pulseaudio -y
 			if [ $? -ne 0 ]; then
 				echo -e "${RED}安装失败，请重试${RES}"
 				sleep 2
@@ -1604,14 +1645,27 @@ esac
 5) echo -e "\n${GREEN}如需加挂外部sdcard，请先ls /mnt确认外部sdcard名字${RES}\n\n1)创建root用户 2)普通用户 9)返回 0)退出"
 	read -r -p ":" input
 	case $input in
-		2) echo -e "\n${GREEN}请确认已安装sudo，否则无法系统内进行安装维护${RES}"
-			echo -n "请把系统文件夹放根目录并输入系统文件夹名字rootfs:"
+		2) echo -e "\n${GREEN}请确认已安装sudo，否则无法系统内进行安装维护，切换root用户命令sudo su${RES}"
+			echo -n "请把系统文件夹放根目录并输入系统文件夹名字rootfs: "
 			read rootfs
-			echo -n "请输入普通用户名name:"
-			read name
-			if grep -q "$name" "$rootfs/etc/passwd"; then
-			echo -e "${RED}你的普通用户名貌似已经有了，起个其他名字吧${RES}"
+			while [ ! -d $rootfs ]
+			do
+				echo -e "${RED}无此文件夹\n${RES}请重输: ${RES}"
+			read rootfs
+		done
+		echo -n "请输入普通用户名name:"
+		read name
+			if grep -wq "$name" "$rootfs/etc/passwd"; then
+			echo -e "${GREEN}你的普通用户名貌似已经有了，将为此普通用户创建登录脚本${RES}"
 			sleep 2
+			Uid=`sed -n p $rootfs/etc/passwd | grep $name | cut -d ':' -f 3`
+			Gid=`sed -n p $rootfs/etc/passwd | grep $name | cut -d ':' -f 4`
+echo "pkill -9 pulseaudio 2>/dev/null
+pulseaudio --start &
+unset LD_PRELOAD
+proot --kill-on-exit -r $rootfs -i $Uid:$Gid --link2symlink -b /sdcard:/root/sdcard -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b /sdcard -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
+echo -e "已创建用户系统登录脚本,登录方式为${YELLOW}./$name.sh${RES}"
+sleep 2
 		else
 			mkdir -p $rootfs/home/$name
 			i=1000
@@ -1619,15 +1673,28 @@ esac
 			do
 				let i++
 			done
+			if [ ! -e $rootfs/etc/sudoers ]; then
+				echo -e "\n${GREEN}你这系统似乎没装sudo命令，故新创建的用户无法进行系统安装维护${RES}"
+				sleep 2
+			else
+				sed -i "/execute/a\\$name ALL=(ALL:ALL) NOPASSWD:ALL" $rootfs/etc/sudoers
+			fi
 			echo "$name:x:$i:$i:,,,:/home/$name:/bin/bash" >>$rootfs/etc/passwd
-			sed -i "/execute/a\\$name ALL=(ALL:ALL) NOPASSWD:ALL" $rootfs/etc/sudoers
 			echo "$name:x:$i:" >>$rootfs/etc/group
 			echo "$name:!:18682:0:99999:7:::" >>$rootfs/etc/shadow
 echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -r $rootfs -i $i:$i --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
-echo "已创建用户系统登录脚本,登录方式为${YELLOW}./$name.sh${RES}"
+proot --kill-on-exit -r $rootfs -i $i:$i --link2symlink -b /sdcard:/root/sdcard -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b /sdcard -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
+echo -e "\n是否加载外部sdcard\n1)是\n2)跳过"
+read -r -p ":" input
+case $input in
+	1) echo -n "请输入外部sdcard名字ext_sdcard:"
+                read ext_sdcard
+                sed -i "s/shm/shm -b \/mnt\/$ext_sdcard:\/home\/$name\/ext_sdcard/g" $name.sh ;;
+	*) echo "" ;;
+	esac
+echo -e "已创建用户系统登录脚本,登录方式为${YELLOW}./$name.sh${RES}"
 sleep 2
 fi ;;
 		9|"") TERMUX ;;
@@ -1635,6 +1702,11 @@ fi ;;
 		1) 
 	echo -n "请把系统文件夹放根目录并输入系统文件夹名字rootfs:"
 	read rootfs
+	while [ ! -d $rootfs ]
+                        do
+				echo -e "${RED}无此文件夹\n${RES}请重输: ${RES}"
+				read rootfs
+		done
 	if [ -e start-$rootfs.sh ]; then
 		rm -rf start-$rootfs.sh
 	fi
@@ -1651,7 +1723,7 @@ case $input in
 		sed -i "s/shm/shm -b \/mnt\/$ext_sdcard:\/root\/ext_sdcard/g" start-$rootfs.sh ;;
 		*) echo "" ;;
 	esac
-echo "已创建root用户系统登录脚本,登录方式为./start-$rootfs.sh"
+echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./start-$rootfs.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 	if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
 		sed -i "1i\pkill -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
@@ -1707,10 +1779,10 @@ sleep 2
 		echo "检查下载安装所需应用..."    
 		sleep 2
 		if [ ! $(command -v curl) ]; then
-			apt install curl
+			apt install curl -y
 		fi
 		if [ ! $(command -v tar) ]; then
-			apt install tar
+			apt install tar -y
 		fi
 		if [ -e rootfs.tar.xz ]; then
 			rm -rf rootfs.tar.xz
@@ -1749,10 +1821,10 @@ TERMUX ;;
                 echo "检查下载安装所需应用..."
                 sleep 2
 		if [ ! $(command -v curl) ]; then
-			apt install curl
+			apt install curl -y
 		fi
 		if [ ! $(command -v tar) ]; then
-			apt install tar
+			apt install tar -y
 		fi
 		if [ -e rootfs.tar.xz ]; then
 			rm -rf rootfs.tar.xz
@@ -1787,7 +1859,7 @@ sleep 2
 rm -rf termux_tmp && mkdir termux_tmp && cd termux_tmp
 CURL_T=`curl https://mirrors.bfsu.edu.cn/debian/pool/main/q/qemu/ | grep '\.deb' | grep 'qemu-user-static' | grep arm64 | tail -n 1 | cut -d '=' -f 3 | cut -d '"' -f 2`
 curl -o qemu.deb https://mirrors.bfsu.edu.cn/debian/pool/main/q/qemu/$CURL_T
-apt install binutils
+apt install binutils -y
 ar -vx qemu.deb
 tar xvf data.tar.xz
 cd && cp termux_tmp/usr/bin/qemu-x86_64-static $bagname/
@@ -1831,10 +1903,10 @@ echo -e "${RES}"
 echo "检查下载安装所需应用..."                          
 sleep 2
 if [ ! $(command -v curl) ]; then
-	apt install curl
+	apt install curl -y
 	fi
 	if [ ! $(command -v tar) ]; then
-	apt install tar
+	apt install tar -y
 fi
 if [ -e rootfs.tar.xz ]; then
 	rm -rf rootfs.tar.xz
@@ -1867,7 +1939,7 @@ sleep 2
 	10) if [ ! $(command -v tar) ]; then
 		echo -e "检测到你未安装tar,将先安装tar"
 		sleep 2
-		pkg install tar
+		pkg install tar -y
 	fi
 		echo -e "\n请选择备份或恢复
 		1) 备份
@@ -1894,6 +1966,7 @@ elif [ "${backup##*.}" = "gz" ]; then
 			     else
 				     echo -e "${RED}不支持的格式${RES}"
 				     sleep 2
+				     unset backup
 				     TERMUX
 				     fi
 				     if [ $? -eq 0 ]; then
@@ -1902,12 +1975,15 @@ elif [ "${backup##*.}" = "gz" ]; then
 					     echo -e "${RED}恢复失败，请检查...${RES}"
 					     fi
 					     sleep 2
+					     unset backup
 					     TERMUX ;;
 				     [Ee]) echo "exit"
 					     exit 1 ;;
 				     [Mm]) echo "back to Main"
+					     unset backup
 					     MAIN ;;
 				     *) INVALID_INPUT
+					     unset backup
 					     TERMUX
 			     esac ;;
 11)  echo "修改键盘"
