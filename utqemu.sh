@@ -515,7 +515,8 @@ done
 					read iso1_name ;;
 				*) ;;
 			esac ;;
-			VIRTIO_MODE) ;;
+			VIRTIO_MODE) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接>回车（例如hdb.img）hdb_name: "
+				read hdb_name ;;
 	esac ;;
 *) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）hdb_name: "
 	read hdb_name ;;
