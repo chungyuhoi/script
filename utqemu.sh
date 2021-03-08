@@ -4,10 +4,9 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
-	忽略输出提示，增加日志查询
-	修正各种模式下声音的输出
-	增加局域网vnc显示(为减少效率的影响，暂不支持声音输出)
-	修正图形界面下使用本脚本
+	修正virtio驱动光盘链接
+	增加5.0以上版本可加载双光盘模式(该模式下分区加载选项会被替代)
+	增加优先硬盘或光盘启动的顺序选择
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -212,16 +211,11 @@ deb http://mirrors.bfsu.edu.cn/debian/ bullseye-backports main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >$sys_name/etc/apt/sources.list
 EOF
 if [ ! -e ./utqemu.sh ]; then
-curl -O http://down.archserver.top:81/utqemu.sh 2>/dev/null
+curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
 fi
 cp utqemu.sh $sys_name/root/utqemu.sh
 sed -i "s/qemu-system-x86-64-headless/qemu-system-x86 xserver-xorg x11-utils/" $sys_name/root/utqemu.sh
 sed -i 's/qemu-system-i386-headless/-y \&\& apt --reinstall install pulseaudio/' $sys_name/root/utqemu.sh
-#sed -i '/^MAIN()/,$d' $sys_name/root/utqemu.sh
-#echo 'MAIN(){
-#QEMU_SYSTEM
-#}
-#MAIN "$@"' >>$sys_name/root/utqemu.sh
 echo "bash utqemu.sh" >>$sys_name/etc/profile
 echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
 sleep 2
@@ -384,7 +378,8 @@ fi
 	uname -a | grep 'Android' -q 
 	if [ $? == 0 ]; then
 		echo -e "\n${YELLOW}vncviewer地址为127.0.0.1:0${RES}"     
-		sleep 1     
+		sleep 1
+		display=vnc
 		set -- "${@}" "-vnc" ":0"
 	else
 		echo -n -e "\n${GREEN}是否已有快捷脚本，如有请输快捷脚本名字，如无请回车:${RES} "
@@ -496,17 +491,35 @@ esac
 echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
 ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso"
 sleep 1
-while [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ]
+while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
 do
 	if [ -n "$hda_name" ]; then
 		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
 		sleep 1
 	fi
-echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（例如andows.img），如需中止，请ctrl+c，请输入hda_name: "
-read  hda_name
+	echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（例如andows.img），退出请输${YELLOW}0${RES}，请输入hda_name: "
+	read  hda_name
 done
-	echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）hdb_name: "
-	read hdb_name
+	if [ $hda_name == '0' ]; then
+		exit 0
+	fi
+	case $SYS in
+		QEMU_ADV) 
+			case $QEMU_MODE in
+				"")
+				read -r -p "1)加载分区镜像 2)加载双光盘 回车)不加载 " input
+			case $input in
+				1) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）hdb_name: "
+					read hdb_name ;;
+				2) echo -n -e "请输入${YELLOW}第一个光盘${RES}全名,不加载请直接回车（例如DVD.iso）iso1_name: "
+					read iso1_name ;;
+				*) ;;
+			esac ;;
+			VIRTIO_MODE) ;;
+	esac ;;
+*) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）hdb_name: "
+	read hdb_name ;;
+esac
 	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）iso_name: "
 	read iso_name
 #		set -- "${@}" "-net" "nic" "-net" "user,smb=${DIRECT}/xinhao/"
@@ -515,14 +528,19 @@ done
         set -- "${@}" "-m" "$mem"
 #       set -- "${@}" "-rtc" "base=utc,driftfix=slew"
 	set -- "${@}" "-rtc" "base=localtime,clock=host"
+	set -- "${@}" "-full-screen"
 #不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件
 	set -- "${@}" "-nodefaults"
 #不加载用户自定义的配置文件。
 	set -- "${@}" "-no-user-config"
 #更改消息的格式，时间戳
 	set -- "${@}" "-msg" "timestamp=on"
+	case $QEMU_SYS in
+		qemu-system-i386)
 #高精度定时器
-	set -- "${@}" "-no-hpet"
+	set -- "${@}" "-no-hpet" ;;
+		*) ;;
+esac
 	echo -e "是否自定义逻辑cpu数量"
 	read -r -p "1)默认配置 2)自定义 " input
 	case $input in
@@ -750,9 +768,16 @@ esac
 		if [ -n "$hdb_name" ]; then
 		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
 		fi
-		if [ -n "$iso_name" ]; then     
-                       set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,if=ide,index=2,media=cdrom"  
-		fi                            
+		if [ -n "$iso1_name" ]; then
+			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
+		if [ -n "$iso_name" ]; then 
+		       set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,if=ide,media=cdrom"
+		fi
+	else
+		if [ -n "$iso_name" ]; then
+			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,if=ide,index=2,media=cdrom"
+		fi
+		fi
 		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
 
 
@@ -765,8 +790,11 @@ esac
 		set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
 
 		if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}/xinhao/windows/$hdb_name,if=none" 
+		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}/xinhao/windows/$hdb_name,if=none"
 		set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
+		fi
+		if [ -n "$iso1_name" ]; then
+			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
 		fi
 		if [ -n "$iso_name" ]; then
 		set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}/xinhao/windows/$iso_name,if=none"     
@@ -784,8 +812,15 @@ esac
 if [ -n "$hdb_name" ]; then
 			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk,if=virtio" 
 		fi
+		if [ -n "$iso1_name" ]; then
+			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
+			if [ -n "$iso_name" ]; then
+				set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,media=cdrom"
+			fi
+		else
 		if [ -n "$iso_name" ]; then
 			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,index=2,media=cdrom"
+		fi
 		fi
 			set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
 #			set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
@@ -812,7 +847,11 @@ esac ;;
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	2) ;;
 esac
-		set -- "${@}" "-boot" "order=dc,menu=on,strict=off"
+	read -r -p "1)优硬盘启动 2)优先光盘启动 " input
+	case $input in
+		1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
+		2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
+	esac
 		fi
 
 		if [ -n "$display" ]; then
@@ -873,11 +912,18 @@ esac
 		2|"") ;;
 esac
 	fi
-	printf "%s\n${BLUE}"
+	printf "%s\n"
 	cat <<-EOF
 	${@}
 	EOF
-	printf "%s\n${GREEN}模拟器已启动，如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	case $display in
+		vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vnc 127.0.0.1:0" ;;
+		wlan_vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vnc $IP:0" ;;
+		xsdl) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开xsdl" ;;
+		spice) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1:0" ;;
+		*) printf "%s\n${GREEN}模拟器已启动" ;;
+	esac
+	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
         ;;
@@ -930,7 +976,7 @@ case $input in
 	fi
 		echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
 		DATE=`date | cut -d " " -f 7`
-		if [ -n $DATE ]; then
+		if [ ! -n $DATE ]; then
 			DATE=`date | cut -d " " -f 6`
 		fi
 		VERSION=`curl -s https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/ | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
