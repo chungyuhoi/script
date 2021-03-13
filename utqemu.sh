@@ -207,13 +207,10 @@ echo -e "${BLUE}正在解压系统包${RES}"
         echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >$sys_name/etc/resolv.conf
         echo "export  TZ='Asia/Shanghai'" >> $sys_name/root/.bashrc
-	echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >$sys_name/etc/apt/sources.list
-cat >/dev/null <<-EOF
 echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian/ bullseye-backports main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >$sys_name/etc/apt/sources.list
-EOF
 if [ ! -e ./utqemu.sh ]; then
 curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
 fi
@@ -296,6 +293,7 @@ QEMU_ETC() {
 	echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 2) 转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
 3) 修改设备标识(手机、平板、电脑)
+4) 修改源
 9) 返回
 0) 退出\n"
 	read -r -p "请选择: " input
@@ -386,6 +384,17 @@ do
 			sleep 2
 			QEMU_ETC ;;
 	esac ;;
+4) read -r -p "1)中科源 2)北外源 9)返回主目录 0)退出 " input
+	case $input in
+		1) echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >/etc/apt/sources.list && apt update ;;
+		2) echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
+deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
+deb http://mirrors.bfsu.edu.cn/debian/ bullseye-backports main contrib non-free
+deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >/etc/apt/sources.list && apt update ;;
+		9) QEMU_SYSTEM ;;
+		0) exit 1 ;;
+		*) INVALID_INPUT && QEMU_ETC ;;
+esac ;;
 		9) unset FORMAT_
 			unset FORMAT
 			QEMU_SYSTEM ;;
@@ -1087,12 +1096,9 @@ VIRTIO() {
 
 echo -e "
 1) 下载virtio驱动光盘"
-#uname -a | grep 'Android' -q
-#if [ $? != 0 ]; then
 	case $SYS in
 		QEMU_ADV)
 echo -e "2) 为磁盘接口添加virtio驱动（需另外下载virtio驱动光盘）" ;;
-#fi
 *) ;;
 esac
 echo -e "8) 关于virtio
@@ -1128,8 +1134,6 @@ fi
 
 	2) case $SYS in
 		QEMU_ADV)
-		#uname -a | grep 'Android' -q
-		#if [ $? != 0 ]; then
 		echo -e "\n${GREEN}本次操作默认vnc输出，地址127.0.0.1:0\n请确认系统镜像与virtio驱动盘已放入手机目录/xinhao/windows里${RES}"
 	CONFIRM
 	if [ ! -e "${DIRECT}/xinhao/windows" ]; then
@@ -1175,9 +1179,7 @@ done
 	echo -e "\e[33m即将开机，参数是默认的，开机过程会比较慢，Windows会自动检测fake磁盘，并搜索适配的驱动。如果失败了，前往Device Manager，找到SCSI驱动器（带有感叹号图标，应处于打开状态），点击Update driver并选择虚拟的CD-ROM。不要定位到CD-ROM内的文件夹了，只选择CD-ROM设备就行，Windows会自动找到合适的驱动的。完成后请关机，然后正常启动qemu-system-x86_64(qemu-system-i386)方式并选择磁盘接口virtio。${RES}"
 	CONFIRM
 qemu-system-x86_64 -m 1g -drive file=${DIRECT}/xinhao/windows/$hda_name,if=ide -drive file=${DIRECT}/xinhao/windows/fake.qcow2,if=virtio -cdrom ${DIRECT}/xinhao/windows/$iso_name -vnc :0;;
-#else
 *)	INVALID_INPUT && VIRTIO
-#fi
 ;;
 esac ;;
 8) ABOUT_VIRTIO ;;
