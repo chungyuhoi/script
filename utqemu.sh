@@ -207,10 +207,13 @@ echo -e "${BLUE}正在解压系统包${RES}"
         echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >$sys_name/etc/resolv.conf
         echo "export  TZ='Asia/Shanghai'" >> $sys_name/root/.bashrc
+	echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >$sys_name/etc/apt/sources.list
+	cat >/dev/null <<EOF
 echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian/ bullseye-backports main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >$sys_name/etc/apt/sources.list
+EOF
 if [ ! -e ./utqemu.sh ]; then
 curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
 fi
