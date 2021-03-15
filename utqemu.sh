@@ -587,8 +587,8 @@ SELECT_EMU() {
 	sleep 1
 #       pkill -9 qemu-system-x86
 #	pkill -9 qemu-system-i38
-	killall qemu-system-x86 2>/dev/null
-	killall qemu-system-i38 2>/dev/null
+	killall -9 qemu-system-x86 2>/dev/null
+	killall -9 qemu-system-i38 2>/dev/null
         qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
 				if [ $? != 0 ]; then
 		case $(dpkg --print-architecture) in
@@ -597,11 +597,15 @@ SELECT_EMU() {
 esac
 	else
 		echo -e "请选择计算机类型，因系统原因，q35可能导致启动不成功"
-#kernel-irqchip=on|off|split中断控制器
+#kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
+#vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
+#dump-guest-core=on|off将客户机内存包括在核心转储中。默认为开。
+#mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
+#aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
+#dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
 		read -r -p "1)pc默认 2)q35 " input
 		case $input in
 			1|"") 
-			#	set -- "${@}" "-machine" "pc-i440fx-3.1,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel_irqchip=off" ;;
 	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
 			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}\n"
 				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
@@ -1019,8 +1023,8 @@ esac
 			case $display in
 				xsdl)
 cat >/usr/local/bin/$script_name <<-EOF
-killall qemu-system-x86 2>/dev/null
-killall qemu-system-i38 2>/dev/null
+killall -9 qemu-system-x86 2>/dev/null
+killall -9 qemu-system-i38 2>/dev/null
 #pkill -9 qemu-system-x86
 #pkill -9 qemu-system-i38
 export PULSE_SERVER=tcp:127.0.0.1:4713
@@ -1030,8 +1034,8 @@ EOF
 ;;
 				vnc|spice|xsdl) 
 cat >/usr/local/bin/$script_name <<-EOF
-killall qemu-system-x86 2>/dev/null
-killall qemu-system-i38 2>/dev/null
+killall -9 qemu-system-x86 2>/dev/null
+killall -9 qemu-system-i38 2>/dev/null
 #pkill -9 qemu-system-x86
 #pkill -9 qemu-system-i38
 export PULSE_SERVER=tcp:127.0.0.1:4713
@@ -1040,8 +1044,8 @@ EOF
 ;;
 				amd|gtk_|"")
 cat >/usr/local/bin/$script_name <<-EOF
-killall qemu-system-x86 2>/dev/null
-killall qemu-system-i38 2>/dev/null
+killall -9 qemu-system-x86 2>/dev/null
+killall -9 qemu-system-i38 2>/dev/null
 #pkill -9 qemu-system-x86
 #pkill -9 qemu-system-i38
 ${@}
@@ -1152,8 +1156,8 @@ fi
 		sleep 2
 		QEMU_SYSTEM
 	fi
-killall qemu-system-x86 2>/dev/null
-killall qemu-system-i38 2>/dev/null
+killall -9 qemu-system-x86 2>/dev/null
+killall -9 qemu-system-i38 2>/dev/null
 #	pkill -9 qemu-system-x86
 #	pkill -9 qemu-system-i38
 	if [ ! -e "${DIRECT}/xinhao/windows/fake.qcow2" ]; then
