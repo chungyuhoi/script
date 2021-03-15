@@ -585,8 +585,10 @@ SELECT_EMU() {
 	esac
 	echo -e "\n${GREEN}请确认系统镜像已放入手机目录/xinhao/windows里${RES}\n"
 	sleep 1
-        pkill -9 qemu-system-x86
-	pkill -9 qemu-system-i38
+#       pkill -9 qemu-system-x86
+#	pkill -9 qemu-system-i38
+	killall qemu-system-x86 2>/dev/null
+	killall qemu-system-i38 2>/dev/null
         qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
 				if [ $? != 0 ]; then
 		case $(dpkg --print-architecture) in
@@ -1017,8 +1019,10 @@ esac
 			case $display in
 				xsdl)
 cat >/usr/local/bin/$script_name <<-EOF
-pkill -9 qemu-system-x86
-pkill -9 qemu-system-i38
+killall qemu-system-x86 2>/dev/null
+killall qemu-system-i38 2>/dev/null
+#pkill -9 qemu-system-x86
+#pkill -9 qemu-system-i38
 export PULSE_SERVER=tcp:127.0.0.1:4713
 export DISPLAY=127.0.0.1:0
 ${@}
@@ -1026,16 +1030,20 @@ EOF
 ;;
 				vnc|spice|xsdl) 
 cat >/usr/local/bin/$script_name <<-EOF
-pkill -9 qemu-system-x86
-pkill -9 qemu-system-i38
+killall qemu-system-x86 2>/dev/null
+killall qemu-system-i38 2>/dev/null
+#pkill -9 qemu-system-x86
+#pkill -9 qemu-system-i38
 export PULSE_SERVER=tcp:127.0.0.1:4713
 ${@}
 EOF
 ;;
 				amd|gtk_|"")
 cat >/usr/local/bin/$script_name <<-EOF
-pkill -9 qemu-system-x86
-pkill -9 qemu-system-i38
+killall qemu-system-x86 2>/dev/null
+killall qemu-system-i38 2>/dev/null
+#pkill -9 qemu-system-x86
+#pkill -9 qemu-system-i38
 ${@}
 EOF
 ;;
@@ -1144,8 +1152,10 @@ fi
 		sleep 2
 		QEMU_SYSTEM
 	fi
-	pkill -9 qemu-system-x86
-	pkill -9 qemu-system-i38
+killall qemu-system-x86 2>/dev/null
+killall qemu-system-i38 2>/dev/null
+#	pkill -9 qemu-system-x86
+#	pkill -9 qemu-system-i38
 	if [ ! -e "${DIRECT}/xinhao/windows/fake.qcow2" ]; then
 	echo -e "\n将为你创建一个新的磁盘镜像，用于搜索virtio驱动\n"
 	sleep 2
