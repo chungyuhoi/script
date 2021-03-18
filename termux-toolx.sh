@@ -1242,6 +1242,8 @@ DOSBOX() {
 		else
 		dosbox=`ls ${HOME}/.dosbox`
                 sed -i "/^\[autoexec/a\mount c /sdcard/DOS" ${HOME}/.dosbox/$dosbox
+#		echo 'mount d /sdcard/DOS/hospital -t cdrom' ${HOME}/.dosbox/$dosbox
+#		echo 'mount d /sdcard/DOS/CDROM -t cdrom -label mdk' ${HOME}/.dosbox/$dosbox
 		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录DOS文件夹里，打开dosbox输入c:即可看到运行文件夹${RES}"
 		sleep 2
 	fi

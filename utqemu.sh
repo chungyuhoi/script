@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	增加aqemu(适用于图形界面下配置操作qemu)安装选项
 	简化磁盘接口virtio驱动安装模式，无需创建加载分区，默认为共享文件夹
 	优化使用快捷脚本的提示
 	新增qcow2与vmdk格式转换选项
@@ -297,6 +298,7 @@ QEMU_ETC() {
 2) 转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
 3) 修改设备标识(手机、平板、电脑)
 4) 修改源
+5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
 9) 返回
 0) 退出\n"
 	read -r -p "请选择: " input
@@ -398,6 +400,14 @@ deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib no
 		0) exit 1 ;;
 		*) INVALID_INPUT && QEMU_ETC ;;
 esac ;;
+5) echo -e "${GREEN}aqemu是qemu的前端，适用于图形界面下简易配置操作qemu，安装完aqemu，首次启动时请搜索并绑定qemu-system-x86_64。${RES}"
+	CONFIRM
+	apt update && $sudo apt install aqemu -y
+	if [ ! $(command -v aqemu ) ]; then
+		echo -e "${RED}安装失败，请重试${RES}"
+		sleep 1
+		fi
+		;;
 		9) unset FORMAT_
 			unset FORMAT
 			QEMU_SYSTEM ;;
@@ -811,7 +821,18 @@ esac ;;
 			spice) read -r -p "1)常规使用 2)spice传输协议使用 " input
 			case $input in
 			1|"") set -- "${@}" "-vga" "qxl" ;;
-		2) set -- "${@}" "-vga" "qxl" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent" ;;
+		2) set -- "${@}" "-vga" "qxl" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
+			cat >/dev/null <<EOF
+set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
+#set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
+set -- "${@}" "-device" "ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on"
+#set -- "${@}" "-device" "ich9-usb-uhci2,masterbus=usb.0,firstport=2"
+#set -- "${@}" "-device" "ich9-usb-uhci3,masterbus=usb.0,firstport=4"
+set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev1" "-device" "usb-redir,chardev=usbredirchardev1,id=usbredirdev1"
+#set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev2" "-device" "usb-redir,chardev=usbredirchardev2,id=usbredirdev2"
+#set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev3" "-device" "usb-redir,chardev=usbredirchardev3,id=usbredirdev3"
+EOF
+			;;
         esac ;;
 
 *) set -- "${@}" "-vga" "qxl" ;;
