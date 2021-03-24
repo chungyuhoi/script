@@ -29,6 +29,8 @@ echo -e "\n\e[33m注意事项\e[0m
 	if [ $(command -v qemu-system-x86_64) ]; then
 		echo -e "\e[33m检测到你已安装qemu-system-x86，版本是\e[0m"
 echo -e "\e[32m$(qemu-system-x86_64 --version | head -n 1)\e[0m"
+else
+	echo -e "\e[1;31m检测到你未安装qemu-system-x86，请先选择安装\e[0m"
 	fi
 }
 ###################
@@ -297,7 +299,7 @@ QEMU_ETC() {
 	echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 2) 转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
 3) 修改设备标识(手机、平板、电脑)
-4) 修改源
+4) 修改源(只适用本脚本下载的系统)
 5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
 9) 返回
 0) 退出\n"
@@ -389,7 +391,11 @@ do
 			sleep 2
 			QEMU_ETC ;;
 	esac ;;
-4) read -r -p "1)中科源 2)北外源 9)返回主目录 0)退出 " input
+4) if ! grep -q 'bullseye/sid' "/etc/os-release"; then
+	echo -e "\n${RED}只支持bullseye${RES}\n"
+sleep 2
+else
+	read -r -p "1)中科源 2)北外源 9)返回主目录 0)退出 " input
 	case $input in
 		1) echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >/etc/apt/sources.list && apt update ;;
 		2) echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
@@ -399,8 +405,9 @@ deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib no
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
 		*) INVALID_INPUT && QEMU_ETC ;;
-esac ;;
-5) echo -e "${GREEN}aqemu是qemu的前端，适用于图形界面下简易配置操作qemu，安装完aqemu，首次启动时请搜索并绑定qemu-system-x86_64。${RES}"
+esac
+fi ;;
+5) echo -e "${GREEN}aqemu是qemu的前端，适用于图形界面下简易配置操作qemu，安装完aqemu，首次启动时请搜索并绑定qemu-system-x86_64${RES}"
 	CONFIRM
 	apt update && $sudo apt install aqemu -y
 	if [ ! $(command -v aqemu ) ]; then
@@ -507,25 +514,24 @@ $script_name >/dev/null 2>>${HOME}/.utqemu_log
 				fi
 		fi
 case $ARCH in
-	tablet) echo ""
-		read -r -p "请选择显示输出方式 1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 9)返回 0)退出 " input
+	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
+		read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 9)返回 0)退出 " input
 	case $input in
-		1|"") echo -e "\n${YELLOW}vnc输出${RES}"
+		1|"") echo -e "\n${BLUE}vnc输出${RES}"
 			display=vnc
 			;;
-		2) echo -e "sdl信号输出，需先打开xsdl再继续此操作
-"
+		2) echo -e "${BLUE}sdl信号输出，需先打开xsdl再继续此操作${RES}"
 			display=xsdl
 			;;
-		3) echo -e "${YELLOW}spice输出${RES}
+		3) echo -e "${BLUE}spice输出${RES}
 \e[33m请勿随意切换aspice，如出现系统界面无法控制，只能重开qemu${RES}"
 sleep 1
 display=spice
 ;;
-		4) echo -e "\n${YELLOW}窗口输出${RES}"
+		4) echo -e "\n${BLUE}窗口输出${RES}"
 			display=gtk_ ;;
 		5) display=wlan_vnc
-			echo -e "\n${YELLOW}为减少效率的影响，暂不支持声音输出\n输出显示的设备vnc地址为$IP:0${RES}"
+			echo -e "\n${BLUE}为减少效率的影响，暂不支持声音输出\n输出显示的设备vnc地址为$IP:0${RES}"
 			sleep 1 ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
@@ -541,7 +547,7 @@ esac
 ##################
 SELECT_EMU_MODE() {
 
-	echo -e "\n请选择启动哪个模拟器${RES}\n
+	echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
 	1) qemu-system-x86_64
 	2) qemu-system-i386\n"
 	read -r -p "请选择: " input
@@ -561,8 +567,8 @@ LIST() {
 }
 ##################
 SELECT_EMU() {
-	echo -e "\n请选择启动哪个模拟器\n
-        1) qemu-system-x86_64
+        echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
+	1) qemu-system-x86_64
         2) qemu-system-i386
 	3) 磁盘接口virtio驱动安装模式(测试阶段)	\n"
 	read -r -p "请选择: " input
@@ -606,7 +612,7 @@ SELECT_EMU() {
                 *) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg" ;;
 esac
 	else
-		echo -e "请选择计算机类型，因系统原因，q35可能导致启动不成功"
+		echo -e "请选择${YELLOW}计算机类型${RES}，因系统原因，q35可能导致启动不成功"
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
 #vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
 #dump-guest-core=on|off将客户机内存包括在核心转储中。默认为开。
@@ -638,6 +644,7 @@ done
 		QEMU_ADV) 
 			case $QEMU_MODE in
 				"")
+					echo -e "请选择${YELLOW}分区磁盘${RES}加载模式"
 				read -r -p "1)加载分区镜像 2)加载双光盘 ,不加载请直接回车 " input
 			case $input in
 				1) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
@@ -656,7 +663,7 @@ esac
 	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
 	read iso_name
 #		set -- "${@}" "-net" "nic" "-net" "user,smb=${DIRECT}/xinhao/"
-        echo -n "请输入模拟的内存大小，以m为单位（1g=1024m，例如512）: "
+        echo -e -n "请输入模拟的${YELLOW}内存${RES}大小，以m为单位（1g=1024m，例如512）: "
         read mem
 #内存
         set -- "${@}" "-m" "$mem"
@@ -684,7 +691,7 @@ esac
 	set -- "${@}" "-no-hpet" ;;
 		*) ;;
 esac
-	echo -e "是否自定义逻辑cpu数量"
+	echo -e "是否自定义${YELLOW}逻辑cpu${RES}数量"
 	read -r -p "1)默认配置 2)自定义 " input
 	case $input in
 		1|"") _SMP="" ;;
@@ -701,12 +708,13 @@ done
 echo -e "${YELLOW}$CORES核心$THREADS线程$SOCKETS插槽${RES}"
 _SMP="$CPU,cores=$CORES,threads=$THREADS,sockets=$SOCKETS" ;;
 esac
+echo -e "请选择${YELLOW}cpu${RES}"
 case $SYS in
 	QEMU_ADV|ANDROID)
-read -r -p "请选择cpu 1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Dhyana " input ;;
-	QEMU_PRE) read -r -p "请选择cpu 1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS " input ;;
+read -r -p "1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Dhyana " input ;;
+	QEMU_PRE) read -r -p "1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS " input ;;
 esac
-#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器
+#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能。
         case $input in
         1) set -- "${@}" "-cpu" "core2duo"
 		if [ -n "$_SMP" ]; then
@@ -750,6 +758,12 @@ esac
 		else
 			set -- "${@}" "-smp" "8,cores=8,threads=1,sockets=1"
 			fi ;;
+	8) set -- "${@}" "-cpu" "max,level=0xd,vendor=GenuineIntel"
+		if [ -n "$_SMP" ]; then
+			set -- "${@}" "-smp" "$_SMP"
+		else
+			set -- "${@}" "-smp" "8,cores=4,threads=2,sockets=1"
+			fi ;;
         *)      set -- "${@}" "-cpu" "max"
 		if [ -n "$CPU" ]; then
                 set -- "${@}" "-smp" "$CPU"
@@ -761,7 +775,8 @@ esac
 	if [ $? == 0 ]; then
 #####################
 #TERMUX
-read -r -p "请选择显卡 1)cirrus 2)vmware 3)std 4)virtio " input
+echo -e "请选择${YELLOW}显卡${RES}"
+read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 	case $input in 
 		1) set -- "${@}" "-vga" "cirrus" ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
@@ -776,7 +791,8 @@ else
 
 ##################
 #PROOT
-	read -r -p "请选择显卡 1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
+echo -e "请选择${YELLOW}显卡${RES}"
+	read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
         case $input in
                 1) set -- "${@}" "-vga" "cirrus" ;;
                 2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
@@ -793,7 +809,7 @@ case $input in
 			set -- "${@}" "-vga" "virtio"
 #			set -- "${@}" "-device" "virtio-vga,virgl=on"
 ;;
-		2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图>形界面(桌面)显示${RES}"
+		2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图形界面(桌面)显示${RES}"
 			CONFIRM
 			case $display in
 			xsdl) set -- "${@}" "-vga" "virtio" "-display" "sdl,gl=on" ;;
@@ -839,7 +855,8 @@ EOF
 esac
 esac
 	fi
-	read -r -p "请选择网卡 1)e1000 2)rtl8139 3)virtio 0)不加载 " input
+	echo -e "请选择${YELLOW}网卡${RES}"
+	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
         case $input in
                         1|"") set -- "${@}" "-net" "user"
                                 set -- "${@}" "-net" "nic,model=e1000" ;;
@@ -849,7 +866,8 @@ esac
 				set -- "${@}" "-net" "nic,model=virtio" ;;
 			0) set -- "${@}" "-net" "none" ;;
                 esac
-		read -r -p "是否加载usb鼠标,少部分系统可能不支持 1)加载 0)不加载 " input
+		echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
+		read -r -p "1)加载 0)不加载 " input
                 case $input in
                         1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
                         2|"") ;;
@@ -861,7 +879,8 @@ esac
                 if [ $? != 0 ]; then
 #内存锁，默认打开
 			set -- "${@}" "-realtime" "mlock=off"
-			read -r -p "请选择声卡 1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
+			echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
+			read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
                         case $input in
                 1|"") set -- "${@}" "-soundhw" "ac97" ;;
                 2) set -- "${@}" "-soundhw" "sb16" ;;
@@ -887,19 +906,22 @@ esac
 ####################
 case $(dpkg --print-architecture) in
 	i*86|x86*|amd64)
-		read -r -p "过量内存使用(默认关闭) 1)开启 2)关闭 " input
+		echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
+		read -r -p "1)开启 2)关闭 " input
 		case $input in
 			1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
 			*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
 		esac
-		read -r -p "过量cpu电源控制(默认关闭) 1) 开启 2)关闭 " input
+		echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
+		read -r -p "1) 开启 2)关闭 " input
 		case $input in
 			1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
 			*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
 		esac ;;
 	*) ;;
 esac
-		read -r -p "请选择声卡 1)es1370 2)sb16 3)hda 4)ac97(推荐) 0)不加载 " input
+echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
+		read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 0)不加载 " input
                         case $input in
                         1) set -- "${@}" "-device" "ES1370" ;;
                         2) set -- "${@}" "-device" "sb16" ;;
@@ -916,7 +938,7 @@ esac
 		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=virtio"
 		set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name" ;;
 		*)
-		echo -e "请选择磁盘接口,因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
+		echo -e "请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
 		read -r -p "1)ide 2)sata 3)virtio " input
 		case $input in
 ##################
@@ -999,13 +1021,14 @@ if [ -n "$hdb_name" ]; then
 esac ;;
 	esac
 #开全内存balloon功能，俗称内存气球
-	echo -e "是否开全内存balloon功能(需安装virtio驱动)"
+	echo -e "是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
 	read -r -p "1)开启 2)不开启 " input
 	case $input in
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	2) ;;
 esac
-	read -r -p "1)优硬盘启动 2)优先光盘启动 " input
+echo -e "请选择${YELLOW}启动顺序${RES}"
+	read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
 	case $input in
 		1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
 		2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
@@ -1036,7 +1059,7 @@ esac
 		case $display in
 		wlan_vnc) ;;
 		*)
-	echo -e "${YELLOW}是否创建本次参数的快捷脚本${RES}"
+	echo -e "是否创建本次参数的${YELLOW}快捷脚本${RES}"
 	read -r -p "1)是 2)否 " input
 	case $input in
 		1) echo -n "请给脚本起个名字: "
@@ -1150,7 +1173,7 @@ case $input in
 	fi
 		echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
 		DATE=`date | cut -d " " -f 7`
-		if [ ! -n $DATE ]; then
+		if [ -n $DATE ]; then
 			DATE=`date | cut -d " " -f 6`
 		fi
 		VERSION=`curl -s https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/ | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
