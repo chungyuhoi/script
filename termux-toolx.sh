@@ -154,6 +154,40 @@ SYS=kali
 fi
 echo -e "你的架构为" $(dpkg --print-architecture)
 #####################
+ARCH_CHECK() {
+        case $(dpkg --print-architecture) in
+                arm*|aarch64) DIRECT="/sdcard"
+                        ARCH=tablet ;;
+                i*86|x86*|amd64)
+                       if grep -E -q 'tablet|computer' ${HOME}/.utqemu_ 2>/dev/null; then
+        case $(cat ${HOME}/.utqemu_) in
+                tablet) DIRECT="/sdcard"
+                        ARCH=tablet ;;
+                computer) DIRECT="${HOME}"
+                        ARCH=computer ;;
+        esac
+elif
+        grep -E -q 'Z3560|Z5800|Z2580' "/proc/cpuinfo" 2>/dev/null; then
+        read -r -p "请确认你使用的是否手机平板 1) 是 2)否 " input
+        case $input in
+                1) echo "tablet" >${HOME}/.utqemu_
+                        DIRECT="/sdcard"
+                        ARCH=tablet ;;
+                2) echo "computer" >${HOME}/.utqemu_
+                        DIRECT="${HOME}"
+                        ARCH=computer ;;
+                *) INVALID_INPUT
+                        ARCH_CHECK ;;
+        esac
+        echo -e "${GREEN}已配置设备识别参数，如发现选错，请执行 rm ${HOME}/.utqemu_ 并新打开本脚本${RES}"
+        CONFIRM
+else
+                        DIRECT="${HOME}"
+                        ARCH=computer
+                        fi ;;
+                *) echo -e "${RED}不支持你设备的架构${RES}" ;;
+esac
+}
 #####################
 CHECK (){
 	if [ -e /etc/os-release ]; then
@@ -1235,15 +1269,15 @@ DOSBOX() {
 				echo -e "done\n如需创建dos运行文件目录，需先运行一次dosbox以生成配置文件"
 				CONFIRM
 				INSTALL_SOFTWARE ;;
-			2) rm -rf /sdcard/DOS && mkdir /sdcard/DOS
+			2) rm -rf $DIRECT/DOS && mkdir $DIRECT/DOS
 		if [ ! -e ${HOME}/.dosbox ]; then
 			echo -e "\n${RED}未检测到dosbox配置文件，请先运行一遍dosbox，再做此步操作${RES}"
 			sleep 2
 		else
 		dosbox=`ls ${HOME}/.dosbox`
-                sed -i "/^\[autoexec/a\mount c /sdcard/DOS" ${HOME}/.dosbox/$dosbox
-#		echo 'mount d /sdcard/DOS/hospital -t cdrom' ${HOME}/.dosbox/$dosbox
-#		echo 'mount d /sdcard/DOS/CDROM -t cdrom -label mdk' ${HOME}/.dosbox/$dosbox
+                sed -i "/^\[autoexec/a\mount c $DIRECT/DOS" ${HOME}/.dosbox/$dosbox
+#		echo 'mount d $DIRECT/DOS/hospital -t cdrom' ${HOME}/.dosbox/$dosbox
+#		echo 'mount d $DIRECT/DOS/CDROM -t cdrom -label mdk' ${HOME}/.dosbox/$dosbox
 		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录DOS文件夹里，打开dosbox输入c:即可看到运行文件夹${RES}"
 		sleep 2
 	fi
@@ -1313,13 +1347,13 @@ else
 2) echo -e "创建windows镜像目录及共享目录\n"
 # 	sed -i "1i\export PULSE_SERVER=tcp:127.0.0.1:4713" /etc/profile 2>/dev/null
 #	sed -i "1i\export QEMU_AUDIO_DRV=alsa" /etc/profile 2>/dev/null	
-        if [ ! -e "/sdcard/windows" ]; then
-                mkdir /sdcard/windows
+        if [ ! -e "$DIRECT/windows" ]; then
+                mkdir $DIRECT/windows
         fi
-	if [ ! -e "/sdcard/share/" ]; then
-		mkdir /sdcard/share
+	if [ ! -e "$DIRECT/share/" ]; then
+		mkdir $DIRECT/share
 	fi
-	if [ ! -e "/sdcard/windows" ]; then
+	if [ ! -e "$DIRECT/windows" ]; then
 		echo -e "${RED}创建目录失败${RES}"
 	else
 		echo -e "${GREEN}手机主目录下已创建windows文件夹，请把'系统镜像，分区镜像，光盘镜像'放进这个目录里\n共享目录是share(目录内总文件大小不能超过500m)${RES}"
@@ -1438,14 +1472,14 @@ read -r -p "请选择显卡 1)cirrus 2)std 3)vmware" input
                 3) set -- "${@}" "-soundhw" "es1370" ;;
 		4) set -- "${@}" "-soundhw" "hda" ;;
 esac
-                set -- "${@}" "-hda" "/sdcard/windows/$hda_name"
+                set -- "${@}" "-hda" "$DIRECT/windows/$hda_name"
 		if [ -n "$hdb_name" ]; then
-			set -- "${@}" "-hdb" "/sdcard/windows/$hdb_name"
+			set -- "${@}" "-hdb" "$DIRECT/windows/$hdb_name"
 		fi
 		if [ -n "$iso_name" ]; then
-			set -- "${@}" "-cdrom" "/sdcard/windows/$iso_name"
+			set -- "${@}" "-cdrom" "$DIRECT/windows/$iso_name"
 		fi
-                set -- "${@}" "-hdd" "fat:rw:/sdcard/share/"
+                set -- "${@}" "-hdd" "fat:rw:$DIRECT/share/"
 		set -- "${@}" "-boot" "order=dc"
 
 	else
@@ -1458,14 +1492,14 @@ esac
                         4|"") set -- "${@}" "-device" "AC97" ;;
                 esac
 		set -- "${@}" "-boot" "order=dc,menu=on,strict=off"
-		set -- "${@}" "-hda" "/sdcard/windows/$hda_name"
+		set -- "${@}" "-hda" "$DIRECT/windows/$hda_name"
 		if [ -n "$hdb_name" ] ; then
-			set -- "${@}" "-hdb" "/sdcard/windows/$hdb_name"
+			set -- "${@}" "-hdb" "$DIRECT/windows/$hdb_name"
 		fi   
 			if [ -n "$iso_name" ] ; then
-				set -- "${@}" "-cdrom" "/sdcard/windows/$iso_name"
+				set -- "${@}" "-cdrom" "$DIRECT/windows/$iso_name"
 			fi
-		set -- "${@}" "-hdd" "fat:rw:/sdcard/share/"
+		set -- "${@}" "-hdd" "fat:rw:$DIRECT/share/"
 		fi
 	set -- "$QEMU_SYS" "${@}"
 	"${@}" &
@@ -1665,7 +1699,7 @@ esac
 echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -r $rootfs -i $Uid:$Gid --link2symlink -b /sdcard:/root/sdcard -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b /sdcard -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
+proot --kill-on-exit -r $rootfs -i $Uid:$Gid --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
 echo -e "已创建用户系统登录脚本,登录方式为${YELLOW}./$name.sh${RES}"
 sleep 2
 		else
@@ -1687,7 +1721,7 @@ sleep 2
 echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -r $rootfs -i $i:$i --link2symlink -b /sdcard:/root/sdcard -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b /sdcard -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
+proot --kill-on-exit -r $rootfs -i $i:$i --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
 echo -e "\n是否加载外部sdcard\n1)是\n2)跳过"
 read -r -p ":" input
 case $input in
@@ -1716,7 +1750,7 @@ fi ;;
 		echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -S $rootfs --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b $rootfs/proc/version:/proc/version -b $rootfs/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" > start-$rootfs.sh && chmod +x start-$rootfs.sh
+proot --kill-on-exit -S $rootfs --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $rootfs/proc/version:/proc/version -b $rootfs/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" > start-$rootfs.sh && chmod +x start-$rootfs.sh
 echo -e "\n是否加载外部sdcard\n1)是\n2)跳过"
 read -r -p ":" input
 case $input in
@@ -1871,7 +1905,7 @@ rm -rf termux_tmp
 echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -S $bagname --link2symlink -b $bagname/root:/dev/shm -b /sdcard -q $bagname/qemu-x86_64-static -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 /bin/bash" >$bagname.sh
+proot --kill-on-exit -S $bagname --link2symlink -b $bagname/root:/dev/shm -b $DIRECT -q $bagname/qemu-x86_64-static -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 /bin/bash" >$bagname.sh
 echo -e "现在可以用${YELLOW}./$bagname.sh${RES}登录系统"
 sleep 2
 TERMUX ;;
@@ -2075,7 +2109,7 @@ echo "" >$bagname/proc/version
 echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -S $bagname --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b $bagname/proc/version:/proc/version -b $bagname/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$bagname.sh && chmod +x $bagname.sh
+proot --kill-on-exit -S $bagname --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $bagname/proc/version:/proc/version -b $bagname/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$bagname.sh && chmod +x $bagname.sh
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./$bagname.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
@@ -2088,6 +2122,7 @@ sleep 2
 #########################
 #################
 MAIN() {
+	ARCH_CHECK
 	uname -a | grep 'Android' -q
 	if [ $? -ne 0 ]; then
 	echo "当前环境为rootfs系统,已自动屏蔽termux相关选项"

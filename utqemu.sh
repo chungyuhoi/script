@@ -1172,10 +1172,7 @@ case $input in
 		apt update && apt install curl -y
 	fi
 		echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
-		DATE=`date | cut -d " " -f 7`
-		if [ -n $DATE ]; then
-			DATE=`date | cut -d " " -f 6`
-		fi
+		DATE=`date +"%Y"`
 		VERSION=`curl -s https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/ | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
 VERSION_=`curl https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION | grep iso | cut -d ">" -f 3 | cut -d "<" -f 1 | head -n 1`
 echo "$VERSION_" | grep iso -q
