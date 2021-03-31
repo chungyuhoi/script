@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	修改arm(aarch64)加速方式选项，改为指定--accel tcg,thread=multi或自动检测
 	增加aqemu(适用于图形界面下配置操作qemu)安装选项
 	简化磁盘接口virtio驱动安装模式，无需创建加载分区，默认为共享文件夹
 	优化使用快捷脚本的提示
@@ -612,20 +613,42 @@ SELECT_EMU() {
                 *) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg" ;;
 esac
 	else
-		echo -e "请选择${YELLOW}计算机类型${RES}，因系统原因，q35可能导致启动不成功"
+		echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
 #vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
-#dump-guest-core=on|off将客户机内存包括在核心转储中。默认为开。
+#dump-guest-core=on|off将客户机内存包括在核心转储中，类似于dump日志。默认为开。
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
-		read -r -p "1)pc默认 2)q35 " input
+		read -r -p "1)pc 2)q35 " input
 		case $input in
-			1|"") 
+			1|"")
+			case $(dpkg --print-architecture) in
+					arm*|aarch64) 
+#set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
+echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，请自行体验)"
+read -r -p "1)tcg 2)自动 " input
+	case $input in
+		1) set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off" "--accel" "tcg,thread=multi" ;;
+		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
+	esac ;;
+					*)
 	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
-			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}\n"
-				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
-		esac
+esac ;;
+			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
+				case $(dpkg --print-architecture) in
+					arm*|aarch64) 
+						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，请自行体验)"
+read -r -p "1)tcg 2)自动 " input
+case $input in
+	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off" "--accel" "tcg,thread=multi" ;;
+	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
+esac ;;
+					*)
+				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" 
+;;
+		esac ;;
+esac
 		fi
 		LIST
 while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
@@ -667,27 +690,37 @@ esac
         read mem
 #内存
         set -- "${@}" "-m" "$mem"
-#时间设置
+#时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #       set -- "${@}" "-rtc" "base=utc,driftfix=slew"
 	set -- "${@}" "-rtc" "base=localtime,clock=host"
-	set -- "${@}" "-full-screen"
+#	set -- "${@}" "-full-screen"
 #不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件
 	set -- "${@}" "-nodefaults"
 #不加载用户自定义的配置文件。
 	set -- "${@}" "-no-user-config"
+	case $ARCH in
+		tablet)
 #重定向虚拟串口到主机设备
 	set -- "${@}" "-serial" "none"
 #重定向虚拟并口到主机设备
 	set -- "${@}" "-parallel" "none"
+	;;
+		*) ;;
+	esac
 #更改消息的格式，时间戳
 	set -- "${@}" "-msg" "timestamp=on"
+#	set -- "${@}" "-monitor" "stdio"
+#qemu monitor protocol协议，对qemu虚拟机进行交互
+#	set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
+#使用bios配置
+#	set -- "${@}" "-L" "${DIRECT}/xinhao/windows/"
 #使用bzImage内核映像
 #	set -- "${@}" "-kernel" "bzImage"
 #使用cmdline作为内核命令行
 #	set -- "${@}" "-append" "cmdline"
 	case $QEMU_SYS in
 		qemu-system-i386)
-#高精度定时器,仅i386
+#取消高精度定时器,仅i386
 	set -- "${@}" "-no-hpet" ;;
 		*) ;;
 esac
@@ -711,10 +744,10 @@ esac
 echo -e "请选择${YELLOW}cpu${RES}"
 case $SYS in
 	QEMU_ADV|ANDROID)
-read -r -p "1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Dhyana " input ;;
-	QEMU_PRE) read -r -p "1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS " input ;;
+		read -r -p "1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)Dhyana 9)测试用(勿选) " input ;;
+QEMU_PRE) read -r -p "1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 " input ;;
 esac
-#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能。
+#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
         case $input in
         1) set -- "${@}" "-cpu" "core2duo"
 		if [ -n "$_SMP" ]; then
@@ -752,18 +785,33 @@ esac
 		else
 			set -- "${@}" "-smp" "8,cores=8,threads=1,sockets=1"
 			fi ;;
-	7) set -- "${@}" "-cpu" "Dhyana"
+	7) set -- "${@}" "-cpu" "Opteron_G5"
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
 			set -- "${@}" "-smp" "8,cores=8,threads=1,sockets=1"
 			fi ;;
-	8) set -- "${@}" "-cpu" "max,level=0xd,vendor=GenuineIntel"
+	8) case $SYS in
+		QEMU_ADV|ANDROID) set -- "${@}" "-cpu" "Dhyana"
+		if [ -n "$_SMP" ]; then
+			set -- "${@}" "-smp" "$_SMP"
+		else
+			set -- "${@}" "-smp" "8,cores=8,threads=1,sockets=1"
+			fi ;;
+		*) set -- "${@}" "-cpu" "max"
+			if [ -n "$CPU" ]; then
+				set -- "${@}" "-smp" "$CPU"
+			else
+				set -- "${@}" "-smp" "4"
+				fi ;;
+	esac
+	;;
+	9) set -- "${@}" "-cpu" "max,-hle,-rtm"
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
 			set -- "${@}" "-smp" "8,cores=4,threads=2,sockets=1"
-			fi ;;
+		fi ;;
         *)      set -- "${@}" "-cpu" "max"
 		if [ -n "$CPU" ]; then
                 set -- "${@}" "-smp" "$CPU"
@@ -828,7 +876,6 @@ case $input in
 			       export PULSE_SERVER=tcp:127.0.0.1:4713
 			       fi ;;
 	       esac	       
-#		display=3d
 	       	;;
 esac ;;
 
@@ -939,7 +986,7 @@ echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
 		set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name" ;;
 		*)
 		echo -e "请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
-		read -r -p "1)ide 2)sata 3)virtio " input
+		read -r -p "1)ide 2)sata 3)virtio 4)测试用(勿选) " input
 		case $input in
 ##################
 #IDE			
@@ -982,8 +1029,8 @@ echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
 		fi
 
 		set -- "${@}" "-usb" "-drive" "if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/"
-#		set -- "${@}" "-machine" "usb=on"
-		set -- "${@}" "-device" "usb-storage,drive=disk1"	;;
+		set -- "${@}" "-device" "usb-storage,drive=disk1"
+		;;
 
 ##################
 #VIRTIO
@@ -1008,6 +1055,17 @@ if [ -n "$hdb_name" ]; then
 #			set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
 #			set -- "${@}" "-device" "virtio-9p-pci,id=fs0,fsdev=fsdev-fs0,mount_tag=virtio9p01,bus=pci.0,addr=0x1d"
 ;;
+##################
+#test
+	4) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk"
+if [ -n "$hdb_name" ]; then
+	set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk"
+	fi
+	if [ -n "$iso_name" ]; then
+		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,index=2,media=cdrom"
+	fi
+	set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,format=raw"
+				;;
 ##################
 #hda
 		*) set -- "${@}" "-hda" "${DIRECT}/xinhao/windows/$hda_name" 
@@ -1038,11 +1096,12 @@ echo -e "请选择${YELLOW}启动顺序${RES}"
 		if [ -n "$display" ]; then
 			case $display in
 				wlan_vnc) set -- "${@}" "-vnc" "$IP:0" ;;
-				vnc) set -- "${@}" "-vnc" ":0"
+				vnc) 
+					set -- "${@}" "-vnc" ":0"
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				xsdl) export DISPLAY=127.0.0.1:0
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
-				spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=on"
+				spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				amd) set -- "${@}" "-display" "gtk,gl=off" ;;
 				gtk_) set -- "${@}" "-display" "gtk,gl=off"
@@ -1181,7 +1240,7 @@ if [ $? -ne 0 ]; then
 	sleep 2
                 QEMU_SYSTEM
         else
-        echo -e "${YELLOW}下载链接地址为\n\n${GREEN}https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION$VERSION_${RES}\n"
+        echo -e "${YELLOW}下载地址链接为\n\n${GREEN}https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION$VERSION_${RES}\n"
         CONFIRM
 curl -O https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION$VERSION_
 QEMU_SYSTEM
