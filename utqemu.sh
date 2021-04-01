@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	增加独立系统(容器)支持多架构下载，由原来的arm64,aarch64增加amd64,i386,armhf,armel等架构，新增架构目前只测试过i386，其他架构有待验证
 	修改arm(aarch64)加速方式选项，改为指定--accel tcg,thread=multi或自动检测
 	增加aqemu(适用于图形界面下配置操作qemu)安装选项
 	简化磁盘接口virtio驱动安装模式，无需创建加载分区，默认为共享文件夹
@@ -22,6 +23,7 @@ clear
 echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作
 	qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富
+	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
 	如遇到使用异常，可尝试所有选择项直接回车以获得默认参数
 	声音输出（不支持termux与utermux环境）
@@ -121,7 +123,7 @@ ARCH_CHECK() {
 	esac
 elif
 	grep -E -q 'Z3560|Z5800|Z2580' "/proc/cpuinfo" 2>/dev/null; then
-	read -r -p "请确认你使用的是否手机平板 1) 是 2)否 " input
+	read -r -p "请确认你使用的是否手机平板 1)是 2)否 " input
 	case $input in
 		1) echo "tablet" >${HOME}/.utqemu_
 			DIRECT="/sdcard"
@@ -186,7 +188,18 @@ SYS_DOWN() {
 	echo -e "${YELLOW}即将下载系统(约占500m空间)${RES}"
 	sleep 2
 sys_name=bullseye-qemu
-                DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/"
+case $(dpkg --print-architecture) in
+	arm64|aarch*)
+                DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
+	x86_64|amd64)
+		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/amd64/default/" ;;
+	i*86|x86)
+		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/i386/default/" ;;
+	armv7*|armv8l)
+		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/armhf/default/" ;;
+	armv6*|armv5*)
+		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/armel/default/" ;;
+		esac
 		BAGNAME="rootfs.tar.xz"
         if [ -e ${BAGNAME} ]; then
                 rm -rf ${BAGNAME}
@@ -627,7 +640,7 @@ esac
 					arm*|aarch64) 
 #set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，请自行体验)"
-read -r -p "1)tcg 2)自动 " input
+read -r -p "1)tcg 2)自动检测 " input
 	case $input in
 		1) set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off" "--accel" "tcg,thread=multi" ;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
@@ -639,7 +652,7 @@ esac ;;
 				case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，请自行体验)"
-read -r -p "1)tcg 2)自动 " input
+read -r -p "1)tcg 2)自动检测 " input
 case $input in
 	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off" "--accel" "tcg,thread=multi" ;;
 	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
@@ -709,6 +722,7 @@ esac
 	esac
 #更改消息的格式，时间戳
 	set -- "${@}" "-msg" "timestamp=on"
+#控制台，一种类似于shell的交互方式	
 #	set -- "${@}" "-monitor" "stdio"
 #qemu monitor protocol协议，对qemu虚拟机进行交互
 #	set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
