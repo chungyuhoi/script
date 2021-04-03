@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	对配置选项做简化
 	增加独立系统(容器)支持多架构下载，由原来的arm64,aarch64增加amd64,i386,armhf,armel等架构，新增架构目前只测试过i386，其他架构有待验证
 	修改arm(aarch64)加速方式选项，改为指定--accel tcg,thread=multi或自动检测
 	增加aqemu(适用于图形界面下配置操作qemu)安装选项
@@ -24,6 +25,7 @@ echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作
 	qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，听歌流畅。
+	时间差问题，不知道什么原因，termux(utermux)在模拟时偶尔会有8小时时间差，所以在主页面加入时间显示作为参考，如果发现不对，请重新使用脚本
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
 	如遇到使用异常，可尝试所有选择项直接回车以获得默认参数
 	声音输出（不支持termux与utermux环境）
@@ -443,6 +445,7 @@ esac
 QEMU_SYSTEM() {
 	QEMU_VERSION
 	NOTE
+	date
 echo -e "
 1) 安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}
 2) 创建windows镜像目录
@@ -703,9 +706,6 @@ esac
         read mem
 #内存
         set -- "${@}" "-m" "$mem"
-#时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
-#       set -- "${@}" "-rtc" "base=utc,driftfix=slew"
-	set -- "${@}" "-rtc" "base=localtime,clock=host"
 #	set -- "${@}" "-full-screen"
 #不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件
 	set -- "${@}" "-nodefaults"
@@ -919,19 +919,16 @@ esac
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
         case $input in
-                        1|"") set -- "${@}" "-net" "user"
+                        1|"") 
+#				set -- "${@}" "-net" "nic"
+#				set -- "${@}" "-net" "user,smb=${DIRECT}/xinhao"
+				set -- "${@}" "-net" "user"
                                 set -- "${@}" "-net" "nic,model=e1000" ;;
                         2) set -- "${@}" "-net" "user"
                                 set -- "${@}" "-net" "nic,model=rtl8139" ;;
 			3) set -- "${@}" "-net" "user"
 				set -- "${@}" "-net" "nic,model=virtio" ;;
 			0) set -- "${@}" "-net" "none" ;;
-                esac
-		echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
-		read -r -p "1)加载 0)不加载 " input
-                case $input in
-                        1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
-                        2|"") ;;
                 esac
 
 #####################
@@ -1092,20 +1089,56 @@ if [ -n "$hdb_name" ]; then
 			set -- "${@}" "-hdd" "fat:rw:${DIRECT}/xinhao/share/" ;;
 esac ;;
 	esac
-#开全内存balloon功能，俗称内存气球
-	echo -e "是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
-	read -r -p "1)开启 2)不开启 " input
-	case $input in
-	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
-	2) ;;
-esac
-echo -e "请选择${YELLOW}启动顺序${RES}"
-	read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
-	case $input in
-		1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
-		2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
-	esac
 		fi
+
+
+########################
+#进阶选项
+
+echo -e "\n是否进阶选项，包括${YELLOW}鼠标、启动顺序、时间${RES}等"
+read -r -p "1)是 2)否 " input
+case $input in
+	1)
+case $SYS in
+	QEMU_PRE) ;;
+	*)
+#开全内存balloon功能，俗称内存气球
+echo -e "\n是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
+read -r -p "1)开启 2)不开启 " input
+case $input in
+	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
+	*) ;;
+esac ;;
+esac
+echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
+read -r -p "1)加载 2)不加载 " input
+case $input in
+	1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
+	*) ;;
+esac
+#时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
+echo -e "请选择${YELLOW}系统时间${RES}标准"
+read -r -p "1)utc 2)localtime " input
+case $input in
+	1) set -- "${@}" "-rtc" "base=utc,driftfix=slew" ;;
+	2) set -- "${@}" "-rtc" "base=localtime,clock=host" ;;
+	*) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
+esac
+
+echo -e "请选择${YELLOW}启动顺序${RES}"
+read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
+case $input in
+	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
+	2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off"
+		;;
+esac
+;;
+*)
+	set -- "${@}" "-rtc" "base=localtime"
+	set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
+	set -- "${@}" "-usb" "-device" "usb-tablet"
+	;;
+esac
 
 		if [ -n "$display" ]; then
 			case $display in
@@ -1132,7 +1165,7 @@ echo -e "请选择${YELLOW}启动顺序${RES}"
 		case $display in
 		wlan_vnc) ;;
 		*)
-	echo -e "是否创建本次参数的${YELLOW}快捷脚本${RES}"
+	echo -e "\n创建本次参数的${YELLOW}快捷脚本${RES}"
 	read -r -p "1)是 2)否 " input
 	case $input in
 		1) echo -n "请给脚本起个名字: "
