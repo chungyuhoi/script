@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	修正8小时时间差问题
 	对配置选项做简化
 	增加独立系统(容器)支持多架构下载，由原来的arm64,aarch64增加amd64,i386,armhf,armel等架构，新增架构目前只测试过i386，其他架构有待验证
 	修改arm(aarch64)加速方式选项，改为指定--accel tcg,thread=multi或自动检测
@@ -25,7 +26,6 @@ echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作
 	qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，听歌流畅。
-	时间差问题，不知道什么原因，termux(utermux)在模拟时偶尔会有8小时时间差，所以在主页面加入时间显示作为参考，如果发现不对，请重新使用脚本
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
 	如遇到使用异常，可尝试所有选择项直接回车以获得默认参数
 	声音输出（不支持termux与utermux环境）
@@ -151,6 +151,8 @@ QEMU_VERSION(){
 uname -a | grep 'Android' -q
         if [ $? == 0 ]; then
                 SYS=ANDROID
+	elif [ ! $(command -v qemu-system-x86_64) ]; then
+		echo ""
         elif [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
                         SYS=QEMU_ADV
                 else
@@ -239,7 +241,8 @@ fi
 cp utqemu.sh $sys_name/root/utqemu.sh
 sed -i "s/qemu-system-x86-64-headless/qemu-system-x86 xserver-xorg x11-utils/" $sys_name/root/utqemu.sh
 sed -i 's/qemu-system-i386-headless/-y \&\& apt --reinstall install pulseaudio/' $sys_name/root/utqemu.sh
-echo "bash utqemu.sh" >>$sys_name/etc/profile
+#echo "bash utqemu.sh" >>$sys_name/etc/profile
+echo "bash utqemu.sh" >>$sys_name/root/.bashrc
 echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
 sleep 2
 }
@@ -642,7 +645,7 @@ esac
 			case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 #set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
-echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，请自行体验)"
+echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 " input
 	case $input in
 		1) set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off" "--accel" "tcg,thread=multi" ;;
@@ -654,7 +657,7 @@ esac ;;
 			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
 				case $(dpkg --print-architecture) in
 					arm*|aarch64) 
-						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，请自行体验)"
+						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 " input
 case $input in
 	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off" "--accel" "tcg,thread=multi" ;;
@@ -1121,8 +1124,8 @@ echo -e "请选择${YELLOW}系统时间${RES}标准"
 read -r -p "1)utc 2)localtime " input
 case $input in
 	1) set -- "${@}" "-rtc" "base=utc,driftfix=slew" ;;
-	2) set -- "${@}" "-rtc" "base=localtime,clock=host" ;;
-	*) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
+	*) set -- "${@}" "-rtc" "base=localtime,clock=host" ;;
+#	*) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
 esac
 
 echo -e "请选择${YELLOW}启动顺序${RES}"
