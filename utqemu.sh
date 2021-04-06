@@ -25,7 +25,7 @@ clear
 echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作
 	qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富
-	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，听歌流畅。
+	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
 	如遇到使用异常，可尝试所有选择项直接回车以获得默认参数
 	声音输出（不支持termux与utermux环境）
@@ -258,7 +258,7 @@ SYSTEM_CHECK() {
 			echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源${RES}\n  
 			1) 换国内源    
 			2) 不换"   
-			read -r -p "是否换国内源:" input   
+			read -r -p "是否换国内源: " input   
 			case $input in    
 				1|"") echo "换国内源" 
 sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
@@ -328,7 +328,7 @@ QEMU_ETC() {
 			apt update && apt install qemu-img
 		fi
 			echo -e "\n对于普通玩家这两个格式没什么区别，不用纠结"
-			read -r -p "请选择格式 1)qcow2 2)vmdk :" input
+			read -r -p "请选择格式 1)qcow2 2)vmdk : " input
 			case $input in
 				1|"") echo -e "${YELLOW}qcow2${RES}"
 					FORMAT=qcow2	;;
@@ -356,7 +356,7 @@ else
 	apt update && apt install qemu-img
 fi
 	echo ""
-	read -r -p "请选择转换后格式 1)qcow2 2)vmdk :" input
+	read -r -p "请选择转换后格式 1)qcow2 2)vmdk : " input
 	case $input in
 	1) echo -e "转换为${YELLOW}qcow2${RES}格式"
 		FORMAT=qcow2 ;;
@@ -448,7 +448,6 @@ esac
 QEMU_SYSTEM() {
 	QEMU_VERSION
 	NOTE
-	date
 echo -e "
 1) 安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}
 2) 创建windows镜像目录
@@ -463,7 +462,7 @@ echo -e "7) 查看日志
 8) 更新内容
 9) 关于utqemu
 0) 退出\n"
-read -r -p "请选择:" input
+read -r -p "请选择: " input
 case $input in
 	1)  echo -e "${YELLOW}安装过程中，如遇到询问选择，请输(y)，安装过程容易出错，请重试安装${RES}"
 	sleep 2
@@ -687,7 +686,7 @@ done
 			case $QEMU_MODE in
 				"")
 					echo -e "请选择${YELLOW}分区磁盘${RES}加载模式"
-				read -r -p "1)加载分区镜像 2)加载双光盘 ,不加载请直接回车 " input
+				read -r -p "1)加载分区镜像 2)加载双光盘 不加载请直接回车 " input
 			case $input in
 				1) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
 					read hdb_name ;;
@@ -1340,7 +1339,7 @@ done
 		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
 		sleep 1
 	fi
-	echo -n -e "请输入${YELLOW}virtio驱动盘${RES}全名,（例如virtio-win-0.1.185.iso）:"
+	echo -n -e "请输入${YELLOW}virtio驱动盘${RES}全名,（例如virtio-win-0.1.185.iso）: "
         read iso_name
 done
 	echo -e "\e[33m即将开机，参数是默认的，开机过程会比较慢，Windows会自动检测fake磁盘，并搜索适配的驱动。如果失败了，前往Device Manager，找到SCSI驱动器（带有感叹号图标，应处于打开状态），点击Update driver并选择虚拟的CD-ROM。不要定位到CD-ROM内的文件夹了，只选择CD-ROM设备就行，Windows会自动找到合适的驱动的。完成后请关机，然后正常启动qemu-system-x86_64(qemu-system-i386)方式并选择磁盘接口virtio。${RES}"
@@ -1367,7 +1366,7 @@ MAIN() {
 	1) 直接运行，termux(utermux)目前版本为5.0以上，由于termux源的qemu编译的功能不全，强烈建议在容器上使用qemu，\e[33m其他系统的版本各不一样，一些功能参数可能没被编译进去${RES}
 	2) 独立系统(容器)运行5.0以上版本
 	0) 退出\n"
-	read -r -p "请选择:" input
+	read -r -p "请选择: " input
 	case $input in
 	1) QEMU_SYSTEM ;;
 	2) uname -a | grep 'Android' -q
