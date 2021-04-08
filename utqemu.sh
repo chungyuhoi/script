@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	加入内存ram的自动分配选项
 	修正8小时时间差问题
 	对配置选项做简化
 	增加独立系统(容器)支持多架构下载，由原来的arm64,aarch64增加amd64,i386,armhf,armel等架构，新增架构目前只测试过i386，其他架构有待验证
@@ -129,15 +130,17 @@ elif
 	case $input in
 		1) echo "tablet" >${HOME}/.utqemu_
 			DIRECT="/sdcard"
-			ARCH=tablet ;;
+			ARCH=tablet
+			echo -e "${GREEN}已配置设备识别参数，如发现选错，请在相关应用维护选项中修改${RES}"
+        CONFIRM ;;
 		2) echo "computer" >${HOME}/.utqemu_
 			DIRECT="${HOME}"
-			ARCH=computer ;;
+			ARCH=computer
+			echo -e "${GREEN}已配置设备识别参数，如发现选错，请在相关应用维护选项中修改${RES}"
+        CONFIRM ;;
 		*) INVALID_INPUT
 			ARCH_CHECK ;;
 	esac
-	echo -e "${GREEN}已配置设备识别参数，如发现选错，请在相关应用维护选项中修改${RES}"
-	CONFIRM
 else
 			DIRECT="${HOME}"
 			ARCH=computer
@@ -704,10 +707,19 @@ esac
 	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
 	read iso_name
 #		set -- "${@}" "-net" "nic" "-net" "user,smb=${DIRECT}/xinhao/"
-        echo -e -n "请输入模拟的${YELLOW}内存${RES}大小，以m为单位（1g=1024m，例如512）: "
-        read mem
 #内存
-        set -- "${@}" "-m" "$mem"
+	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)\n以m为单位（1g=1024m，例如输512），自动分配请回车: "
+        read mem
+	if [ -n "$mem" ]; then
+		set -- "${@}" "-m" "$mem"
+	else
+		case $ARCH in
+			tablet) set -- "${@}" "-m" "$(free -m | awk '{print $2/4 }' | sed -n 2p | cut -d '.' -f 1)" ;;
+			*) set -- "${@}" "-m" "$(free -m | awk '{print $2/2 }' | sed -n 2p | cut -d '.' -f 1)" ;;
+		esac
+	fi
+
+
 #	set -- "${@}" "-full-screen"
 #不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件
 	set -- "${@}" "-nodefaults"
