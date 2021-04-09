@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	修复termux(utermux)运行vnc端口占用问题
 	加入内存ram的自动分配选项
 	修正8小时时间差问题
 	对配置选项做简化
@@ -506,7 +507,6 @@ fi
 		echo -e "\n${YELLOW}vncviewer地址为127.0.0.1:0${RES}"     
 		sleep 1
 		display=vnc
-		set -- "${@}" "-vnc" ":0"
 	else
 		echo -n -e "\n${GREEN}是否已有快捷脚本，如有请输快捷脚本名字，如无请回车:${RES} "
 		read script_name
@@ -708,14 +708,14 @@ esac
 	read iso_name
 #		set -- "${@}" "-net" "nic" "-net" "user,smb=${DIRECT}/xinhao/"
 #内存
-	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)\n以m为单位（1g=1024m，例如输512），自动分配请回车: "
+	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)，以m为单位（1g=1024m，例如输512），自动分配请回车: "
         read mem
 	if [ -n "$mem" ]; then
 		set -- "${@}" "-m" "$mem"
 	else
 		case $ARCH in
-			tablet) set -- "${@}" "-m" "$(free -m | awk '{print $2/4 }' | sed -n 2p | cut -d '.' -f 1)" ;;
-			*) set -- "${@}" "-m" "$(free -m | awk '{print $2/2 }' | sed -n 2p | cut -d '.' -f 1)" ;;
+			tablet) set -- "${@}" "-m" "$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)" ;;
+			*) set -- "${@}" "-m" "$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1)" ;;
 		esac
 	fi
 
