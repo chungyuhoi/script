@@ -562,7 +562,21 @@ display=spice
 	esac
 	sleep 1 ;;
 	computer)
-		display=amd ;;
+		echo -e "\n请选择${YELLOW}显示输出方式${RES}"
+		read -r -p "1)本地 2)局域网vnc 9)返回 0)退出 " input
+		case $input in
+			1|"")
+				display=amd ;;
+			2)
+				display=wlan_vnc
+				echo -e "\n${BLUE}vnc不支持声音输出，所以会由电脑输出声音\n输出显示的设备vnc地址为$IP:0${RES}"
+				sleep 1 ;;
+			9) QEMU_SYSTEM ;;
+			0) exit 1 ;;
+			*) INVALID_INPUT
+				QEMU_SYSTEM ;;
+		esac
+		sleep 1 ;;
 esac
 	fi
 
@@ -710,6 +724,7 @@ esac
 #内存
 	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)，以m为单位（1g=1024m，例如输512），自动分配请回车: "
         read mem
+	mem=`echo $mem | tr -cd [0-9]`
 	if [ -n "$mem" ]; then
 		set -- "${@}" "-m" "$mem"
 	else
@@ -974,24 +989,6 @@ esac
 ####################
 #5.0
 ####################
-#amd
-####################
-case $(dpkg --print-architecture) in
-	i*86|x86*|amd64)
-		echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
-		read -r -p "1)开启 2)关闭 " input
-		case $input in
-			1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
-			*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
-		esac
-		echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
-		read -r -p "1) 开启 2)关闭 " input
-		case $input in
-			1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
-			*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
-		esac ;;
-	*) ;;
-esac
 echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
 		read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 0)不加载 " input
                         case $input in
@@ -1124,6 +1121,25 @@ case $input in
 	*) ;;
 esac ;;
 esac
+#amd
+####################
+case $(dpkg --print-architecture) in
+	i*86|x86*|amd64)
+		echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
+                read -r -p "1)开启 2)关闭 " input
+		case $input in
+			1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
+			*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
+		esac
+		echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
+		read -r -p "1) 开启 2)关闭 " input
+		case $input in
+			1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
+			*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
+		esac ;;
+	*) ;;
+esac
+
 echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 read -r -p "1)加载 2)不加载 " input
 case $input in
