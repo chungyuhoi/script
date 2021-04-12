@@ -999,6 +999,76 @@ echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
                         4|"") set -- "${@}" "-device" "AC97" ;;
                 esac
 
+####################
+#进阶选项
+
+echo -e "\n是否进阶选项，包括${YELLOW}共享文件夹、鼠标、启动顺序、时间${RES}等"
+read -r -p "1)是 2)否 " input
+case $input in
+        1)
+case $SYS in
+        QEMU_PRE) ;;
+        *)
+echo -e "是否加载${YELLOW}共享文件夹${RES}"
+read -r -p "1)加载 2)不加载 " input
+case $input in
+	1|"") SHARE=true ;;
+	*) ;;
+esac
+#开全内存balloon功能，俗称内存气球
+echo -e "是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
+read -r -p "1)开启 2)不开启 " input
+case $input in
+	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
+	*) ;;
+esac ;;
+esac
+#amd
+####################
+case $(dpkg --print-architecture) in
+	i*86|x86*|amd64)
+		echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
+		read -r -p "1)开启 2)关闭 " input
+		case $input in
+			1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
+			*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
+		esac
+		echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
+		read -r -p "1) 开启 2)关闭 " input
+		case $input in
+			1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
+			*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
+		esac ;;
+	*) ;;
+esac
+echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
+read -r -p "1)加载 2)不加载 " input
+case $input in
+	1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
+	*) ;;
+esac
+#时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
+echo -e "请选择${YELLOW}系统时间${RES}标准"
+read -r -p "1)utc 2)localtime " input
+case $input in
+	1) set -- "${@}" "-rtc" "base=utc,driftfix=slew" ;;
+	*) set -- "${@}" "-rtc" "base=localtime,clock=host" ;;
+#       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
+esac
+echo -e "请选择${YELLOW}启动顺序${RES}"
+read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
+case $input in
+	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
+	2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
+esac ;;
+*)
+	set -- "${@}" "-rtc" "base=localtime"
+	set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
+	set -- "${@}" "-usb" "-device" "usb-tablet" 
+	SHARE=true ;;
+esac
+
+
 #################
 	case $QEMU_MODE in
 		VIRTIO_MODE)
@@ -1007,7 +1077,7 @@ echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
 		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=virtio"
 		set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name" ;;
 		*)
-		echo -e "请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
+		echo -e "\n请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
 		read -r -p "1)ide 2)sata 3)virtio 4)测试用(勿选) " input
 		case $input in
 ##################
@@ -1027,7 +1097,10 @@ echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
 			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,if=ide,index=2,media=cdrom"
 		fi
 		fi
-		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
+		case $SHARE in
+			true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
+			*) ;;
+		esac ;;
 
 
 		2)
@@ -1049,11 +1122,13 @@ echo -e "请选择${YELLOW}声卡${RES}(不加载则提升模拟效率)"
 		set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}/xinhao/windows/$iso_name,if=none"     
 		set -- "${@}" "-device" "ide-cd,drive=cdrom,bus=ahci.2"
 		fi
-
+		case $SHARE in
+			true)
 		set -- "${@}" "-usb" "-drive" "if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/"
 		set -- "${@}" "-device" "usb-storage,drive=disk1"
 		;;
-
+	*) ;;
+esac ;;
 ##################
 #VIRTIO
 
@@ -1071,12 +1146,16 @@ if [ -n "$hdb_name" ]; then
 			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,index=2,media=cdrom"
 		fi
 		fi
+		case $SHARE in
+			true)
 			set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
 #			set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
 #			set -- "${@}" "-device" "virtio-9p-pci,fsdev=fsdev-fs0,mount_tag=virtio9p01"
 #			set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
 #			set -- "${@}" "-device" "virtio-9p-pci,id=fs0,fsdev=fsdev-fs0,mount_tag=virtio9p01,bus=pci.0,addr=0x1d"
 ;;
+			*) ;;
+		esac ;;
 ##################
 #test
 	4) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk"
@@ -1086,7 +1165,11 @@ if [ -n "$hdb_name" ]; then
 	if [ -n "$iso_name" ]; then
 		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,index=2,media=cdrom"
 	fi
-	set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,format=raw"
+	case $SHARE in
+		true)
+	set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,format=raw" ;;
+*) ;;
+esac
 				;;
 ##################
 #hda
@@ -1097,79 +1180,17 @@ if [ -n "$hdb_name" ]; then
 		if [ -n "$iso_name" ]; then
 			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name"
 			fi
+			case $SHARE in
+				true)
 			set -- "${@}" "-hdd" "fat:rw:${DIRECT}/xinhao/share/" ;;
+		*) ;;
+	esac ;;
 esac ;;
 	esac
 		fi
 
 
 ########################
-#进阶选项
-
-echo -e "\n是否进阶选项，包括${YELLOW}鼠标、启动顺序、时间${RES}等"
-read -r -p "1)是 2)否 " input
-case $input in
-	1)
-case $SYS in
-	QEMU_PRE) ;;
-	*)
-#开全内存balloon功能，俗称内存气球
-echo -e "\n是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
-read -r -p "1)开启 2)不开启 " input
-case $input in
-	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
-	*) ;;
-esac ;;
-esac
-#amd
-####################
-case $(dpkg --print-architecture) in
-	i*86|x86*|amd64)
-		echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
-                read -r -p "1)开启 2)关闭 " input
-		case $input in
-			1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
-			*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
-		esac
-		echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
-		read -r -p "1) 开启 2)关闭 " input
-		case $input in
-			1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
-			*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
-		esac ;;
-	*) ;;
-esac
-
-echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
-read -r -p "1)加载 2)不加载 " input
-case $input in
-	1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
-	*) ;;
-esac
-#时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
-echo -e "请选择${YELLOW}系统时间${RES}标准"
-read -r -p "1)utc 2)localtime " input
-case $input in
-	1) set -- "${@}" "-rtc" "base=utc,driftfix=slew" ;;
-	*) set -- "${@}" "-rtc" "base=localtime,clock=host" ;;
-#	*) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
-esac
-
-echo -e "请选择${YELLOW}启动顺序${RES}"
-read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
-case $input in
-	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
-	2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off"
-		;;
-esac
-;;
-*)
-	set -- "${@}" "-rtc" "base=localtime"
-	set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
-	set -- "${@}" "-usb" "-device" "usb-tablet"
-	;;
-esac
-
 		if [ -n "$display" ]; then
 			case $display in
 				wlan_vnc) set -- "${@}" "-vnc" "$IP:0" ;;
@@ -1195,7 +1216,7 @@ esac
 		case $display in
 		wlan_vnc) ;;
 		*)
-	echo -e "\n创建本次参数的${YELLOW}快捷脚本${RES}"
+	echo -e "创建本次参数的${YELLOW}快捷脚本${RES}"
 	read -r -p "1)是 2)否 " input
 	case $input in
 		1) echo -n "请给脚本起个名字: "
