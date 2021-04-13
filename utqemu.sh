@@ -664,8 +664,8 @@ esac
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 " input
 	case $input in
-		1) set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off" "--accel" "tcg,thread=multi" ;;
-		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
+		1) set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 	esac ;;
 					*)
 	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
@@ -676,8 +676,8 @@ esac ;;
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 " input
 case $input in
-	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off" "--accel" "tcg,thread=multi" ;;
-	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
+	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 esac ;;
 					*)
 				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" 
@@ -750,7 +750,7 @@ esac
 		*) ;;
 	esac
 #更改消息的格式，时间戳
-	set -- "${@}" "-msg" "timestamp=on"
+	set -- "${@}" "-msg" "timestamp=off"
 #控制台，一种类似于shell的交互方式	
 #	set -- "${@}" "-monitor" "stdio"
 #qemu monitor protocol协议，对qemu虚拟机进行交互
