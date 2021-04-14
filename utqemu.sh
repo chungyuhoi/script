@@ -498,9 +498,13 @@ fi
         QEMU_SYSTEM
         ;;
 3) if [ ! $(command -v qemu-system-x86_64) ]; then
-	echo -e "\n${GREEN}检测到你未安装qemu，请先执行安装选项${RES}"
+	echo -e "\n${RED}检测到你未安装qemu，请先执行安装选项${RES}"
 	sleep 2
 	QEMU_SYSTEM
+fi
+	if [ ! -d /sdcard/xinhao ]; then
+		echo -e "\n${RED}未检测到你的镜像目录，请确认已赋予手机存储权限并创建镜像目录${RES}"
+		CONFIRM
 fi
 	uname -a | grep 'Android' -q 
 	if [ $? == 0 ]; then
@@ -668,7 +672,7 @@ read -r -p "1)tcg 2)自动检测 " input
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 	esac ;;
 					*)
-	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" ;;
+	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=on" ;;
 esac ;;
 			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
 				case $(dpkg --print-architecture) in
@@ -680,7 +684,7 @@ case $input in
 	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 esac ;;
 					*)
-				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off" 
+				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=on" 
 ;;
 		esac ;;
 esac
@@ -746,13 +750,13 @@ esac
 	set -- "${@}" "-serial" "none"
 #重定向虚拟并口到主机设备
 	set -- "${@}" "-parallel" "none"
+#控制台，一种类似于shell的交互方式
+	set -- "${@}" "-monitor" "none"
 	;;
 		*) ;;
 	esac
 #更改消息的格式，时间戳
 	set -- "${@}" "-msg" "timestamp=off"
-#控制台，一种类似于shell的交互方式	
-#	set -- "${@}" "-monitor" "stdio"
 #qemu monitor protocol协议，对qemu虚拟机进行交互
 #	set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
 #使用bios配置
@@ -764,7 +768,9 @@ esac
 	case $QEMU_SYS in
 		qemu-system-i386)
 #取消高精度定时器,仅i386
-	set -- "${@}" "-no-hpet" ;;
+	set -- "${@}" "-no-hpet"
+#        set -- "${@}" "-no-acpi"
+;;
 		*) ;;
 esac
 	echo -e "是否自定义${YELLOW}逻辑cpu${RES}数量"
@@ -787,16 +793,16 @@ esac
 echo -e "请选择${YELLOW}cpu${RES}"
 case $SYS in
 	QEMU_ADV|ANDROID)
-		read -r -p "1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)Dhyana 9)测试用(勿选) " input ;;
+		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)Dhyana 9)测试用(勿选) " input ;;
 QEMU_PRE) read -r -p "1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 " input ;;
 esac
 #部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
         case $input in
-        1) set -- "${@}" "-cpu" "core2duo"
+        1) set -- "${@}" "-cpu" "n270"
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
-                set -- "${@}" "-smp" "2,cores=2,threads=1,sockets=1"
+                set -- "${@}" "-smp" "2,cores=1,threads=2,sockets=1"
 		fi ;;
         2) set -- "${@}" "-cpu" "athlon"
 		if [ -n "$_SMP" ]; then
@@ -810,11 +816,11 @@ esac
 		else
                 set -- "${@}" "-smp" "1,cores=1,threads=1,sockets=1"
 			fi ;;
-        4) set -- "${@}" "-cpu" "n270"
+        4) set -- "${@}" "-cpu" "core2duo"
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
-                set -- "${@}" "-smp" "2,cores=1,threads=2,sockets=1"
+                set -- "${@}" "-smp" "2,cores=2,threads=1,sockets=1"
 		fi ;;
 	5) set -- "${@}" "-cpu" "Skylake-Server-IBRS"
 		if [ -n "$_SMP" ]; then
@@ -849,11 +855,17 @@ esac
 				fi ;;
 	esac
 	;;
-	9) set -- "${@}" "-cpu" "max,-hle,-rtm"
+	0) set -- "${@}" "-cpu" "max,-hle,-rtm"
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
 			set -- "${@}" "-smp" "8,cores=4,threads=2,sockets=1"
+		fi ;;
+	9) set -- "${@}" "-cpu" "Skylake-Server-IBRS,model_id=Intel_Xeon_W-3175X,vendor=GenuineIntel"
+		if [ -n "$CPU" ]; then
+			set -- "${@}" "-smp" "$CPU"
+		else
+		set -- "${@}" "-smp" "4,cores=4,threads=1,sockets=1"
 		fi ;;
         *)      set -- "${@}" "-cpu" "max"
 		if [ -n "$CPU" ]; then
@@ -888,7 +900,7 @@ echo -e "请选择${YELLOW}显卡${RES}"
                 1) set -- "${@}" "-vga" "cirrus" ;;
                 2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
-				1|"") set -- "${@}" "-vga" "vmware"     ;;
+				1|"") set -- "${@}" "-device" "vmware-svga"     ;;
 				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=256" ;;
 			esac ;;
 		3|"") set -- "${@}" "-vga" "std" ;;
@@ -898,6 +910,7 @@ echo -e "请选择${YELLOW}显卡${RES}"
 case $input in
 		1|"") 
 			set -- "${@}" "-vga" "virtio"
+#			set -- "${@}" "-device" "virtio-vga"
 #			set -- "${@}" "-device" "virtio-vga,virgl=on"
 ;;
 		2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图形界面(桌面)显示${RES}"
