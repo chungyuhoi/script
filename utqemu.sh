@@ -988,6 +988,12 @@ esac
                 3) set -- "${@}" "-soundhw" "es1370" ;;
 		4) set -- "${@}" "-soundhw" "hda" ;;
 esac
+	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
+	read -r -p "1)加载 2)不加载 " input
+	case $input in
+		1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
+		*) ;;
+	esac
                 set -- "${@}" "-hda" "${DIRECT}/xinhao/windows/$hda_name"
                 if [ -n "$hdb_name" ]; then
                         set -- "${@}" "-hdb" "${DIRECT}/xinhao/windows/$hdb_name"
@@ -998,7 +1004,6 @@ esac
                 set -- "${@}" "-hdd" "fat:rw:${DIRECT}/xinhao/share/"
 	       	set -- "${@}" "-boot" "order=dc"
 		set -- "${@}" "-rtc" "base=localtime"
-		set -- "${@}" "-usb" "-device" "usb-tablet"
 
         else
 ####################
