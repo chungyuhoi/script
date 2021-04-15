@@ -996,7 +996,9 @@ esac
                         set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name"
                 fi
                 set -- "${@}" "-hdd" "fat:rw:${DIRECT}/xinhao/share/"
-                set -- "${@}" "-boot" "order=dc"
+	       	set -- "${@}" "-boot" "order=dc"
+		set -- "${@}" "-rtc" "base=localtime"
+		set -- "${@}" "-usb" "-device" "usb-tablet"
 
         else
 ####################
@@ -1019,9 +1021,6 @@ echo -e "\n是否进阶选项，包括${YELLOW}共享文件夹、鼠标、启动
 read -r -p "1)是 2)否 " input
 case $input in
         1)
-case $SYS in
-        QEMU_PRE) ;;
-        *)
 echo -e "是否加载${YELLOW}共享文件夹${RES}"
 read -r -p "1)加载 2)不加载 " input
 case $input in
@@ -1034,7 +1033,6 @@ read -r -p "1)开启 2)不开启 " input
 case $input in
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	*) ;;
-esac ;;
 esac
 #amd
 ####################
