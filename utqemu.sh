@@ -4,20 +4,9 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
-	修复termux(utermux)运行vnc端口占用问题
-	加入内存ram的自动分配选项
-	修正8小时时间差问题
-	对配置选项做简化
+	取消默认加载共享文件夹，可在进阶选项中选择加载
 	增加独立系统(容器)支持多架构下载，由原来的arm64,aarch64增加amd64,i386,armhf,armel等架构，新增架构目前只测试过i386，其他架构有待验证
-	修改arm(aarch64)加速方式选项，改为指定--accel tcg,thread=multi或自动检测
-	增加aqemu(适用于图形界面下配置操作qemu)安装选项
 	简化磁盘接口virtio驱动安装模式，无需创建加载分区，默认为共享文件夹
-	优化使用快捷脚本的提示
-	新增qcow2与vmdk格式转换选项
-	新增vmdk空磁盘创建
-	修正virtio驱动光盘链接
-	增加5.0以上版本可加载双光盘模式(该模式下分区加载选项会被替代)
-	增加优先硬盘或光盘启动的顺序选择
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -525,7 +514,7 @@ if grep 'vnc' $(which $script_name); then
 		grep '\-cpu' $(which $script_name)
 		printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开xsdl"
 		elif grep '\-spice' $(which $script_name); then
-			printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1:0"
+			printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
 		else
 			grep '\-cpu' $(which $script_name)
 			printf "%s\n${GREEN}模拟器已启动"
@@ -1094,7 +1083,8 @@ esac ;;
 	set -- "${@}" "-rtc" "base=localtime"
 	set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
 	set -- "${@}" "-usb" "-device" "usb-tablet" 
-	SHARE=true ;;
+#	SHARE=true
+       	;;
 esac
 
 
@@ -1297,7 +1287,7 @@ esac
 		vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0" ;;
 		wlan_vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer $IP:0" ;;
 		xsdl) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开xsdl" ;;
-		spice) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1:0" ;;
+		spice) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
 		*) printf "%s\n${GREEN}模拟器已启动" ;;
 	esac
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"

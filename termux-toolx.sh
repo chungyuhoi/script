@@ -1641,7 +1641,7 @@ TERMUX
 	TERMUX
 	;;
 4)
-	echo -e "安装并配置pulseaudio\n如果安装失效，请选择另一种安装方式\n1)直接安装\n2)通过setup-audio脚本安装"
+	echo -e "安装并配置pulseaudio\n如果安装失效，请选择另一种安装方式\n1)直接安装\n2)通过setup-audio脚本安装\n3)修复出现([pulseaudio] main.c: ${RED}Daemon startup failed.${RES})提示"
 	read -r -p ":" input
 	case $input in
 		1|"") pkg in pulseaudio -y
@@ -1671,6 +1671,9 @@ fi			;;
 		echo -e "${GREEN}重新配置待机时长...${RES}"
         sed -i "s/180/-1/g" ${PREFIX}/etc/pulse/daemon.conf
 	sleep 2 ;;
+		3) unset LD_LIBRARY_PATH
+			echo -e "已处理"
+			sleep 1 ;;
 		*) INVALID_INPUT
 			TERMUX ;;
 esac
