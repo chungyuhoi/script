@@ -866,10 +866,10 @@ esac
 		set -- "${@}" "-smp" "4"
 		fi ;;
 esac
-	uname -a | grep 'Android' -q 
-	if [ $? == 0 ]; then
 #####################
 #TERMUX
+	uname -a | grep 'Android' -q 
+	if [ $? == 0 ]; then
 echo -e "请选择${YELLOW}显卡${RES}"
 read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 	case $input in 
@@ -882,81 +882,24 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 		3|"") set -- "${@}" "-vga" "std" ;; 
 		4) set -- "${@}" "-vga" "virtio" ;;
         esac
-else
-
+	fi
 ##################
 #PROOT
+#####################
+#<5.0
+	qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
+	if [ $? != 0 ]; then
 echo -e "请选择${YELLOW}显卡${RES}"
 	read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
         case $input in
                 1) set -- "${@}" "-vga" "cirrus" ;;
-                2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
-			case $input in
-				1|"") set -- "${@}" "-device" "vmware-svga"     ;;
-				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=256" ;;
-			esac ;;
+                2) set -- "${@}" "-vga" "vmware" ;;
 		3|"") set -- "${@}" "-vga" "std" ;;
-		4) 
-			echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
-			read -r -p "1)不设置3D参数 2)设置3D参数 " input 
-case $input in
-		1|"") 
-			set -- "${@}" "-vga" "virtio"
-#			set -- "${@}" "-device" "virtio-vga"
-#			set -- "${@}" "-device" "virtio-vga,virgl=on"
-;;
-		2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图形界面(桌面)显示${RES}"
-			CONFIRM
-			case $display in
-			xsdl) set -- "${@}" "-vga" "virtio" "-display" "sdl,gl=on" ;;
-			vnc|wlan_vnc) 
-				set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
-#				set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
-		 ;;
-			spice) set -- "${@}" "-vga" "virtio" "-display" "gtk,gl=on" ;;
-			amd|gtk_) set -- "${@}" "-vga" "virtio" "-display" "gtk,gl=on" ;;
-		esac
-		unset display
-		case $ARCH in
-			computer) ;;
-			*) env | grep 'PULSE_SERVER' -q
-			       if [ $? != 0 ]; then
-			       export PULSE_SERVER=tcp:127.0.0.1:4713
-			       fi ;;
-	       esac	       
-	       	;;
-esac ;;
-
-
-		5) case $display in
-			spice) read -r -p "1)常规使用 2)spice传输协议使用 " input
-			case $input in
-			1|"") set -- "${@}" "-device" "qxl-vga" ;;
-		2) set -- "${@}" "-device" "qxl-vga" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
-			cat >/dev/null <<EOF
-set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
-#set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
-set -- "${@}" "-device" "ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on"
-#set -- "${@}" "-device" "ich9-usb-uhci2,masterbus=usb.0,firstport=2"
-#set -- "${@}" "-device" "ich9-usb-uhci3,masterbus=usb.0,firstport=4"
-set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev1" "-device" "usb-redir,chardev=usbredirchardev1,id=usbredirdev1"
-#set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev2" "-device" "usb-redir,chardev=usbredirchardev2,id=usbredirdev2"
-#set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev3" "-device" "usb-redir,chardev=usbredirchardev3,id=usbredirdev3"
-EOF
-			;;
-        esac ;;
-
-*) set -- "${@}" "-device" "qxl-vga" ;;
+		4) set -- "${@}" "-vga" "virtio" ;;
+		5) set -- "${@}" "-vga" "qxl" ;;
 esac
-esac
-	fi
-
-#####################
-#<5.0
-		qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
-                if [ $? != 0 ]; then
 #内存锁，默认打开
-			set -- "${@}" "-realtime" "mlock=off"
+		set -- "${@}" "-realtime" "mlock=off"
 
 echo -e "请选择${YELLOW}网卡${RES}"
 read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
@@ -1003,6 +946,66 @@ esac
 ####################
 #5.0
 ####################
+echo -e "请选择${YELLOW}显卡${RES}"
+read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
+	case $input in
+		1) set -- "${@}" "-device" "cirrus-vga" ;;
+		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
+			case $input in
+				1|"") set -- "${@}" "-device" "vmware-svga"     ;;
+				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
+			esac ;;
+				3|"") set -- "${@}" "-vga" "std" ;;
+				4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
+		read -r -p "1)不设置3D参数 2)设置3D参数 " input
+		case $input in
+			1|"")
+#				set -- "${@}" "-vga" "virtio"
+				set -- "${@}" "-device" "virtio-gpu-pci"
+#                       set -- "${@}" "-device" "virtio-vga"
+#                       set -- "${@}" "-device" "virtio-vga,virgl=on"
+;;
+			2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图形界面(桌面)显示${RES}"
+				CONFIRM
+				case $display in
+					xsdl) set -- "${@}" "-vga" "virtio" "-display" "sdl,gl=on" ;;
+					vnc|wlan_vnc)
+						set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
+#                               set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
+;;
+					spice) set -- "${@}" "-vga" "virtio" "-display" "gtk,gl=on" ;;
+					amd|gtk_) set -- "${@}" "-vga" "virtio" "-display" "gtk,gl=on" ;;
+				esac
+				unset display
+				case $ARCH in
+					computer) ;;
+					*) env | grep 'PULSE_SERVER' -q
+						if [ $? != 0 ]; then
+							export PULSE_SERVER=tcp:127.0.0.1:4713
+							fi ;;
+					esac ;;
+			esac ;;
+		5) case $display in
+			spice) read -r -p "1)常规使用 2)spice传输协议使用 " input
+			case $input in
+				1|"") set -- "${@}" "-device" "qxl-vga" ;;
+				2) set -- "${@}" "-device" "qxl-vga" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
+cat >/dev/null <<EOF
+set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
+#set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
+set -- "${@}" "-device" "ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on"
+#set -- "${@}" "-device" "ich9-usb-uhci2,masterbus=usb.0,firstport=2"
+#set -- "${@}" "-device" "ich9-usb-uhci3,masterbus=usb.0,firstport=4"
+set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev1" "-device" "usb-redir,chardev=usbredirchardev1,id=usbredirdev1"
+#set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev2" "-device" "usb-redir,chardev=usbredirchardev2,id=usbredirdev2"
+#set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev3" "-device" "usb-redir,chardev=usbredirchardev3,id=usbredirdev3"
+EOF
+;;
+esac ;;
+*) set -- "${@}" "-device" "qxl-vga" ;;
+esac
+esac
+
 echo -e "请选择${YELLOW}网卡${RES}"
 read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 case $input in
@@ -1255,7 +1258,7 @@ export DISPLAY=127.0.0.1:0
 ${@}
 EOF
 ;;
-				vnc|spice|xsdl) 
+				vnc|spice) 
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
