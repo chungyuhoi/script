@@ -645,6 +645,7 @@ esac
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
 #vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
 #dump-guest-core=on|off将客户机内存包括在核心转储中，类似于dump日志。默认为开。
+#tb-size=n (TCG translation block cache size)，Controls the size (in MiB) of the TCG translation block cache.
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
@@ -657,7 +658,9 @@ esac
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 " input
 	case $input in
-		1) set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+		1) 
+#set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,tb-size=1882,thread=multi" ;;
+			set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 	esac ;;
 					*)
@@ -874,7 +877,7 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
 				1|"") set -- "${@}" "-vga" "vmware"     ;;
-				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=256" ;;
+				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
 		3|"") set -- "${@}" "-vga" "std" ;; 
 		4) set -- "${@}" "-vga" "virtio" ;;
@@ -928,8 +931,8 @@ esac ;;
 		5) case $display in
 			spice) read -r -p "1)常规使用 2)spice传输协议使用 " input
 			case $input in
-			1|"") set -- "${@}" "-vga" "qxl" ;;
-		2) set -- "${@}" "-vga" "qxl" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
+			1|"") set -- "${@}" "-device" "qxl-vga" ;;
+		2) set -- "${@}" "-device" "qxl-vga" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
 			cat >/dev/null <<EOF
 set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
 #set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
@@ -943,7 +946,7 @@ EOF
 			;;
         esac ;;
 
-*) set -- "${@}" "-vga" "qxl" ;;
+*) set -- "${@}" "-device" "qxl-vga" ;;
 esac
 esac
 	fi
