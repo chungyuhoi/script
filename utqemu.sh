@@ -397,8 +397,12 @@ do
 		sleep 1 ;;
 3) read -r -p "1)手机平板 2)电脑 " input
 	case $input in
-		1) echo "tablet" >${HOME}/.utqemu_ ;;
-		2) echo "computer" >${HOME}/.utqemu_ ;;
+		1) echo "tablet" >${HOME}/.utqemu_
+		       echo -e "${GREEN}已修改，请重新登录脚本${RES}"
+	       sleep 1 ;;
+		2) echo "computer" >${HOME}/.utqemu_
+		       echo -e "${GREEN}已修改，请重新登录脚本${RES}"
+	       sleep 1 ;;
 		*) INVALID_INPUT
 			sleep 2
 			QEMU_ETC ;;
@@ -873,10 +877,10 @@ esac
 echo -e "请选择${YELLOW}显卡${RES}"
 read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 	case $input in 
-		1) set -- "${@}" "-vga" "cirrus" ;;
+		1) set -- "${@}" "-device" "cirrus-vga" ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
-				1|"") set -- "${@}" "-vga" "vmware"     ;;
+				1|"") set -- "${@}" "-device" "vmware-svga" ;;
 				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
 		3|"") set -- "${@}" "-vga" "std" ;; 
@@ -961,20 +965,20 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
 		case $input in
 			1|"")
 #				set -- "${@}" "-vga" "virtio"
-				set -- "${@}" "-device" "virtio-gpu-pci"
+				set -- "${@}" "-device" "virtio-vga"
 #                       set -- "${@}" "-device" "virtio-vga"
 #                       set -- "${@}" "-device" "virtio-vga,virgl=on"
 ;;
 			2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图形界面(桌面)显示${RES}"
 				CONFIRM
 				case $display in
-					xsdl) set -- "${@}" "-vga" "virtio" "-display" "sdl,gl=on" ;;
+					xsdl) set -- "${@}" "-device" "virtio-vga" "-display" "sdl,gl=on" ;;
 					vnc|wlan_vnc)
 						set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
 #                               set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
 ;;
-					spice) set -- "${@}" "-vga" "virtio" "-display" "gtk,gl=on" ;;
-					amd|gtk_) set -- "${@}" "-vga" "virtio" "-display" "gtk,gl=on" ;;
+					spice) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
+					amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
 				esac
 				unset display
 				case $ARCH in
