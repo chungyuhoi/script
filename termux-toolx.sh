@@ -2029,14 +2029,23 @@ elif [ "${backup##*.}" = "gz" ]; then
                 if [ -d ${HOME}/.termux ]; then
                         rm -rf ${HOME}/.termux
                 fi
-                mkdir ${HOME}/.termux && echo "extra-keys = [ \
+                mkdir ${HOME}/.termux
+		read -r -p "1)常规触屏 2)m6键盘 " input
+		case $input in
+		2)
+			echo "extra-keys = [ \
+['ESC','HOME','END','PGUP','PGDN'] \
+] \
+]" >${HOME}/.termux/termux.properties ;;
+		*) echo "extra-keys = [ \
 ['ESC','|','/','HOME','UP','END','PGUP','-'], \
 ['TAB','CTRL','ALT','LEFT','DOWN','RIGHT','PGDN','~'] \
-]" >${HOME}/.termux/termux.properties
-                echo "已修改，请重启termux"
-                sleep 1
-                TERMUX
-                ;;
+]" >${HOME}/.termux/termux.properties ;;
+esac
+echo "已修改，请重启termux"
+sleep 1
+TERMUX
+;;
 	12) echo -e "
 		1) 增加等待7秒\n
 		任意键) 取消等待"

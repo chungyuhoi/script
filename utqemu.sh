@@ -19,7 +19,7 @@ echo -e "\n\e[33m注意事项\e[0m
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
 	如遇到使用异常，可尝试所有选择项直接回车以获得默认参数
-	声音输出（不支持termux与utermux环境）
+	声音输出（不支持termux与utermux环境，pc建议ac97，q35建议hda）
 	sdl输出显示，源地址并未编译qemu的sdl，这里只是通过信号输出，需先开启xsdl(不支持termux与utermux环境）
 	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好\n"
 	if [ $(command -v qemu-system-x86_64) ]; then
@@ -729,8 +729,34 @@ esac
 		set -- "${@}" "-m" "$mem"
 	else
 		case $ARCH in
-			tablet) set -- "${@}" "-m" "$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)" ;;
-			*) set -- "${@}" "-m" "$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1)" ;;
+			tablet) 
+#				set -- "${@}" "-m" "$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)"
+mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
+if (( $mem >= 2048 )); then
+	set -- "${@}" "-m" "3072"
+elif (( $mem >= 1536 )); then
+	set -- "${@}" "-m" "2048"
+elif (( $mem >= 1024 )); then
+	set -- "${@}" "-m" "1536"
+	elif (( $mem >= 512 )); then
+		set -- "${@}" "-m" "1024"
+	else set -- "${@}" "-m" "512"
+fi
+	;;
+			*) 
+#				set -- "${@}" "-m" "$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1)"
+mem=$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1)
+if (( $mem >= 2048 )); then
+	set -- "${@}" "-m" "3072"
+elif (( $mem >= 1536 )); then
+	set -- "${@}" "-m" "2048"
+elif (( $mem >= 1024 )); then
+	set -- "${@}" "-m" "1536"
+elif (( $mem >= 512 )); then
+	set -- "${@}" "-m" "1024"
+else set -- "${@}" "-m" "512"
+fi
+;;
 		esac
 	fi
 
@@ -1272,7 +1298,7 @@ export PULSE_SERVER=tcp:127.0.0.1:4713
 ${@}
 EOF
 ;;
-				amd|gtk_|"")
+				amd|gtk_|*)
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
