@@ -121,12 +121,12 @@ elif
 		1) echo "tablet" >${HOME}/.utqemu_
 			DIRECT="/sdcard"
 			ARCH=tablet
-			echo -e "${GREEN}已配置设备识别参数，如发现选错，请在相关应用维护选项中修改${RES}"
+			echo -e "${GREEN}已配置设备识别参数，请重新打开脚本，如发现选错，请在相关应用维护选项中修改${RES}"
         CONFIRM ;;
 		2) echo "computer" >${HOME}/.utqemu_
 			DIRECT="${HOME}"
 			ARCH=computer
-			echo -e "${GREEN}已配置设备识别参数，如发现选错，请在相关应用维护选项中修改${RES}"
+			echo -e "${GREEN}已配置设备识别参数，请重新打开脚本，如发现选错，请在相关应用维护选项中修改${RES}"
         CONFIRM ;;
 		*) INVALID_INPUT
 			ARCH_CHECK ;;
@@ -660,11 +660,11 @@ esac
 					arm*|aarch64) 
 #set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-read -r -p "1)tcg 2)自动检测 " input
+read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(测试) " input
 	case $input in
 		1) 
-#set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,tb-size=1882,thread=multi" ;;
-			set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+		3) set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))" ;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 	esac ;;
 					*)
@@ -674,9 +674,10 @@ esac ;;
 				case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-read -r -p "1)tcg 2)自动检测 " input
+read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(测试) " input
 case $input in
 	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+	3) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))" ;;
 	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 esac ;;
 					*)
@@ -791,6 +792,7 @@ fi
 		qemu-system-i386)
 #取消高精度定时器,仅i386
 	set -- "${@}" "-no-hpet"
+	set -- "${@}" "-no-fd-bootchk"
 #        set -- "${@}" "-no-acpi"
 ;;
 		*) ;;
