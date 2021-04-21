@@ -660,7 +660,7 @@ esac
 					arm*|aarch64) 
 #set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(测试) " input
+read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(测试用勿选) " input
 	case $input in
 		1) 
 set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
@@ -674,7 +674,7 @@ esac ;;
 				case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(测试) " input
+read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(测试用勿选) " input
 case $input in
 	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
 	3) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))" ;;
