@@ -267,6 +267,7 @@ if [ $? != 0 ]; then
 	echo -e "${YELLOW}检测到你未安装pulseaudio，为保证声音正常输出，将自动安装${RES}"
 	sleep 2
 	apt update && apt install pulseaudio -y
+fi
 if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
 then
         echo "module already present"
@@ -276,7 +277,6 @@ else
 if grep -q "exit-idle" ${PREFIX}/etc/pulse/daemon.conf ; then
 sed -i '/exit-idle/d' ${PREFIX}/etc/pulse/daemon.conf
 echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
-fi
 fi
 if [ ! $(command -v proot) ]; then
 	apt update && apt install proot -y
