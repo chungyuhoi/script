@@ -155,27 +155,16 @@ uname -a | grep 'Android' -q
 }
 #################
 LOGIN() {
-	if [ -n $DEBIAN ]; then
-		echo ""
-	else
-	echo -e "\n${YELLOW}请选择拟登录的系统${RES}
-	1) 5.0以下版本
-	2）5.0以上版本"
-	read -r -p "请选择: " input
-	case $input in
-		1) DEBIAN=buster ;;
-		2) DEBIAN=bullseye ;;
-	esac
-	fi
 pulseaudio --start & 2>/dev/null
 echo "" &
+echo "欢迎来到bullseye-qemu系统" &
 unset LD_PRELOAD
 command="proot"
 command+=" --kill-on-exit"
 command+=" --link2symlink"
-command+=" -S $DEBIAN-qemu"
+command+=" -S bullseye-qemu"
 command+=" -b /sdcard"
-command+=" -b $DEBIAN-qemu/root:/dev/shm"
+command+=" -b bullseye-qemu/root:/dev/shm"
 command+=" -b /sdcard:/root/sdcard"
 command+=" -w /root"
 command+=" /usr/bin/env -i"
@@ -194,37 +183,20 @@ fi
 }
 ##################
 SYS_DOWN() {
-	echo -e "\n${YELLOW}请选择拟使用的qemu相关版本系统${RES}
-	1) qemu5.0以下版本(适用于模拟xp及win2000以下版本)
-	2）qemu5.0以上版本(适用于模拟win7及以上版本)"
-	read -r -p "请选择: " input
-	case $input in
-		1) DEBIAN=buster
-			sys_name=buster-qemu
-			if [ -d $(pwd)/buster-qemu ]; then
-				LOGIN
-			fi ;;
-		2) DEBIAN=bullseye
-			sys_name=bullseye-qemu
-			if [ -d $(pwd)/bullseye-qemu ]; then
-				LOGIN
-			fi ;;
-		*) INVALID_INPUT
-			SYS_DOWN ;;
-	esac
 	echo -e "${YELLOW}即将下载系统(约占500m空间)${RES}"
 	sleep 2
+sys_name=bullseye-qemu
 case $(dpkg --print-architecture) in
 	arm64|aarch*)
-                DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/arm64/default/" ;;
+                DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
 	x86_64|amd64)
-		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/amd64/default/" ;;
+		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/amd64/default/" ;;
 	i*86|x86)
-		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/i386/default/" ;;
+		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/i386/default/" ;;
 	armv7*|armv8l)
-		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/armhf/default/" ;;
+		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/armhf/default/" ;;
 	armv6*|armv5*)
-		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/armel/default/" ;;
+		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/armel/default/" ;;
 		esac
 		BAGNAME="rootfs.tar.xz"
         if [ -e ${BAGNAME} ]; then
@@ -250,11 +222,7 @@ echo -e "${BLUE}正在解压系统包${RES}"
         echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >$sys_name/etc/resolv.conf
         echo "export  TZ='Asia/Shanghai'" >> $sys_name/root/.bashrc
-	case $DEBIAN in
-		bullseye) echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >$sys_name/etc/apt/sources.list ;;
-		buster) echo "deb http://mirrors.ustc.edu.cn/debian stable main contrib non-free
-deb http://mirrors.ustc.edu.cn/debian stable-updates main contrib non-free" >$sys_name/etc/apt/sources.list ;;
-esac
+	echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >$sys_name/etc/apt/sources.list
 	cat >/dev/null <<EOF
 echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
@@ -440,32 +408,17 @@ do
 			sleep 2
 			QEMU_ETC ;;
 	esac ;;
-4) if ! grep -E -q 'buster|bullseye/sid' "/etc/os-release"; then
-	echo -e "\n${RED}只支持bullseye与buster${RES}\n"
+4) if ! grep -q 'bullseye/sid' "/etc/os-release"; then
+	echo -e "\n${RED}只支持bullseye${RES}\n"
 sleep 2
-QEMU_ETC
 else
 	read -r -p "1)中科源 2)北外源 9)返回主目录 0)退出 " input
 	case $input in
-		1) if grep -q 'bullseye' /etc/os-release ;then
-			echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >/etc/apt/sources.list
-		elif grep -q 'buster' /etc/os-release ;then
-			echo "deb http://mirrors.ustc.edu.cn/debian stable main contrib non-free
-deb http://mirrors.ustc.edu.cn/debian stable-updates main contrib non-free" >/etc/apt/sources.list
-		fi
-		apt update ;;
-		2) if grep -q 'bullseye/sid' /etc/os-release ;then
-			echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
+		1) echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >/etc/apt/sources.list && apt update ;;
+		2) echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian/ bullseye-backports main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >/etc/apt/sources.list
-elif grep -q 'buster' /etc/os-release ;then
-	echo "deb http://mirrors.bfsu.edu.cn/debian buster main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian buster-updates main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian buster-backports main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian-security buster/updates main contrib non-free" >/etc/apt/sources.list
-fi
-	apt update ;;
+deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >/etc/apt/sources.list && apt update ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
 		*) INVALID_INPUT && QEMU_ETC ;;
@@ -598,7 +551,8 @@ display=spice
 		4) echo -e "\n${BLUE}窗口输出${RES}"
 			display=gtk_ ;;
 		5) display=wlan_vnc
-			echo -e "\n${BLUE}为减少效率的影响，暂不支持声音输出\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${YELLOW}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
+			echo -e "\n${BLUE}为减少效率的影响，暂不支持声音输出\n因部分机型支持双wifi或wifi热点同开
+，导致出现两段ip，请确保使用的${YELLOW}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
 			sleep 1 ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
@@ -1532,13 +1486,16 @@ MAIN() {
 	if [ $? == 0 ]; then
 	echo -e "\n\e[33m请选择qemu-system-x86的运行环境\e[0m\n
 	1) 直接运行，termux(utermux)目前版本为5.0以上，由于termux源的qemu编译的功能不全，强烈建议在容器上使用qemu，\e[33m其他系统的版本各不一样，一些功能参数可能没被编译进去${RES}
-	2) 独立系统(容器)运行qemu
+	2) 独立系统(容器)运行5.0以上版本
 	0) 退出\n"
 	read -r -p "请选择: " input
 	case $input in
 	1) QEMU_SYSTEM ;;
 	2) uname -a | grep 'Android' -q
 if [ $? == 0 ]; then
+	ls bullseye-qemu 2>/dev/null
+fi
+	if [ $? != 0 ]; then
 		SYS_DOWN
 	fi
 	LOGIN ;;
