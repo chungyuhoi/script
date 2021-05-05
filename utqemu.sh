@@ -1531,6 +1531,7 @@ if [ $? == 0 ]; then
 	else
 		SYS_DOWN
 		fi
+		LOGIN
 		fi ;;
 	3) uname -a | grep 'Android' -q
 if [ $? == 0 ]; then
@@ -1541,6 +1542,7 @@ if [ $? == 0 ]; then
 	else
 		SYS_DOWN
 		fi
+		LOGIN
 		fi ;;
 	0) exit 1 ;;
 	*) INVALID_INPUT
