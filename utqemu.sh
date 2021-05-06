@@ -1124,6 +1124,11 @@ case $input in
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	*) ;;
 esac
+echo -n -e "请输入${YELLOW}uefi${RES}全名,不加载请直接回车 "
+	read UEFI
+	if [ -n "$UEFI" ]; then
+		set -- "${@}" "-pflash" "${DIRECT}/xinhao/windows/$UEFI"
+	fi
 #amd
 ####################
 case $(dpkg --print-architecture) in
