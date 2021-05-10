@@ -16,8 +16,9 @@ echo -e "\n\e[33m更新内容\e[0m
 NOTE() {
 clear
 echo -e "\n\e[33m注意事项\e[0m
+	\e[33mFlyOS定制版\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作
-	qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富
+	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
 	如遇到使用异常，可尝试所有选择项直接回车以获得默认参数
@@ -36,7 +37,7 @@ ABOUT_UTQEMU(){
 	clear
 printf "%s
 ${YELLOW}关于FlyOSVirtualMachinePro脚本${RES}
-	我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n"
+	此版本为FlyOS定制版，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n"
 CONFIRM
 QEMU_SYSTEM	
 }
@@ -673,13 +674,6 @@ esac
 #	pkill -9 qemu-system-i38
 	killall -9 qemu-system-x86 2>/dev/null
 	killall -9 qemu-system-i38 2>/dev/null
-        qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
-				if [ $? != 0 ]; then
-		case $(dpkg --print-architecture) in
-                        arm*|aarch64) set -- "${@}" "--accel" "tcg,thread=multi" ;;
-                *) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg" ;;
-esac
-	else
 		echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
 #vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
@@ -693,7 +687,9 @@ esac
 			1|"")
 			case $(dpkg --print-architecture) in
 					arm*|aarch64) 
-#set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
+case $SYS in
+	QEMU_PRE) set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
+	*)
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
 	case $input in
@@ -709,12 +705,16 @@ set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqch
 			fi	;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 	esac ;;
+esac ;;
 					*)
 	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=on" ;;
 esac ;;
 			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
 				case $(dpkg --print-architecture) in
 					arm*|aarch64) 
+						case $SYS in
+							QEMU_PRE) set -- "${@}" "-machine" "q35" "--accel" "tcg,thread=multi" ;;
+							*)
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
 case $input in
@@ -729,12 +729,12 @@ case $input in
 		fi	;;
 	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
 esac ;;
+esac ;;
 					*)
 				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=on" 
 ;;
 		esac ;;
 esac
-		fi
 		LIST
 while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
 do
@@ -1008,23 +1008,6 @@ esac
                 3) set -- "${@}" "-soundhw" "es1370" ;;
 		4) set -- "${@}" "-soundhw" "hda" ;;
 esac
-	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
-	read -r -p "1)加载 2)不加载 " input
-	case $input in
-		1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
-		*) ;;
-	esac
-                set -- "${@}" "-hda" "${DIRECT}/xinhao/windows/$hda_name"
-                if [ -n "$hdb_name" ]; then
-                        set -- "${@}" "-hdb" "${DIRECT}/xinhao/windows/$hdb_name"
-                fi
-                if [ -n "$iso_name" ]; then
-                        set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name"
-                fi
-                set -- "${@}" "-hdd" "fat:rw:${DIRECT}/xinhao/share/"
-	       	set -- "${@}" "-boot" "order=dc"
-		set -- "${@}" "-rtc" "base=localtime"
-
         else
 ####################
 #5.0
@@ -1107,7 +1090,7 @@ echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
                         0) ;;
                         4|"") set -- "${@}" "-device" "AC97" ;;
                 esac
-
+	fi	
 ####################
 #进阶选项
 
@@ -1171,12 +1154,6 @@ case $input in
 	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
 	2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
 esac ;;
-*)
-	set -- "${@}" "-rtc" "base=localtime"
-	set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
-	set -- "${@}" "-usb" "-device" "usb-tablet" 
-#	SHARE=true
-       	;;
 esac
 
 
@@ -1298,7 +1275,6 @@ esac
 	esac ;;
 esac ;;
 	esac
-		fi
 
 
 ########################
