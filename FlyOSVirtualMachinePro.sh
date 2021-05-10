@@ -1154,6 +1154,11 @@ case $input in
 	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
 	2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
 esac ;;
+*)
+        set -- "${@}" "-rtc" "base=localtime"
+        set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
+        set -- "${@}" "-usb" "-device" "usb-tablet"
+        ;;
 esac
 
 
