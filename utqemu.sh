@@ -4,6 +4,8 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	将qxl显卡选项下的spice传输协议移到spice视频输出选项下(该选项参数需模拟系统安装virtio驱动，能解决win7声音卡顿问题)
+	增加qemu5.0以下版本与5.0相同的一些选项
 	增加qemu5.0以下旧版容器下载，winxp推荐此版本
 	增加tcg缓存锁定选项，与手机平板的cpu、ram有关联，通过最佳设置提高模拟效率，不建议折腾
 	取消默认加载共享文件夹，可在进阶选项中选择加载
@@ -273,7 +275,7 @@ SYSTEM_CHECK() {
 sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
 sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
 sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update -n ;;  
-2) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list
+*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list
 	MAIN ;;  
 esac                                                    
 		fi
@@ -516,7 +518,7 @@ fi
         if [ ! -e "${DIRECT}/xinhao/windows" ]; then        
 	echo -e "${RED}创建目录失败${RES}"
         else
-                echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
+                echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
         fi
         CONFIRM
         QEMU_SYSTEM
@@ -576,8 +578,12 @@ case $ARCH in
 		3) echo -e "${BLUE}spice输出${RES}
 \e[33m请勿随意切换aspice，如出现系统界面无法控制，只能重开qemu${RES}"
 sleep 1
-display=spice
-;;
+read -r -p "1)常规使用 2)spice传输协议使用(需virtio驱动) " input
+case $input in
+	2) display=spice_ ;;
+		*) display=spice ;;
+	esac
+	;;
 		4) echo -e "\n${BLUE}窗口输出${RES}"
 			display=gtk_ ;;
 		5) display=wlan_vnc
@@ -851,7 +857,7 @@ esac
 	read -r -p "1)默认配置 2)自定义 " input
 	case $input in
 		1|"") _SMP="" ;;
-		2) CPU=0
+		*) CPU=0
 			while [ $CPU -eq 0 ]
 do
 	echo -n -e "请输入逻辑cpu参数，分别为核心、线程、插槽个数，输入三位数字(例如2核1线2插槽,不能有0 则输212) "
@@ -959,10 +965,10 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
 				1|"") set -- "${@}" "-device" "vmware-svga" ;;
-				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
+				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
-		3|"") set -- "${@}" "-vga" "std" ;; 
 		4) set -- "${@}" "-vga" "virtio" ;;
+		*) set -- "${@}" "-vga" "std" ;;
         esac
 	fi
 ##################
@@ -976,9 +982,9 @@ echo -e "请选择${YELLOW}显卡${RES}"
         case $input in
                 1) set -- "${@}" "-vga" "cirrus" ;;
                 2) set -- "${@}" "-vga" "vmware" ;;
-		3|"") set -- "${@}" "-vga" "std" ;;
 		4) set -- "${@}" "-vga" "virtio" ;;
 		5) set -- "${@}" "-vga" "qxl" ;;
+		*) set -- "${@}" "-vga" "std" ;;
 esac
 #内存锁，默认打开
 		set -- "${@}" "-realtime" "mlock=off"
@@ -1008,6 +1014,7 @@ case $display in
                 0) ;;
                 3) set -- "${@}" "-soundhw" "es1370" ;;
 		4) set -- "${@}" "-soundhw" "hda" ;;
+		*) set -- "${@}" "-soundhw" "all" ;;
 esac
 ;;
 esac
@@ -1022,7 +1029,7 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
 				1|"") set -- "${@}" "-device" "vmware-svga"     ;;
-				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
+				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
 				3|"") set -- "${@}" "-vga" "std" ;;
 				4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
@@ -1041,7 +1048,7 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
 						set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
 #                               set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
 ;;
-					spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
+					spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
 				esac
 				unset display
 				case $ARCH in
@@ -1052,11 +1059,7 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
 							fi ;;
 					esac ;;
 			esac ;;
-		5) case $display in
-			spice) read -r -p "1)常规使用 2)spice传输协议使用 " input
-			case $input in
-				1|"") set -- "${@}" "-device" "qxl-vga" ;;
-				2) set -- "${@}" "-device" "qxl-vga" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
+		5) set -- "${@}" "-device" "qxl-vga"
 cat >/dev/null <<EOF
 set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
 #set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
@@ -1068,9 +1071,6 @@ set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev1" "-device" 
 #set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev3" "-device" "usb-redir,chardev=usbredirchardev3,id=usbredirdev3"
 EOF
 ;;
-esac ;;
-*) set -- "${@}" "-device" "qxl-vga" ;;
-esac
 esac
 
 echo -e "请选择${YELLOW}网卡${RES}"
@@ -1094,7 +1094,7 @@ echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
                         2) set -- "${@}" "-device" "sb16" ;;
 			3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
                         0) ;;
-                        4|"") set -- "${@}" "-device" "AC97" ;;
+                        *) set -- "${@}" "-device" "AC97" ;;
                 esac
 		;;
 esac
@@ -1301,6 +1301,9 @@ esac ;;
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
+				spice_) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
+					set -- "${@}" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
+					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				amd) set -- "${@}" "-display" "gtk,gl=off" ;;
 				gtk_) set -- "${@}" "-display" "gtk,gl=off"
 					env | grep 'PULSE_SERVER' -q
@@ -1333,7 +1336,7 @@ export DISPLAY=127.0.0.1:0
 ${@}
 EOF
 ;;
-				vnc|spice) 
+				vnc|spice|spice_) 
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
@@ -1354,9 +1357,9 @@ EOF
 ;;
 esac
 chmod +x /usr/local/bin/$script_name
-echo -e "${GREEN}已保存本次参数的脚本，下次可直接输$script_name启动qemu${RES}"
+echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
 sleep 2 ;;
-		2|"") ;;
+		*) ;;
 esac ;;
 esac
 	fi
@@ -1368,7 +1371,7 @@ esac
 		vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0" ;;
 		wlan_vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer $IP:0" ;;
 		xsdl) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开xsdl" ;;
-		spice) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
+		spice|spice_) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
 		*) printf "%s\n${GREEN}模拟器已启动" ;;
 	esac
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
