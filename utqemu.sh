@@ -575,9 +575,7 @@ case $ARCH in
 		2) echo -e "${BLUE}sdl信号输出，需先打开xsdl再继续此操作${RES}"
 			display=xsdl
 			;;
-		3) echo -e "${BLUE}spice输出${RES}
-\e[33m请勿随意切换aspice，如出现系统界面无法控制，只能重开qemu${RES}"
-sleep 1
+		3) echo -e "${BLUE}spice输出${RES}"
 read -r -p "1)常规使用 2)spice传输协议使用(需virtio驱动) " input
 case $input in
 	2) display=spice_ ;;
@@ -829,6 +827,8 @@ fi
 	set -- "${@}" "-parallel" "none"
 #控制台，一种类似于shell的交互方式
 	set -- "${@}" "-monitor" "none"
+#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。	
+	set -- "${@}" "-mem-prealloc"
 	;;
 		*) ;;
 	esac
@@ -1184,9 +1184,9 @@ esac
 ##################
 #IDE			
 			1)
-		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide,index=0,media=disk,aio=threads,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide,index=0,media=disk,aio=native,cache=none"
 		if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,if=ide,index=1,media=disk,aio=native,cache=none"
 		fi
 		if [ -n "$iso1_name" ]; then
 			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
@@ -1199,7 +1199,7 @@ esac
 		fi
 		fi
 		case $SHARE in
-			true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
+			true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=native,cache=none" ;;
 			*) ;;
 		esac ;;
 
@@ -1208,12 +1208,12 @@ esac
 
 ##################
 #SATA        
-		set -- "${@}" "-drive" "id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none"
+		set -- "${@}" "-drive" "id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none,cache=none,aio=native"
 		set -- "${@}" "-device" "ahci,id=ahci"
 		set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
 
 		if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}/xinhao/windows/$hdb_name,if=none"
+		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}/xinhao/windows/$hdb_name,if=none,cache=none,aio=native"
 		set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
 		fi
 		if [ -n "$iso1_name" ]; then
@@ -1233,9 +1233,9 @@ esac ;;
 ##################
 #VIRTIO
 
-	3) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk,if=virtio"
+	3) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk,if=virtio,cache=none,aio=native"
 if [ -n "$hdb_name" ]; then
-			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk,if=virtio" 
+			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk,if=virtio,cache=none,aio=native" 
 		fi
 		if [ -n "$iso1_name" ]; then
 			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
@@ -1249,7 +1249,7 @@ if [ -n "$hdb_name" ]; then
 		fi
 		case $SHARE in
 			true)
-			set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
+			set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio,cache=none,aio=native"
 #			set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
 #			set -- "${@}" "-device" "virtio-9p-pci,fsdev=fsdev-fs0,mount_tag=virtio9p01"
 #			set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
