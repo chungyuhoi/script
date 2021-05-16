@@ -1171,6 +1171,22 @@ esac
 
 
 #################
+cat >/dev/null<<EOF
+if=INTERFACE：指定驱动器接口类型，可用的有：ide，scsi，sd，mtd，floopy，pflash，virtio等
+bus=BUS NUM，unit=UNIT NUM：设置驱动器在客户机中的总线编号和单元编号
+index=INDEX NUM：设置在同一种接口的驱动器中的索引编号
+media=disk|cdrom：设置驱动器中媒介的类型，其值为“disk”或“cdrom”
+snapshot=on|off：是否启用镜像功能，启用时，qemu不会将磁盘数据的更改写回镜像文件中，而是写到临时文件，也可以在qemu         monitor中使用commit命令强制将磁盘数据的更改保存回镜像文件中
+cache=writethrough|writeback|（none|off）
+writethrough：默认值，即直写模式，它是在调用write写入数据的同时将数据写入磁盘缓存和后端块设备中，优点：操作简单，缺点：写入数据速度较慢
+writeback：回写模式，将数据写入到磁盘缓存中即返回，只有数据被换出缓存的时候才写入到后端块设备中，优点：写入速度快，缺点：可能造成数据丢失
+（none|off）：设置none或者off表示不写入缓存，直接写入到块设备中，优点是数据安全，缺点:速度太慢
+aio=threads|native：默认threads，即让一个线程池去处理异步io；而native只适用于cache=none的情况，就是使用linux原生的aio
+format=FORMAT：使用的磁盘格式，默认qemu是自动检测磁盘格式的
+serial=SERIAL NUM：分配给设备的序列号
+add=ADDR:分配给驱动器控制器的pci地址，该选项只有在使用virtio接口才适用
+id=NAME：设置该驱动器的id，这个id可以在qemu monitor中用info block命令查看
+EOF
 	case $QEMU_MODE in
 		VIRTIO_MODE)
 		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide"
@@ -1184,9 +1200,9 @@ esac
 ##################
 #IDE			
 			1)
-		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide,index=0,media=disk,aio=native,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide,index=0,media=disk,aio=threads,cache=none"
 		if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,if=ide,index=1,media=disk,aio=native,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
 		fi
 		if [ -n "$iso1_name" ]; then
 			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
@@ -1199,7 +1215,7 @@ esac
 		fi
 		fi
 		case $SHARE in
-			true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=native,cache=none" ;;
+			true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
 			*) ;;
 		esac ;;
 
@@ -1208,12 +1224,12 @@ esac
 
 ##################
 #SATA        
-		set -- "${@}" "-drive" "id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none,cache=none,aio=native"
+		set -- "${@}" "-drive" "id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none,"
 		set -- "${@}" "-device" "ahci,id=ahci"
 		set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
 
 		if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}/xinhao/windows/$hdb_name,if=none,cache=none,aio=native"
+		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}/xinhao/windows/$hdb_name,if=none"
 		set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
 		fi
 		if [ -n "$iso1_name" ]; then
@@ -1233,9 +1249,9 @@ esac ;;
 ##################
 #VIRTIO
 
-	3) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk,if=virtio,cache=none,aio=native"
+	3) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk,if=virtio"
 if [ -n "$hdb_name" ]; then
-			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk,if=virtio,cache=none,aio=native" 
+			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk,if=virtio"
 		fi
 		if [ -n "$iso1_name" ]; then
 			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
@@ -1249,7 +1265,7 @@ if [ -n "$hdb_name" ]; then
 		fi
 		case $SHARE in
 			true)
-			set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio,cache=none,aio=native"
+			set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
 #			set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
 #			set -- "${@}" "-device" "virtio-9p-pci,fsdev=fsdev-fs0,mount_tag=virtio9p01"
 #			set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
