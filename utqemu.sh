@@ -1388,7 +1388,7 @@ esac ;;
 7) if [ -e ${HOME}/.utqemu_log ]; then
 	echo -e "\n按空格下一页，退出请按q\n"
 	CONFIRM
-	more ${HOME}/.utqemu_log | egrep "qemu-system-x86_64|qemu-system-i386"
+	more ${HOME}/.utqemu_log | egrep "qemu-system-x86_64|qemu-system-i386" | egrep -v "stronger memory|Connection reset by peer"
 	echo -e "\n\e[33m到底了\e[0m"
 	read -r -p "是否删除日志 1)是 0)否 " input
 	case $input in
