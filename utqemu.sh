@@ -1402,7 +1402,7 @@ esac
 *) QEMU_ETC ;;
 esac ;;
 7) if [ -e ${HOME}/.utqemu_log ]; then
-	echo -e "\n按空格下一页，退出请按q\n"
+	echo -e "\n${GREEN}日志已忽略不重要的信息${RES}\n按空格下一页，退出请按q\n"
 	CONFIRM
 	more ${HOME}/.utqemu_log | egrep "qemu-system-x86_64|qemu-system-i386" | egrep -v "stronger memory|Connection reset by peer|requested feature"
 	echo -e "\n\e[33m到底了\e[0m"
