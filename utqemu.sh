@@ -22,7 +22,6 @@ echo -e "\n\e[33m注意事项\e[0m
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
-	如遇到使用异常，可尝试所有选择项直接回车以获得默认参数
 	声音输出（不支持termux与utermux环境，pc建议ac97，q35建议hda）
 	sdl输出显示，源地址并未编译qemu的sdl，这里只是通过信号输出，需先开启xsdl(不支持termux与utermux环境）
 	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好\n"
@@ -287,7 +286,7 @@ if [ $? != 0 ]; then
 fi
 if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
 then
-        echo "module already present"
+        echo ""
 else
         echo "load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" >> ${PREFIX}/etc/pulse/default.pa
                                 fi
@@ -826,10 +825,7 @@ fi
 #重定向虚拟并口到主机设备
 	set -- "${@}" "-parallel" "none"
 #控制台，一种类似于shell的交互方式
-	set -- "${@}" "-monitor" "none"
-#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。	
-	set -- "${@}" "-mem-prealloc"
-	;;
+	set -- "${@}" "-monitor" "none" ;;
 		*) ;;
 	esac
 #更改消息的格式，时间戳
@@ -876,6 +872,7 @@ case $SYS in
 		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)Dhyana 9)测试用(勿选) 0)max(推荐) " input ;;
 QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 " input ;;
 esac
+#max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
 #部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
         case $input in
         1) set -- "${@}" "-cpu" "n270"
@@ -941,11 +938,11 @@ esac
 		else
 			set -- "${@}" "-smp" "4"
 		fi ;;
-	9) set -- "${@}" "-cpu" "Skylake-Server-IBRS,model_id=Intel_Xeon_W-3175X,vendor=GenuineIntel"
+	9) set -- "${@}" "-cpu" "max,level=0xd,vendor=GenuineIntel"
 		if [ -n "$CPU" ]; then
 			set -- "${@}" "-smp" "$CPU"
 		else
-		set -- "${@}" "-smp" "4,cores=4,threads=1,sockets=1"
+		set -- "${@}" "-smp" "4"
 		fi ;;
         *)      set -- "${@}" "-cpu" "max"
 		if [ -n "$CPU" ]; then
@@ -1119,6 +1116,13 @@ case $input in
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	*) ;;
 esac
+#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。
+echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(可提高响应速度，如出现闪退请关闭)"
+read -r -p "1)加载 2)不加载 " input
+case $input in
+	2) ;;
+	*) set -- "${@}" "-mem-prealloc" ;;
+esac
 echo -n -e "请输入${YELLOW}uefi${RES}全名,不加载请直接回车 "
 	read UEFI
 	if [ -n "$UEFI" ]; then
@@ -1145,8 +1149,8 @@ esac
 echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 read -r -p "1)加载 2)不加载 " input
 case $input in
-	1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
-	*) ;;
+	2) ;;
+	*) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
 esac
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 echo -e "请选择${YELLOW}系统时间${RES}标准"
@@ -1160,12 +1164,13 @@ echo -e "请选择${YELLOW}启动顺序${RES}"
 read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
 case $input in
 	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
-	2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
+	*) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
 esac ;;
 *)
         set -- "${@}" "-rtc" "base=localtime"
         set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
         set -- "${@}" "-usb" "-device" "usb-tablet"
+	set -- "${@}" "-mem-prealloc"
         ;;
 esac
 
