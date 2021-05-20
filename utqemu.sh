@@ -834,7 +834,7 @@ fi
 #	set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
 #使用bios配置
 #	set -- "${@}" "-L" "${DIRECT}/xinhao/windows/"
-#使用bzImage内核映像
+#使用bzImage内核镜像
 #	set -- "${@}" "-kernel" "bzImage"
 #使用cmdline作为内核命令行
 #	set -- "${@}" "-append" "cmdline"
@@ -1170,7 +1170,6 @@ esac ;;
         set -- "${@}" "-rtc" "base=localtime"
         set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
         set -- "${@}" "-usb" "-device" "usb-tablet"
-	set -- "${@}" "-mem-prealloc"
         ;;
 esac
 
