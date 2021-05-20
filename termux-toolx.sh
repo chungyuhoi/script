@@ -575,11 +575,15 @@ read -r -p "Y(yes) N(no) E(exit) M(main)" input
 case $input in
 	[yY]|"")
 		echo "Yes"
+		curl -1sLf "https://dl.cloudsmith.io/public/debianopt/debianopt/gpg.D215CE5D26AF10D5.key" | apt-key add -
+cat >/dev/null<<-eof
 		dpkg -l | grep gnupg -q
 		if [ "$?" != "0" ]; then
 		$sudo_t apt install gnupg2 -y
 		fi
-		echo "deb https://bintray.proxy.ustclug.org/debianopt/debianopt buster main" > /etc/apt/sources.list.d/debianopt.list && curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add - && apt update && SETTLE
+		echo "deb https://bintray.proxy.ustclug.org/debianopt/debianopt buster main" > /etc/apt/sources.list.d/debianopt.list && curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
+eof
+		apt update && SETTLE
 		sleep 1
 		;;
 	[nN])
