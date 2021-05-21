@@ -68,12 +68,12 @@ VIRTIO
 }
 ####################
 
-YELLOW="\e[1;33m"
-GREEN="\e[1;32m"
-RED="\e[1;31m"
-BLUE="\e[1;34m"
-PINK="\e[0;35m"
-WHITE="\e[0;37m"
+YELLOW="\e[33m"
+GREEN="\e[32m"
+RED="\e[31m"
+BLUE="\e[34m"
+PINK="\e[35m"
+WHITE="\e[37m"
 RES="\e[0m"
 ####################
 `ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
@@ -629,7 +629,7 @@ esac
 ##################
 LIST() {
 	echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-	ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso"
+	ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
 	sleep 1
 }
 ##################
@@ -825,7 +825,8 @@ fi
 #重定向虚拟并口到主机设备
 	set -- "${@}" "-parallel" "none"
 #控制台，一种类似于shell的交互方式
-	set -- "${@}" "-monitor" "none" ;;
+	set -- "${@}" "-monitor" "none"
+;;
 		*) ;;
 	esac
 #更改消息的格式，时间戳
@@ -1123,11 +1124,22 @@ case $input in
 	2) ;;
 	*) set -- "${@}" "-mem-prealloc" ;;
 esac
-echo -n -e "请输入${YELLOW}uefi${RES}全名,不加载请直接回车 "
+#-L是DOS
+#-bios，启动现系统
+#-plash，启动UEFI 的BIOS
+echo -e "是否加载${YELLOW}UEFI${RES}"
+read -r -p "1)加载 2)不加载 " input
+case $input in
+	1) echo -n -e "请确认UEFI已放进xinhao/windows文件夹内，输入UEFI全名(例如OVMF_CODE.fd),使用qemu的默认UEFI请直接回车 "
 	read UEFI
 	if [ -n "$UEFI" ]; then
 		set -- "${@}" "-pflash" "${DIRECT}/xinhao/windows/$UEFI"
-	fi
+	else
+		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_CODE.fd"
+		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_VARS.fd"
+	fi ;;
+*) ;;
+esac
 #amd
 ####################
 case $(dpkg --print-architecture) in
@@ -1228,7 +1240,7 @@ EOF
 
 ##################
 #SATA        
-		set -- "${@}" "-drive" "id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none,"
+		set -- "${@}" "-drive" "id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none"
 		set -- "${@}" "-device" "ahci,id=ahci"
 		set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
 
