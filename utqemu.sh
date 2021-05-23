@@ -615,8 +615,8 @@ esac
 SELECT_EMU_MODE() {
 
 	echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
-	1) qemu-system-x86_64
-	2) qemu-system-i386\n"
+	1) qemu-system-x86_64 (64位操作系统)
+	2) qemu-system-i386   (32位操作系统)\n"
 	read -r -p "请选择: " input
 	case $input in
 	1) QEMU_SYS=qemu-system-x86_64 ;;
@@ -635,8 +635,8 @@ LIST() {
 ##################
 SELECT_EMU() {
         echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
-	1) qemu-system-x86_64
-        2) qemu-system-i386
+	1) qemu-system-x86_64 (64位操作系统)
+	2) qemu-system-i386   (32位操作系统)
 	3) 磁盘接口virtio驱动安装模式(测试阶段)	\n"
 	read -r -p "请选择: " input
         case $input in
@@ -684,7 +684,7 @@ esac
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
-		read -r -p "1)pc 2)q35 " input
+read -r -p "1)pc 2)q35 " input
 		case $input in
 			1|"")
 			case $(dpkg --print-architecture) in
@@ -1130,7 +1130,7 @@ esac
 echo -e "是否加载${YELLOW}UEFI${RES}"
 read -r -p "1)加载 2)不加载 " input
 case $input in
-	1) echo -n -e "请确认UEFI已放进xinhao/windows文件夹内，输入UEFI全名(例如OVMF_CODE.fd),使用qemu的默认UEFI请直接回车 "
+	1) echo -n -e "请确认UEFI已放进xinhao/windows文件夹内，输入UEFI全名(例如OVMF_CODE.fd)，使用qemu的默认UEFI请直接回车 "
 	read UEFI
 	if [ -n "$UEFI" ]; then
 		set -- "${@}" "-pflash" "${DIRECT}/xinhao/windows/$UEFI"
