@@ -1164,10 +1164,11 @@ case $(dpkg --print-architecture) in
 		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试阶段，可提高响应速度，如出现闪退请关闭)"
    	read -r -p "1)加载 2)不加载 " input
 	case $input in
-		1) if [ -f hugepages.* ]; then
+		1) ls /tmp/hugepages.* 2>/dev/null
+			if [ $? != 0 ]; then
 			mktemp -t hugepages.XXX
   			fi
-			HUGEPAGES=`ls /tmp/hugepages.* | awk '{print $1}'`
+			HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
 			set -- "${@}" "-mem-path" "$HUGEPAGES"
 			set -- "${@}" "-mem-prealloc" ;;
 			*)	esac ;;
