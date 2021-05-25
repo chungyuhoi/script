@@ -1100,7 +1100,7 @@ read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)usb声卡 6)ac97(测试用) 0
 #采样率out.frequency=8000
 #缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
 #周期长度out.period-length=2500
-			set -- "${@}" "-audiodev" "alsa,id=alsa0,in.frequency=44110,out.buffer-length=20000,out.period-length=1250"
+			set -- "${@}" "-audiodev" "alsa,id=alsa0,in.frequency=44110,out.buffer-length=30000,out.period-length=1250"
 				set -- "${@}" "-device" "AC97,audiodev=alsa0" ;;
 			*) set -- "${@}" "-device" "AC97" ;;
                 esac
