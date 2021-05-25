@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	qemu5.0版本的声卡选项增加ac97测试项，该选项参数做了调整，如果声音不流畅可尝试该选项
 	将qxl显卡选项下的spice传输协议移到spice视频输出选项下(该选项参数需模拟系统安装virtio驱动，能解决win7声音卡顿问题)
 	增加qemu5.0以下版本与5.0相同的一些选项
 	增加qemu5.0以下旧版容器下载，winxp推荐此版本
@@ -684,56 +685,57 @@ esac
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
+MA="usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off"
 read -r -p "1)pc 2)q35 " input
 		case $input in
 			1|"")
 			case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 case $SYS in
-	QEMU_PRE) set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+	QEMU_PRE) set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
 	*)
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
 	case $input in
 		1) 
-set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
 3) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
        if [ -n "$TB" ]; then
-			set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$TB"
+			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi,tb-size=$TB"
 		else
-			set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))"
+			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))"
 			fi	;;
-		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
+		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,$MA" ;;
 	esac ;;
 esac ;;
 					*)
-	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=on" ;;
+	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,dump-guest-core=on" ;;
 esac ;;
 			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
 				case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 						case $SYS in
-							QEMU_PRE) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+							QEMU_PRE) set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi" ;;
 							*)
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
 case $input in
-	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
+	1) set -- "${@}" "-machine" "q35," "--accel" "tcg,thread=multi" ;;
 	3) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 		read TB
 		if [ -n "$TB" ]; then
-			set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$TB"
+			set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi,tb-size=$TB"
 		else
-		set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))"
+		set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))"
 		fi	;;
-	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
+	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA" ;;
 esac ;;
 esac ;;
 					*)
-				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=on" 
+				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,dump-guest-core=on" 
 ;;
 		esac ;;
 esac
@@ -1021,7 +1023,7 @@ esac
 #5.0
 ####################
 echo -e "请选择${YELLOW}显卡${RES}"
-read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
+read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 	case $input in
 		1) set -- "${@}" "-device" "cirrus-vga" ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
@@ -1029,7 +1031,7 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
 				1|"") set -- "${@}" "-device" "vmware-svga"     ;;
 				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
-				3|"") set -- "${@}" "-vga" "std" ;;
+				3|"") set -- "${@}" "-device" "VGA" ;;
 				4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
 		read -r -p "1)不设置3D参数 2)设置3D参数 " input
 		case $input in
@@ -1086,13 +1088,21 @@ case $display in
 	wlan_vnc) ;;
 	*)
 echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-		read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 0)不加载 " input
+read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)usb声卡 6)ac97(测试用) 0)不加载 " input
                         case $input in
                         1) set -- "${@}" "-device" "ES1370" ;;
                         2) set -- "${@}" "-device" "sb16" ;;
 			3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
+			5) set -- "${@}" "-device" "usb-audio" ;;
                         0) ;;
-                        *) set -- "${@}" "-device" "AC97" ;;
+                        6) 
+#延迟timer-period=10000
+#采样率out.frequency=8000
+#缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
+#周期长度out.period-length=2500
+			set -- "${@}" "-audiodev" "alsa,id=alsa0,in.frequency=44110,out.buffer-length=20000,out.period-length=1250"
+				set -- "${@}" "-device" "AC97,audiodev=alsa0" ;;
+			*) set -- "${@}" "-device" "AC97" ;;
                 esac
 		;;
 esac
@@ -1116,13 +1126,6 @@ read -r -p "1)开启 2)不开启 " input
 case $input in
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	*) ;;
-esac
-#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。
-echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(可提高响应速度，如出现闪退请关闭)"
-read -r -p "1)加载 2)不加载 " input
-case $input in
-	2) ;;
-	*) set -- "${@}" "-mem-prealloc" ;;
 esac
 #-L是DOS
 #-bios，启动现系统
@@ -1156,7 +1159,18 @@ case $(dpkg --print-architecture) in
 			1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
 			*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
 		esac ;;
-	*) ;;
+	*) 
+#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
+		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试阶段，可提高响应速度，如出现闪退请关闭)"
+   	read -r -p "1)加载 2)不加载 " input
+	case $input in
+		1) if [ -f hugepages.* ]; then
+			mktemp -t hugepages.XXX
+  			fi
+			HUGEPAGES=`ls /tmp/hugepages.* | awk '{print $1}'`
+			set -- "${@}" "-mem-path" "$HUGEPAGES"
+			set -- "${@}" "-mem-prealloc" ;;
+			*)	esac ;;
 esac
 echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 read -r -p "1)加载 2)不加载 " input
