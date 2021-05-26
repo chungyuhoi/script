@@ -740,6 +740,11 @@ esac ;;
 ;;
 		esac ;;
 esac
+	if [ ! -d "${DIRECT}/xinhao/windows/" ];then
+		echo -e "${RED}未获取到镜像目录，请确认已创建镜像目录${RES}\n"
+		CONFIRM
+		QEMU_SYSTEM
+	fi
 		LIST
 while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
 do
@@ -1167,7 +1172,7 @@ case $(dpkg --print-architecture) in
 		esac ;;
 	*) 
 #让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
-		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试阶段，可提高响应速度，如出现闪退请关闭)"
+		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试失败，提高响应速度，如出现闪退请关闭)"
    	read -r -p "1)加载 2)不加载 " input
 	case $input in
 		1) ls /tmp/hugepages.* 2>/dev/null
