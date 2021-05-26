@@ -681,7 +681,7 @@ esac
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
 #vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
 #dump-guest-core=on|off将客户机内存包括在核心转储中，类似于dump日志。默认为开。
-#tb-size=n (TCG translation block cache size)，Controls the size (in MiB) of the TCG translation block cache.
+#tb-size=n (TCG translation block cache size)，Controls the size (in MiB) of the TCG translation block cache.Host instruction codes are stored in code_gen_buffer[]. The default buffer size is 32MB.(Ram_size/4, while ram_size default value is 128MB).
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
@@ -697,15 +697,16 @@ case $SYS in
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
 	case $input in
-		1) 
-set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
+		1)
+#	set -- "${@}" "-machine" "pc-i440fx-3.1,$MA" "--accel" "tcg,thread=multi" ;;
+	set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
 3) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
+	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认优化后的值，请输入: "
 	read TB
        if [ -n "$TB" ]; then
 			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi,tb-size=$TB"
 		else
-			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))"
+			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi,tb-size=`free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1`"
 			fi	;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,$MA" ;;
 	esac ;;
@@ -724,12 +725,12 @@ read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
 case $input in
 	1) set -- "${@}" "-machine" "q35," "--accel" "tcg,thread=multi" ;;
 	3) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
+		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为优化后的值，请输入: "
 		read TB
 		if [ -n "$TB" ]; then
 			set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi,tb-size=$TB"
 		else
-		set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))"
+		set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi,tb-size=`free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1`"
 		fi	;;
 	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA" ;;
 esac ;;
@@ -1095,13 +1096,16 @@ read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)usb声卡 6)ac97(测试用) 0
 			3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
 			5) set -- "${@}" "-device" "usb-audio" ;;
                         0) ;;
-                        6) 
+			6)
+#alsa参数			       	
 #延迟timer-period=10000
 #采样率out.frequency=8000
 #缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
 #周期长度out.period-length=2500
-			set -- "${@}" "-audiodev" "alsa,id=alsa0,in.frequency=44110,out.buffer-length=30000,out.period-length=1250"
-				set -- "${@}" "-device" "AC97,audiodev=alsa0" ;;
+#pa参数
+#采样率out.frequency=8000
+			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=4096,out.period-length=1024"
+				set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
 			*) set -- "${@}" "-device" "AC97" ;;
                 esac
 		;;
@@ -1147,12 +1151,14 @@ esac
 ####################
 case $(dpkg --print-architecture) in
 	i*86|x86*|amd64)
+#在KVM中内存允许过载使用，分配给客户机的内存总数可以大于实际可用的物理内存总数。客户机过载使用内存的上限是：宿主机可用物理内存空间和交换空间的大小之和。超过这个上限会使客户机因内存不足被强制关闭。		
 		echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
 		read -r -p "1)开启 2)关闭 " input
 		case $input in
 			1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
 			*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
 		esac
+#KVM允许客户机过载使用（over-commit）CPU资源，即让一个或多个客户机使用vCPU的总数量超过宿主机实际拥有的物理CPU数量。但不建议单个客户机的CPU数量多于物理宿主机的CPU数量。
 		echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
 		read -r -p "1) 开启 2)关闭 " input
 		case $input in
