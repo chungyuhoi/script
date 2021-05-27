@@ -4,11 +4,12 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	简化参数内容
+	取消tcg缓存设置与usb-audio选项(相关参数在qemu6.0被取消)	
 	qemu5.0版本的声卡选项增加ac97测试项，该选项参数做了调整，如果声音不流畅可尝试该选项
 	将qxl显卡选项下的spice传输协议移到spice视频输出选项下(该选项参数需模拟系统安装virtio驱动，能解决win7声音卡顿问题)
 	增加qemu5.0以下版本与5.0相同的一些选项
 	增加qemu5.0以下旧版容器下载，winxp推荐此版本
-	增加tcg缓存锁定选项，与手机平板的cpu、ram有关联，通过最佳设置提高模拟效率，不建议折腾
 	取消默认加载共享文件夹，可在进阶选项中选择加载
 	增加独立系统(容器)支持多架构下载，由原来的arm64,aarch64增加amd64,i386,armhf,armel等架构，新增架构目前只测试过i386，其他架构有待验证
 	简化磁盘接口virtio驱动安装模式，无需创建加载分区，默认为共享文件夹
@@ -150,7 +151,7 @@ uname -a | grep 'Android' -q
                 SYS=ANDROID
 	elif [ ! $(command -v qemu-system-x86_64) ]; then
 		echo ""
-        elif [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
+        elif [[ $(qemu-system-x86_64 --version) =~ :[5-9] ]] ; then
                         SYS=QEMU_ADV
                 else
                         SYS=QEMU_PRE
@@ -692,22 +693,14 @@ read -r -p "1)pc 2)q35 " input
 			case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 case $SYS in
-	QEMU_PRE) set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
+	QEMU_PRE) set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
 	*)
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
+read -r -p "1)tcg 2)自动检测 " input
 	case $input in
 		1)
 #	set -- "${@}" "-machine" "pc-i440fx-3.1,$MA" "--accel" "tcg,thread=multi" ;;
 	set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
-3) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认优化后的值，请输入: "
-	read TB
-       if [ -n "$TB" ]; then
-			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi,tb-size=$TB"
-		else
-			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi,tb-size=`free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1`"
-			fi	;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,$MA" ;;
 	esac ;;
 esac ;;
@@ -718,20 +711,12 @@ esac ;;
 				case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 						case $SYS in
-							QEMU_PRE) set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi" ;;
+							QEMU_PRE) set -- "${@}" "-machine" "q35" "--accel" "tcg,thread=multi" ;;
 							*)
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
+read -r -p "1)tcg 2)自动检测 " input
 case $input in
-	1) set -- "${@}" "-machine" "q35," "--accel" "tcg,thread=multi" ;;
-	3) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为优化后的值，请输入: "
-		read TB
-		if [ -n "$TB" ]; then
-			set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi,tb-size=$TB"
-		else
-		set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi,tb-size=`free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1`"
-		fi	;;
+	1) set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi" ;;
 	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA" ;;
 esac ;;
 esac ;;
@@ -822,18 +807,18 @@ fi
 
 
 #	set -- "${@}" "-full-screen"
-#不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件
+#不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件，通常模拟器默认加载串口，并口，软盘，光驱等。
 	set -- "${@}" "-nodefaults"
 #不加载用户自定义的配置文件。
 	set -- "${@}" "-no-user-config"
 	case $ARCH in
 		tablet)
 #重定向虚拟串口到主机设备
-	set -- "${@}" "-serial" "none"
+#	set -- "${@}" "-serial" "none"
 #重定向虚拟并口到主机设备
-	set -- "${@}" "-parallel" "none"
+#	set -- "${@}" "-parallel" "none"
 #控制台，一种类似于shell的交互方式
-	set -- "${@}" "-monitor" "none"
+#	set -- "${@}" "-monitor" "none"
 ;;
 		*) ;;
 	esac
@@ -981,7 +966,7 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 #PROOT
 #####################
 #<5.0
-	qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
+	qemu-system-x86_64 --version | grep ':[5-9]' -q || uname -a | grep 'Android' -q
 	if [ $? != 0 ]; then
 echo -e "请选择${YELLOW}显卡${RES}"
 	read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
@@ -1094,14 +1079,13 @@ case $display in
 	wlan_vnc) ;;
 	*)
 echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)usb声卡 6)ac97(测试用) 0)不加载 " input
+read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(测试用) 0)不加载 " input
                         case $input in
                         1) set -- "${@}" "-device" "ES1370" ;;
                         2) set -- "${@}" "-device" "sb16" ;;
 			3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
-			5) set -- "${@}" "-device" "usb-audio" ;;
                         0) ;;
-			6)
+			5)
 #alsa参数			       	
 #延迟timer-period=10000
 #采样率out.frequency=8000
@@ -1194,8 +1178,8 @@ esac
 echo -e "请选择${YELLOW}系统时间${RES}标准"
 read -r -p "1)utc 2)localtime " input
 case $input in
-	1) set -- "${@}" "-rtc" "base=utc,driftfix=slew" ;;
-	*) set -- "${@}" "-rtc" "base=localtime,clock=host" ;;
+	1) set -- "${@}" "-rtc" "base=utc,clock=host,driftfix=slew" ;;
+	*) set -- "${@}" "-rtc" "base=localtime" ;;
 #       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
 esac
 echo -e "请选择${YELLOW}启动顺序${RES}"
