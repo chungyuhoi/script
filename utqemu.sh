@@ -4,6 +4,7 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	应用维护项加入最新aspice安卓版下载地址
 	简化参数内容
 	取消tcg缓存设置与usb-audio选项(相关参数在qemu6.0被取消)	
 	qemu5.0版本的声卡选项增加ac97测试项，该选项参数做了调整，如果声音不流畅可尝试该选项
@@ -332,6 +333,7 @@ QEMU_ETC() {
 3) 修改设备标识(手机、平板、电脑)
 4) 修改源(只适用本脚本下载的系统)
 5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
+6) 获取aspice安卓版下载地址(非永久有效)
 9) 返回
 0) 退出\n"
 	read -r -p "请选择: " input
@@ -469,6 +471,25 @@ fi ;;
 			unset FORMAT
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
+6) echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
+	CONFIRM
+	unset CURL
+	unset CURL_
+	while ( [ "$CURL" != '0' ] && [[ ! $CURL_ =~ apk ]] )
+do
+	CURL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2 `
+CURL_=`curl --connect-timeout 5 -m 8 https://github.com$CURL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
+if [[ ! $CURL_ =~ apk ]]; then
+read -r -p "获取失败，重试请回车，退出请输0" input
+case $input in
+	0) QEMU_ETC ;;
+	*) ;;
+esac
+fi
+done
+echo -e "\n下载地址\n${GREEN}https://github.com/iiordanov/remote-desktop-clients/releases/download/v5.0.4/$CURL_${RES}\n"
+CONFIRM
+QEMU_ETC ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
 esac
 	unset FORMAT_
@@ -629,11 +650,6 @@ SELECT_EMU_MODE() {
 esac
 }
 ##################
-LIST() {
-	echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-	ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
-	sleep 1
-}
 ##################
 SELECT_EMU() {
         echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
@@ -730,7 +746,9 @@ esac
 		CONFIRM
 		QEMU_SYSTEM
 	fi
-		LIST
+		echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
+		ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
+		sleep 1
 while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
 do
 	if [ -n "$hda_name" ]; then
@@ -757,8 +775,6 @@ done
 				*) ;;
 			esac ;;
 			VIRTIO_MODE) ;;
-#	echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
-#		read hdb_name ;;
 	esac ;;
 *) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
 	read hdb_name ;;
@@ -1019,10 +1035,9 @@ read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 		1) set -- "${@}" "-device" "cirrus-vga" ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
-				1|"") set -- "${@}" "-device" "vmware-svga"     ;;
+				1|"") set -- "${@}" "-device" "vmware-svga" ;;
 				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
-				3|"") set -- "${@}" "-device" "VGA" ;;
 				4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
 		read -r -p "1)不设置3D参数 2)设置3D参数 " input
 		case $input in
@@ -1062,6 +1077,7 @@ set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev1" "-device" 
 #set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev3" "-device" "usb-redir,chardev=usbredirchardev3,id=usbredirdev3"
 EOF
 ;;
+*) set -- "${@}" "-device" "VGA" ;;
 esac
 
 echo -e "请选择${YELLOW}网卡${RES}"
@@ -1335,9 +1351,9 @@ esac ;;
 ########################
 		if [ -n "$display" ]; then
 			case $display in
-				wlan_vnc) set -- "${@}" "-vnc" "$IP:0" ;;
+				wlan_vnc) set -- "${@}" "-vnc" "$IP:0,lossy=on" ;;
 				vnc) 
-					set -- "${@}" "-vnc" ":0"
+					set -- "${@}" "-vnc" ":0,lossy=on"
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				xsdl) export DISPLAY=127.0.0.1:0
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
