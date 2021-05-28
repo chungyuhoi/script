@@ -4,8 +4,13 @@ cd $(dirname $0)
 INFO() {
 clear
 echo -e "\n\e[33m更新内容\e[0m
+	应用维护项加入最新aspice安卓版下载地址
+	简化参数内容
+	取消tcg缓存设置与usb-audio选项(相关参数在qemu6.0被取消)	
+	qemu5.0版本的声卡选项增加ac97测试项，该选项参数做了调整，如果声音不流畅可尝试该选项
+	将qxl显卡选项下的spice传输协议移到spice视频输出选项下(该选项参数需模拟系统安装virtio驱动，能解决win7声音卡顿问题)
+	增加qemu5.0以下版本与5.0相同的一些选项
 	增加qemu5.0以下旧版容器下载，winxp推荐此版本
-	增加tcg缓存锁定选项，与手机平板的cpu、ram有关联，通过最佳设置提高模拟效率，不建议折腾
 	取消默认加载共享文件夹，可在进阶选项中选择加载
 	增加独立系统(容器)支持多架构下载，由原来的arm64,aarch64增加amd64,i386,armhf,armel等架构，新增架构目前只测试过i386，其他架构有待验证
 	简化磁盘接口virtio驱动安装模式，无需创建加载分区，默认为共享文件夹
@@ -16,12 +21,10 @@ echo -e "\n\e[33m更新内容\e[0m
 NOTE() {
 clear
 echo -e "\n\e[33m注意事项\e[0m
-	\e[33mFlyOS定制版\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
-	如遇到使用异常，可尝试所有选择项直接回车以获得默认参数
 	声音输出（不支持termux与utermux环境，pc建议ac97，q35建议hda）
 	sdl输出显示，源地址并未编译qemu的sdl，这里只是通过信号输出，需先开启xsdl(不支持termux与utermux环境）
 	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好\n"
@@ -37,7 +40,7 @@ ABOUT_UTQEMU(){
 	clear
 printf "%s
 ${YELLOW}关于FlyOSVirtualMachinePro脚本${RES}
-	此版本为FlyOS定制版，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n"
+	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n"
 CONFIRM
 QEMU_SYSTEM	
 }
@@ -68,12 +71,12 @@ VIRTIO
 }
 ####################
 
-YELLOW="\e[1;33m"
-GREEN="\e[1;32m"
-RED="\e[1;31m"
-BLUE="\e[1;34m"
-PINK="\e[0;35m"
-WHITE="\e[0;37m"
+YELLOW="\e[33m"
+GREEN="\e[32m"
+RED="\e[31m"
+BLUE="\e[34m"
+PINK="\e[35m"
+WHITE="\e[37m"
 RES="\e[0m"
 ####################
 `ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
@@ -149,7 +152,7 @@ uname -a | grep 'Android' -q
                 SYS=ANDROID
 	elif [ ! $(command -v qemu-system-x86_64) ]; then
 		echo ""
-        elif [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
+        elif [[ $(qemu-system-x86_64 --version) =~ :[5-9] ]] ; then
                         SYS=QEMU_ADV
                 else
                         SYS=QEMU_PRE
@@ -265,7 +268,7 @@ SYSTEM_CHECK() {
 	if [ $? == 0 ]; then
 		grep -E -q 'bfsu|tsinghua|ustc|tencent|FlyOSVirtualMachineProcheck' ${PREFIX}/etc/apt/sources.list              
 		if [ $? != 0 ]; then  
-			echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源${RES}\n  
+			echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
 			1) 换国内源    
 			2) 不换"   
 			read -r -p "是否换国内源: " input   
@@ -274,7 +277,7 @@ SYSTEM_CHECK() {
 sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
 sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
 sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update -n ;;  
-2) echo "#FlyOSVirtualMachineProcheck" >>${PREFIX}/etc/apt/sources.list
+*) echo "#FlyOSVirtualMachineProcheck" >>${PREFIX}/etc/apt/sources.list
 	MAIN ;;  
 esac                                                    
 		fi
@@ -286,7 +289,7 @@ if [ $? != 0 ]; then
 fi
 if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
 then
-        echo "module already present"
+        echo ""
 else
         echo "load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" >> ${PREFIX}/etc/pulse/default.pa
                                 fi
@@ -330,6 +333,7 @@ QEMU_ETC() {
 3) 修改设备标识(手机、平板、电脑)
 4) 修改源(只适用本脚本下载的系统)
 5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
+6) 获取aspice安卓版下载地址(非永久有效)
 9) 返回
 0) 退出\n"
 	read -r -p "请选择: " input
@@ -467,6 +471,30 @@ fi ;;
 			unset FORMAT
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
+6) if [ ! $(command -v curl) ]; then
+	echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
+	sleep 2
+	apt update && apt install curl -y
+fi
+	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
+	CONFIRM
+	unset CURL
+	unset CURL_
+	while ( [ "$CURL" != '0' ] && [[ ! $CURL_ =~ apk ]] )
+do
+	CURL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2 `
+CURL_=`curl --connect-timeout 5 -m 8 https://github.com$CURL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
+if [[ ! $CURL_ =~ apk ]]; then
+read -r -p "获取失败，重试请回车，退出请输0 " input
+case $input in
+	0) QEMU_ETC ;;
+	*) ;;
+esac
+fi
+done
+echo -e "\n下载地址\n${GREEN}https://github.com/iiordanov/remote-desktop-clients/releases/download/v5.0.4/$CURL_${RES}\n"
+CONFIRM
+QEMU_ETC ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
 esac
 	unset FORMAT_
@@ -517,7 +545,7 @@ fi
         if [ ! -e "${DIRECT}/xinhao/windows" ]; then        
 	echo -e "${RED}创建目录失败${RES}"
         else
-                echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
+                echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
         fi
         CONFIRM
         QEMU_SYSTEM
@@ -574,15 +602,17 @@ case $ARCH in
 		2) echo -e "${BLUE}sdl信号输出，需先打开xsdl再继续此操作${RES}"
 			display=xsdl
 			;;
-		3) echo -e "${BLUE}spice输出${RES}
-\e[33m请勿随意切换aspice，如出现系统界面无法控制，只能重开qemu${RES}"
-sleep 1
-display=spice
-;;
+		3) echo -e "${BLUE}spice输出${RES}"
+read -r -p "1)常规使用 2)spice传输协议使用(需virtio驱动) " input
+case $input in
+	2) display=spice_ ;;
+		*) display=spice ;;
+	esac
+	;;
 		4) echo -e "\n${BLUE}窗口输出${RES}"
 			display=gtk_ ;;
 		5) display=wlan_vnc
-			echo -e "\n${BLUE}为减少效率的影响，暂不支持声音输出\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${YELLOW}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
+			echo -e "\n${GREEN}为减少效率的影响，暂不支持声音输出${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
 			sleep 1 ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
@@ -598,7 +628,7 @@ display=spice
 				display=amd ;;
 			2)
 				display=wlan_vnc
-				echo -e "\n${BLUE}vnc不支持声音输出，所以会由电脑输出声音\n输出显示的设备vnc地址为$IP:0${RES}"
+				echo -e "\n${BLUE}vnc不支持声音输出，输出显示的设备vnc地址为$IP:0${RES}"
 				sleep 1 ;;
 			9) QEMU_SYSTEM ;;
 			0) exit 1 ;;
@@ -613,8 +643,8 @@ esac
 SELECT_EMU_MODE() {
 
 	echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
-	1) qemu-system-x86_64
-	2) qemu-system-i386\n"
+	1) qemu-system-x86_64 (64位操作系统)
+	2) qemu-system-i386   (32位操作系统)\n"
 	read -r -p "请选择: " input
 	case $input in
 	1) QEMU_SYS=qemu-system-x86_64 ;;
@@ -625,16 +655,11 @@ SELECT_EMU_MODE() {
 esac
 }
 ##################
-LIST() {
-	echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-	ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso"
-	sleep 1
-}
 ##################
 SELECT_EMU() {
         echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
-	1) qemu-system-x86_64
-        2) qemu-system-i386
+	1) qemu-system-x86_64 (64位操作系统)
+	2) qemu-system-i386   (32位操作系统)
 	3) 磁盘接口virtio驱动安装模式(测试阶段)	\n"
 	read -r -p "请选择: " input
         case $input in
@@ -678,11 +703,12 @@ esac
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
 #vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
 #dump-guest-core=on|off将客户机内存包括在核心转储中，类似于dump日志。默认为开。
-#tb-size=n (TCG translation block cache size)，Controls the size (in MiB) of the TCG translation block cache.
+#tb-size=n (TCG translation block cache size)，Controls the size (in MiB) of the TCG translation block cache.Host instruction codes are stored in code_gen_buffer[]. The default buffer size is 32MB.(Ram_size/4, while ram_size default value is 128MB).
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
-		read -r -p "1)pc 2)q35 " input
+MA="usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off"
+read -r -p "1)pc 2)q35 " input
 		case $input in
 			1|"")
 			case $(dpkg --print-architecture) in
@@ -691,23 +717,16 @@ case $SYS in
 	QEMU_PRE) set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
 	*)
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
+read -r -p "1)tcg 2)自动检测 " input
 	case $input in
-		1) 
-set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
-3) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
-	read TB
-       if [ -n "$TB" ]; then
-			set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$TB"
-		else
-			set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))"
-			fi	;;
-		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
+		1)
+#	set -- "${@}" "-machine" "pc-i440fx-3.1,$MA" "--accel" "tcg,thread=multi" ;;
+	set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
+		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,$MA" ;;
 	esac ;;
 esac ;;
 					*)
-	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=on" ;;
+	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,dump-guest-core=on" ;;
 esac ;;
 			2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
 				case $(dpkg --print-architecture) in
@@ -716,26 +735,25 @@ esac ;;
 							QEMU_PRE) set -- "${@}" "-machine" "q35" "--accel" "tcg,thread=multi" ;;
 							*)
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-read -r -p "1)tcg 2)自动检测 3)tcg缓存指定(不建议) " input
+read -r -p "1)tcg 2)自动检测 " input
 case $input in
-	1) set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi" ;;
-	3) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
-		read TB
-		if [ -n "$TB" ]; then
-			set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$TB"
-		else
-		set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$(($(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq | awk '{print $1/100000}' | cut -d '.' -f 1)*100))"
-		fi	;;
-	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" ;;
+	1) set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi" ;;
+	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA" ;;
 esac ;;
 esac ;;
 					*)
-				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,vmport=off,dump-guest-core=on" 
+				set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,dump-guest-core=on" 
 ;;
 		esac ;;
 esac
-		LIST
+	if [ ! -d "${DIRECT}/xinhao/windows/" ];then
+		echo -e "${RED}未获取到镜像目录，请确认已创建镜像目录${RES}\n"
+		CONFIRM
+		QEMU_SYSTEM
+	fi
+		echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
+		ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
+		sleep 1
 while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
 do
 	if [ -n "$hda_name" ]; then
@@ -746,7 +764,7 @@ do
 	read  hda_name
 done
 	if [ $hda_name == '0' ]; then
-		exit 0
+		QEMU_SYSTEM
 	fi
 	case $SYS in
 		QEMU_ADV) 
@@ -762,8 +780,6 @@ done
 				*) ;;
 			esac ;;
 			VIRTIO_MODE) ;;
-#	echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
-#		read hdb_name ;;
 	esac ;;
 *) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
 	read hdb_name ;;
@@ -812,19 +828,19 @@ fi
 
 
 #	set -- "${@}" "-full-screen"
-#不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件
+#不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件，通常模拟器默认加载串口，并口，软盘，光驱等。
 	set -- "${@}" "-nodefaults"
 #不加载用户自定义的配置文件。
 	set -- "${@}" "-no-user-config"
 	case $ARCH in
 		tablet)
 #重定向虚拟串口到主机设备
-	set -- "${@}" "-serial" "none"
+#	set -- "${@}" "-serial" "none"
 #重定向虚拟并口到主机设备
-	set -- "${@}" "-parallel" "none"
+#	set -- "${@}" "-parallel" "none"
 #控制台，一种类似于shell的交互方式
-	set -- "${@}" "-monitor" "none"
-	;;
+#	set -- "${@}" "-monitor" "none"
+;;
 		*) ;;
 	esac
 #更改消息的格式，时间戳
@@ -833,7 +849,7 @@ fi
 #	set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
 #使用bios配置
 #	set -- "${@}" "-L" "${DIRECT}/xinhao/windows/"
-#使用bzImage内核映像
+#使用bzImage内核镜像
 #	set -- "${@}" "-kernel" "bzImage"
 #使用cmdline作为内核命令行
 #	set -- "${@}" "-append" "cmdline"
@@ -852,7 +868,7 @@ esac
 	read -r -p "1)默认配置 2)自定义 " input
 	case $input in
 		1|"") _SMP="" ;;
-		2) CPU=0
+		*) CPU=0
 			while [ $CPU -eq 0 ]
 do
 	echo -n -e "请输入逻辑cpu参数，分别为核心、线程、插槽个数，输入三位数字(例如2核1线2插槽,不能有0 则输212) "
@@ -871,6 +887,7 @@ case $SYS in
 		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)Dhyana 9)测试用(勿选) 0)max(推荐) " input ;;
 QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 " input ;;
 esac
+#max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
 #部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
         case $input in
         1) set -- "${@}" "-cpu" "n270"
@@ -936,11 +953,11 @@ esac
 		else
 			set -- "${@}" "-smp" "4"
 		fi ;;
-	9) set -- "${@}" "-cpu" "Skylake-Server-IBRS,model_id=Intel_Xeon_W-3175X,vendor=GenuineIntel"
+	9) set -- "${@}" "-cpu" "max,level=0xd,vendor=GenuineIntel"
 		if [ -n "$CPU" ]; then
 			set -- "${@}" "-smp" "$CPU"
 		else
-		set -- "${@}" "-smp" "4,cores=4,threads=1,sockets=1"
+		set -- "${@}" "-smp" "4"
 		fi ;;
         *)      set -- "${@}" "-cpu" "max"
 		if [ -n "$CPU" ]; then
@@ -960,26 +977,26 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
 				1|"") set -- "${@}" "-device" "vmware-svga" ;;
-				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
+				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
-		3|"") set -- "${@}" "-vga" "std" ;; 
 		4) set -- "${@}" "-vga" "virtio" ;;
+		*) set -- "${@}" "-vga" "std" ;;
         esac
 	fi
 ##################
 #PROOT
 #####################
 #<5.0
-	qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
+	qemu-system-x86_64 --version | grep ':[5-9]' -q || uname -a | grep 'Android' -q
 	if [ $? != 0 ]; then
 echo -e "请选择${YELLOW}显卡${RES}"
 	read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
         case $input in
                 1) set -- "${@}" "-vga" "cirrus" ;;
                 2) set -- "${@}" "-vga" "vmware" ;;
-		3|"") set -- "${@}" "-vga" "std" ;;
 		4) set -- "${@}" "-vga" "virtio" ;;
 		5) set -- "${@}" "-vga" "qxl" ;;
+		*) set -- "${@}" "-vga" "std" ;;
 esac
 #内存锁，默认打开
 		set -- "${@}" "-realtime" "mlock=off"
@@ -998,7 +1015,9 @@ case $input in
 		set -- "${@}" "-net" "nic,model=virtio" ;;
 	0) set -- "${@}" "-net" "none" ;;
 esac
-
+case $display in
+	wlan_vnc) ;;
+	*)
 			echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
 			read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
                         case $input in
@@ -1007,21 +1026,23 @@ esac
                 0) ;;
                 3) set -- "${@}" "-soundhw" "es1370" ;;
 		4) set -- "${@}" "-soundhw" "hda" ;;
+		*) set -- "${@}" "-soundhw" "all" ;;
+esac
+;;
 esac
         else
 ####################
 #5.0
 ####################
 echo -e "请选择${YELLOW}显卡${RES}"
-read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
+read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 	case $input in
 		1) set -- "${@}" "-device" "cirrus-vga" ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
-				1|"") set -- "${@}" "-device" "vmware-svga"     ;;
-				2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
+				1|"") set -- "${@}" "-device" "vmware-svga" ;;
+				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
-				3|"") set -- "${@}" "-vga" "std" ;;
 				4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
 		read -r -p "1)不设置3D参数 2)设置3D参数 " input
 		case $input in
@@ -1038,7 +1059,7 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
 						set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
 #                               set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
 ;;
-					spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
+					spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
 				esac
 				unset display
 				case $ARCH in
@@ -1049,11 +1070,7 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
 							fi ;;
 					esac ;;
 			esac ;;
-		5) case $display in
-			spice) read -r -p "1)常规使用 2)spice传输协议使用 " input
-			case $input in
-				1|"") set -- "${@}" "-device" "qxl-vga" ;;
-				2) set -- "${@}" "-device" "qxl-vga" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
+		5) set -- "${@}" "-device" "qxl-vga"
 cat >/dev/null <<EOF
 set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
 #set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
@@ -1065,9 +1082,7 @@ set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev1" "-device" 
 #set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev3" "-device" "usb-redir,chardev=usbredirchardev3,id=usbredirdev3"
 EOF
 ;;
-esac ;;
-*) set -- "${@}" "-device" "qxl-vga" ;;
-esac
+*) set -- "${@}" "-device" "VGA" ;;
 esac
 
 echo -e "请选择${YELLOW}网卡${RES}"
@@ -1081,15 +1096,30 @@ case $input in
 		set -- "${@}" "-netdev" "user,id=user0" ;;
 	0) set -- "${@}" "-net" "none" ;;
 esac
+case $display in
+	wlan_vnc) ;;
+	*)
 echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-		read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 0)不加载 " input
+read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(测试用) 0)不加载 " input
                         case $input in
                         1) set -- "${@}" "-device" "ES1370" ;;
                         2) set -- "${@}" "-device" "sb16" ;;
 			3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
                         0) ;;
-                        4|"") set -- "${@}" "-device" "AC97" ;;
+			5)
+#alsa参数			       	
+#延迟timer-period=10000
+#采样率out.frequency=8000
+#缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
+#周期长度out.period-length=2500
+#pa参数
+#采样率out.frequency=8000
+			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=4096,out.period-length=1024"
+				set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
+			*) set -- "${@}" "-device" "AC97" ;;
                 esac
+		;;
+esac
 	fi	
 ####################
 #进阶选项
@@ -1111,48 +1141,73 @@ case $input in
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	*) ;;
 esac
-echo -n -e "请输入${YELLOW}uefi${RES}全名,不加载请直接回车 "
+#-L是DOS
+#-bios，启动现系统
+#-plash，启动UEFI 的BIOS
+echo -e "是否加载${YELLOW}UEFI${RES}"
+read -r -p "1)加载 2)不加载 " input
+case $input in
+	1) echo -n -e "请确认UEFI已放进xinhao/windows文件夹内，输入UEFI全名(例如OVMF_CODE.fd)，使用qemu的默认UEFI请直接回车 "
 	read UEFI
 	if [ -n "$UEFI" ]; then
 		set -- "${@}" "-pflash" "${DIRECT}/xinhao/windows/$UEFI"
-	fi
+	else
+		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_CODE.fd"
+		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_VARS.fd"
+	fi ;;
+*) ;;
+esac
 #amd
 ####################
 case $(dpkg --print-architecture) in
 	i*86|x86*|amd64)
+#在KVM中内存允许过载使用，分配给客户机的内存总数可以大于实际可用的物理内存总数。客户机过载使用内存的上限是：宿主机可用物理内存空间和交换空间的大小之和。超过这个上限会使客户机因内存不足被强制关闭。		
 		echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
 		read -r -p "1)开启 2)关闭 " input
 		case $input in
 			1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
 			*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
 		esac
+#KVM允许客户机过载使用（over-commit）CPU资源，即让一个或多个客户机使用vCPU的总数量超过宿主机实际拥有的物理CPU数量。但不建议单个客户机的CPU数量多于物理宿主机的CPU数量。
 		echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
 		read -r -p "1) 开启 2)关闭 " input
 		case $input in
 			1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
 			*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
 		esac ;;
-	*) ;;
+	*) 
+#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
+		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试失败，提高响应速度，如出现闪退请关闭)"
+   	read -r -p "1)加载 2)不加载 " input
+	case $input in
+		1) ls /tmp/hugepages.* 2>/dev/null
+			if [ $? != 0 ]; then
+			mktemp -t hugepages.XXX
+  			fi
+			HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
+			set -- "${@}" "-mem-path" "$HUGEPAGES"
+			set -- "${@}" "-mem-prealloc" ;;
+			*)	esac ;;
 esac
 echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 read -r -p "1)加载 2)不加载 " input
 case $input in
-	1) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
-	*) ;;
+	2) ;;
+	*) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
 esac
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 echo -e "请选择${YELLOW}系统时间${RES}标准"
 read -r -p "1)utc 2)localtime " input
 case $input in
-	1) set -- "${@}" "-rtc" "base=utc,driftfix=slew" ;;
-	*) set -- "${@}" "-rtc" "base=localtime,clock=host" ;;
+	1) set -- "${@}" "-rtc" "base=utc,clock=host,driftfix=slew" ;;
+	*) set -- "${@}" "-rtc" "base=localtime" ;;
 #       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
 esac
 echo -e "请选择${YELLOW}启动顺序${RES}"
 read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
 case $input in
 	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
-	2) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
+	*) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
 esac ;;
 *)
         set -- "${@}" "-rtc" "base=localtime"
@@ -1163,6 +1218,22 @@ esac
 
 
 #################
+cat >/dev/null<<EOF
+if=INTERFACE：指定驱动器接口类型，可用的有：ide，scsi，sd，mtd，floopy，pflash，virtio等
+bus=BUS NUM，unit=UNIT NUM：设置驱动器在客户机中的总线编号和单元编号
+index=INDEX NUM：设置在同一种接口的驱动器中的索引编号
+media=disk|cdrom：设置驱动器中媒介的类型，其值为“disk”或“cdrom”
+snapshot=on|off：是否启用镜像功能，启用时，qemu不会将磁盘数据的更改写回镜像文件中，而是写到临时文件，也可以在qemu         monitor中使用commit命令强制将磁盘数据的更改保存回镜像文件中
+cache=writethrough|writeback|（none|off）
+writethrough：默认值，即直写模式，它是在调用write写入数据的同时将数据写入磁盘缓存和后端块设备中，优点：操作简单，缺点：写入数据速度较慢
+writeback：回写模式，将数据写入到磁盘缓存中即返回，只有数据被换出缓存的时候才写入到后端块设备中，优点：写入速度快，缺点：可能造成数据丢失
+（none|off）：设置none或者off表示不写入缓存，直接写入到块设备中，优点是数据安全，缺点:速度太慢
+aio=threads|native：默认threads，即让一个线程池去处理异步io；而native只适用于cache=none的情况，就是使用linux原生的aio
+format=FORMAT：使用的磁盘格式，默认qemu是自动检测磁盘格式的
+serial=SERIAL NUM：分配给设备的序列号
+add=ADDR:分配给驱动器控制器的pci地址，该选项只有在使用virtio接口才适用
+id=NAME：设置该驱动器的id，这个id可以在qemu monitor中用info block命令查看
+EOF
 	case $QEMU_MODE in
 		VIRTIO_MODE)
 		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide"
@@ -1227,7 +1298,7 @@ esac ;;
 
 	3) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk,if=virtio"
 if [ -n "$hdb_name" ]; then
-			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk,if=virtio" 
+			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk,if=virtio"
 		fi
 		if [ -n "$iso1_name" ]; then
 			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
@@ -1285,13 +1356,16 @@ esac ;;
 ########################
 		if [ -n "$display" ]; then
 			case $display in
-				wlan_vnc) set -- "${@}" "-vnc" "$IP:0" ;;
+				wlan_vnc) set -- "${@}" "-vnc" "$IP:0,lossy=on" ;;
 				vnc) 
-					set -- "${@}" "-vnc" ":0"
+					set -- "${@}" "-vnc" ":0,lossy=on"
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				xsdl) export DISPLAY=127.0.0.1:0
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
+					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
+				spice_) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
+					set -- "${@}" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				amd) set -- "${@}" "-display" "gtk,gl=off" ;;
 				gtk_) set -- "${@}" "-display" "gtk,gl=off"
@@ -1325,7 +1399,7 @@ export DISPLAY=127.0.0.1:0
 ${@}
 EOF
 ;;
-				vnc|spice) 
+				vnc|spice|spice_) 
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
@@ -1346,9 +1420,9 @@ EOF
 ;;
 esac
 chmod +x /usr/local/bin/$script_name
-echo -e "${GREEN}已保存本次参数的脚本，下次可直接输$script_name启动qemu${RES}"
+echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
 sleep 2 ;;
-		2|"") ;;
+		*) ;;
 esac ;;
 esac
 	fi
@@ -1360,7 +1434,7 @@ esac
 		vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0" ;;
 		wlan_vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer $IP:0" ;;
 		xsdl) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开xsdl" ;;
-		spice) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
+		spice|spice_) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
 		*) printf "%s\n${GREEN}模拟器已启动" ;;
 	esac
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
@@ -1375,9 +1449,9 @@ esac
 *) QEMU_ETC ;;
 esac ;;
 7) if [ -e ${HOME}/.FlyOSVirtualMachinePro_log ]; then
-	echo -e "\n按空格下一页，退出请按q\n"
+	echo -e "\n${GREEN}日志已忽略不重要的信息${RES}\n按空格下一页，退出请按q\n"
 	CONFIRM
-	more ${HOME}/.FlyOSVirtualMachinePro_log | egrep "qemu-system-x86_64|qemu-system-i386"
+	more ${HOME}/.FlyOSVirtualMachinePro_log | egrep "qemu-system-x86_64|qemu-system-i386" | egrep -v "stronger memory|Connection reset by peer|requested feature"
 	echo -e "\n\e[33m到底了\e[0m"
 	read -r -p "是否删除日志 1)是 0)否 " input
 	case $input in
