@@ -471,7 +471,12 @@ fi ;;
 			unset FORMAT
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
-6) echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
+6) if [ ! $(command -v curl) ]; then
+	echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
+	sleep 2
+	apt update && apt install curl -y
+fi
+	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
 	CONFIRM
 	unset CURL
 	unset CURL_
@@ -480,7 +485,7 @@ do
 	CURL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2 `
 CURL_=`curl --connect-timeout 5 -m 8 https://github.com$CURL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
 if [[ ! $CURL_ =~ apk ]]; then
-read -r -p "获取失败，重试请回车，退出请输0" input
+read -r -p "获取失败，重试请回车，退出请输0 " input
 case $input in
 	0) QEMU_ETC ;;
 	*) ;;
@@ -623,7 +628,7 @@ case $input in
 				display=amd ;;
 			2)
 				display=wlan_vnc
-				echo -e "\n${BLUE}vnc不支持声音输出，所以会由电脑输出声音\n输出显示的设备vnc地址为$IP:0${RES}"
+				echo -e "\n${BLUE}vnc不支持声音输出，输出显示的设备vnc地址为$IP:0${RES}"
 				sleep 1 ;;
 			9) QEMU_SYSTEM ;;
 			0) exit 1 ;;
@@ -759,7 +764,7 @@ do
 	read  hda_name
 done
 	if [ $hda_name == '0' ]; then
-		exit 0
+		QEMU_SYSTEM
 	fi
 	case $SYS in
 		QEMU_ADV) 
