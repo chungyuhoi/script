@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 INFO() {
 clear
-echo -e "\n\e[33m更新内容\e[0m
+echo -e "\n\e[33m更新日期2021.5.29 更新内容\e[0m
 	应用维护项加入最新aspice安卓版下载地址
 	简化参数内容
 	取消tcg缓存设置与usb-audio选项(相关参数在qemu6.0被取消)	
@@ -21,13 +21,14 @@ echo -e "\n\e[33m更新内容\e[0m
 NOTE() {
 clear
 echo -e "\n\e[33m注意事项\e[0m
-	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作
-	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数
+	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
+	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
+	如果模拟效率不佳，请尝试大退到termux主界面，并清设备后台，然后重新启动模拟。
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
-	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功
-	声音输出（不支持termux与utermux环境，pc建议ac97，q35建议hda）
-	sdl输出显示，源地址并未编译qemu的sdl，这里只是通过信号输出，需先开启xsdl(不支持termux与utermux环境）
-	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好\n"
+	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功。
+	声音输出（不支持termux与utermux环境，pc建议ac97，q35建议hda）。
+	sdl输出显示，源地址并未编译qemu的sdl，这里只是通过信号输出，需先开启xsdl(不支持termux与utermux环境）。
+	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好。\n"
 	if [ $(command -v qemu-system-x86_64) ]; then
 		echo -e "\e[33m检测到你已安装qemu-system-x86，版本是\e[0m"
 echo -e "\e[32m$(qemu-system-x86_64 --version | head -n 1)\e[0m"
@@ -266,6 +267,9 @@ sleep 2
 SYSTEM_CHECK() {
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
+		if [ ! -e ${HOME}/storage ]; then
+			termux-setup-storage
+		fi
 		grep -E -q 'bfsu|tsinghua|ustc|tencent|utqemucheck' ${PREFIX}/etc/apt/sources.list              
 		if [ $? != 0 ]; then  
 			echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
