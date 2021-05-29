@@ -1497,6 +1497,11 @@ case $input in
 		echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
 		DATE=`date +"%Y"`
 		VERSION=`curl -s https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/ | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
+	       	if [ ! -n "$VERSION" ]; then
+			unset DATE
+			DATE=`date -d "-1 year" +%Y`
+			VERSION=`curl -s https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/ | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
+		fi
 VERSION_=`curl https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION | grep iso | cut -d ">" -f 3 | cut -d "<" -f 1 | head -n 1`
 echo "$VERSION_" | grep iso -q
 if [ $? -ne 0 ]; then
@@ -1505,8 +1510,23 @@ if [ $? -ne 0 ]; then
                 QEMU_SYSTEM
         else
         echo -e "${YELLOW}下载地址链接为\n\n${GREEN}https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION$VERSION_${RES}\n"
-        CONFIRM
+	read -r -p "1)下载 0)返回 " input
+	case $input in
+		1)
 curl -O https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION$VERSION_
+if [ -f $VERSION_ ]; then
+	echo -e "移到/sdcard/xinhao/windows目录中..."
+	mv -v $VERSION_ /sdcard/xinhao/windows
+	if [ -f /sdcard/xinhao/windows/$VERSION_ ]; then
+		echo -e "\n已下载至/sdcard/xinhao/windows/目录"
+		sleep 2
+	fi
+else
+	echo -e "\n${RED}错误，请重试${RES}"
+	sleep 2
+fi ;;
+*) ;;
+esac
 QEMU_SYSTEM
 fi
                 ;;
