@@ -338,6 +338,7 @@ QEMU_ETC() {
 4) 修改源(只适用本脚本下载的系统)
 5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
 6) 获取aspice安卓版下载地址(非永久有效)
+7) 模拟系统的时间不准
 9) 返回
 0) 退出\n"
 	read -r -p "请选择: " input
@@ -498,6 +499,17 @@ fi
 done
 echo -e "\n下载地址\n${GREEN}https://github.com/iiordanov/remote-desktop-clients/releases/download/v5.0.4/$CURL_${RES}\n"
 CONFIRM
+QEMU_ETC ;;
+7) echo -e "\n通常情况下，参数rtc可以解决，但可能由于容器时区问题导致，可通过修改时区来解决\n"
+	read -r -p "1)修改时区 0)返回 " input
+	case $input in
+		1)
+sed -i "/^export TZ=/d" /etc/profile
+sed -i "1i\export TZ='Asia/Shanghai'" /etc/profile
+	echo -e "\n${GREEN}请退出容器返回termux主界面，再重新进入${RES}\n"
+	sleep 2 ;;
+*) ;;
+esac
 QEMU_ETC ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
 esac
@@ -1111,6 +1123,7 @@ read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(测试用) 0)不加载 "
 			3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
                         0) ;;
 			5)
+#adc in dac out				
 #alsa参数			       	
 #延迟timer-period=10000
 #采样率out.frequency=8000
@@ -1118,7 +1131,7 @@ read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(测试用) 0)不加载 "
 #周期长度out.period-length=2500
 #pa参数
 #采样率out.frequency=8000
-			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=4096,out.period-length=1024"
+			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=4104,out.period-length=1024"
 				set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
 			*) set -- "${@}" "-device" "AC97" ;;
                 esac
