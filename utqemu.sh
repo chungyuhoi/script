@@ -8,7 +8,7 @@ echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
 	应用维护项加入最新aspice安卓版下载地址
 	简化参数内容
 	取消tcg缓存设置与usb-audio选项(相关参数在qemu6.0被取消)	
-	qemu5.0版本的声卡选项增加ac97测试项，该选项参数做了调整，如果声音不流畅可尝试该选项
+	qemu5.0版本的声卡选项增加ac97与hda修改参数项，该选项参数做了调整，如果声音不流畅可尝试该选项
 	将qxl显卡选项下的spice传输协议移到spice视频输出选项下(该选项参数需模拟系统安装virtio驱动，能解决win7声音卡顿问题)
 	增加qemu5.0以下版本与5.0相同的一些选项
 	增加qemu5.0以下旧版容器下载，winxp推荐此版本
@@ -612,7 +612,10 @@ $script_name >/dev/null 2>>${HOME}/.utqemu_log
 		fi
 case $ARCH in
 	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
-		read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(测试阶段) 9)返回 0)退出 " input
+		case $SYS in
+			QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 9)返回 0)退出 " input ;;
+			*) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(测试阶段) 9)返回 0)退出 " input
+		esac
 	case $input in
 		1|"") echo -e "\n${BLUE}vnc输出${RES}"
 			display=vnc
@@ -632,7 +635,10 @@ case $input in
 		5) display=wlan_vnc
 			echo -e "\n${GREEN}为减少效率的影响，暂不支持声音输出${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
 			sleep 1 ;;
-		6) echo -e "\n${GREEN}本选项使用常用配置参数\n声卡 winxp为ac97 win7为hda\n网卡 e1000\n显卡 winxp为cirrus win7为VGA\n视频输出 vnc${RES}\n"
+		6) case $SYS in
+			QEMU_PRE) INVALID_INPUT
+			QEMU_SYSTEM ;; 
+		*) echo -e "\n${GREEN}本选项使用常用配置参数${RES}\n声卡 winxp为ac97 win7为hda\n网卡 e1000\n显卡 winxp为cirrus win7为VGA\n视频输出 vnc${RES}\n"
 			mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
 echo -e "请选择拟模拟的系统"
 read -r -p "1)winxp 2)win7 9)返回 " input
@@ -645,7 +651,7 @@ case $input in
 else
 	mem_=512
 fi
-	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}/xinhao/windows/$hda,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback ";;
+	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}/xinhao/windows/$hda,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
 2) echo -e -n "请输镜像全名: "
 	read hda
 	if (( $mem >= 2048 )); then
@@ -659,7 +665,7 @@ elif (( $mem >= 512 )); then
 else
 	mem_=512
 fi
-	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=/sdcard/xinhao/windows/$hda,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	MA=pc VIDEO="-device ati-vga,model=rage128p" DRIVE="-drive id=disk,file=/sdcard/xinhao/windows/$hda,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
 9) QEMU_SYSTEM ;;
 *) INVALID_INPUT
@@ -673,7 +679,8 @@ killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5120,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on >/dev/null 2>>${HOME}/.utqemu_log
 #-drive file=fat:rw:/sdcard/xinhao/share,if=ide,media=disk,aio=threads,cache=writeback
-	QEMU_SYSTEM
+	QEMU_SYSTEM ;;
+esac
 			;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
@@ -1162,7 +1169,7 @@ case $display in
 	wlan_vnc) ;;
 	*)
 echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(测试用) 6)hda(测试用) 0)不加载 " input
+read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数) 6)hda(修改参数) 0)不加载 " input
                         case $input in
                         1) set -- "${@}" "-device" "ES1370" ;;
                         2) set -- "${@}" "-device" "sb16" ;;
