@@ -3,7 +3,8 @@ cd $(dirname $0)
 ####################
 INFO() {
 clear
-echo -e "\n\e[33m更新日期2021.5.29 更新内容\e[0m
+echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
+	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡为ac97，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
 	应用维护项加入最新aspice安卓版下载地址
 	简化参数内容
 	取消tcg缓存设置与usb-audio选项(相关参数在qemu6.0被取消)	
@@ -24,6 +25,7 @@ echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
 	如果模拟效率不佳，请尝试大退到termux主界面，并清设备后台，然后重新启动模拟。
+	xp玩经典游戏(如星际争霸，帝国时代)需使用cirrus显卡才能运行
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功。
 	声音输出（不支持termux与utermux环境，pc建议ac97，q35建议hda）。
@@ -610,7 +612,7 @@ $script_name >/dev/null 2>>${HOME}/.utqemu_log
 		fi
 case $ARCH in
 	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
-		read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 9)返回 0)退出 " input
+		read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(测试阶段) 9)返回 0)退出 " input
 	case $input in
 		1|"") echo -e "\n${BLUE}vnc输出${RES}"
 			display=vnc
@@ -630,6 +632,49 @@ case $input in
 		5) display=wlan_vnc
 			echo -e "\n${GREEN}为减少效率的影响，暂不支持声音输出${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
 			sleep 1 ;;
+		6) echo -e "\n${GREEN}本选项使用常用配置参数，声卡为ac97，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出${RES}\n"
+			mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
+echo -e "\n请选择拟模拟的系统"
+read -r -p "1)winxp 2)win7 9)返回 " input
+case $input in
+1) echo -e "\nqemu5.0以上版本模拟winxp开机比较慢\n"
+	echo -e -n "请输镜像全名: "
+	read hda
+	if (( $mem >= 512 )); then
+	mem_=1024
+else
+	mem_=512
+fi
+	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}/xinhao/windows/$hda,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback ";;
+2) echo -e -n "请输镜像全名: "
+	read hda
+	if (( $mem >= 2048 )); then
+	mem_=3072
+elif (( $mem >= 1536 )); then
+	mem_=2048
+elif (( $mem >= 1024 )); then
+	mem_=1536
+elif (( $mem >= 512 )); then
+	mem_=1024
+else
+	mem_=512
+fi
+	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=/sdcard/xinhao/windows/$hda,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device AC97" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+;;
+9) QEMU_SYSTEM ;;
+*) INVALID_INPUT
+	QEMU_SYSTEM ;;
+esac
+echo "qemu-system-x86_64 -machine $MA,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=4104,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on"
+printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
+printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
+killall -9 qemu-system-x86 2>/dev/null
+killall -9 qemu-system-i38 2>/dev/null
+export PULSE_SERVER=tcp:127.0.0.1:4713
+qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=4104,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on >/dev/null 2>>${HOME}/.utqemu_log
+#-drive file=fat:rw:/sdcard/xinhao/share,if=ide,media=disk,aio=threads,cache=writeback
+	QEMU_SYSTEM
+			;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
 		*) INVALID_INPUT
@@ -716,6 +761,7 @@ esac
 	killall -9 qemu-system-x86 2>/dev/null
 	killall -9 qemu-system-i38 2>/dev/null
 		echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
+#cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
 #vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
 #dump-guest-core=on|off将客户机内存包括在核心转储中，类似于dump日志。默认为开。
@@ -1457,6 +1503,7 @@ esac
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
+	QEMU_SYSTEM
         ;;
 4) WEB_SERVER ;;
 5) VIRTIO ;;
