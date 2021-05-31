@@ -679,7 +679,7 @@ killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5120,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on >/dev/null 2>>${HOME}/.utqemu_log
 #-drive file=fat:rw:/sdcard/xinhao/share,if=ide,media=disk,aio=threads,cache=writeback
-	QEMU_SYSTEM ;;
+	exit 1 ;;
 esac
 			;;
 		9) QEMU_SYSTEM ;;
@@ -1512,7 +1512,7 @@ esac
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
-	QEMU_SYSTEM
+	exit 1
         ;;
 4) WEB_SERVER ;;
 5) VIRTIO ;;
@@ -1652,7 +1652,8 @@ done
 done
 	echo -e "\e[33m即将开机，参数是默认的，开机过程会比较慢，Windows会自动检测fake磁盘，并搜索适配的驱动。如果失败了，前往Device Manager，找到SCSI驱动器（带有感叹号图标，应处于打开状态），点击Update driver并选择虚拟的CD-ROM。不要定位到CD-ROM内的文件夹了，只选择CD-ROM设备就行，Windows会自动找到合适的驱动的。完成后请关机，然后正常启动qemu-system-x86_64(qemu-system-i386)方式并选择磁盘接口virtio。${RES}"
 	CONFIRM
-qemu-system-x86_64 -m 1g -drive file=${DIRECT}/xinhao/windows/$hda_name,if=ide -drive file=${DIRECT}/xinhao/windows/fake.qcow2,if=virtio -cdrom ${DIRECT}/xinhao/windows/$iso_name -vnc :0;;
+qemu-system-x86_64 -m 1g -drive file=${DIRECT}/xinhao/windows/$hda_name,if=ide -drive file=${DIRECT}/xinhao/windows/fake.qcow2,if=virtio -cdrom ${DIRECT}/xinhao/windows/$iso_name -vnc :0 2>>${HOME}/.utqemu_log
+exit 1 ;;
 *)	INVALID_INPUT && VIRTIO
 ;;
 esac ;;
