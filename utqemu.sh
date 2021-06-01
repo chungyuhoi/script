@@ -1051,7 +1051,20 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 		4) set -- "${@}" "-vga" "virtio" ;;
 		*) set -- "${@}" "-vga" "std" ;;
         esac
-	fi
+
+
+	echo -e "请选择${YELLOW}网卡${RES}"
+	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
+	case $input in
+		2) set -- "${@}" "-device" "rtl8139,netdev=user0"
+			set -- "${@}" "-netdev" "user,id=user0" ;;
+		3) set -- "${@}" "-device" "virtio-net-pci,netdev=user0"
+			set -- "${@}" "-netdev" "user,id=user0" ;;
+		0) set -- "${@}" "-net" "none" ;;
+		*)   set -- "${@}" "-device" "e1000,netdev=user0"
+			set -- "${@}" "-netdev" "user,id=user0" ;;
+esac
+else
 ##################
 #PROOT
 #####################
@@ -1073,16 +1086,16 @@ esac
 echo -e "请选择${YELLOW}网卡${RES}"
 read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 case $input in
-	1|"")
-#set -- "${@}" "-net" "nic"
-#set -- "${@}" "-net" "user,smb=${DIRECT}/xinhao"
-	set -- "${@}" "-net" "user"
-		set -- "${@}" "-net" "nic,model=e1000" ;;
 	2) set -- "${@}" "-net" "user"
 		set -- "${@}" "-net" "nic,model=rtl8139" ;;
 	3) set -- "${@}" "-net" "user"
 		set -- "${@}" "-net" "nic,model=virtio" ;;
 	0) set -- "${@}" "-net" "none" ;;
+	*)
+#set -- "${@}" "-net" "nic"
+#set -- "${@}" "-net" "user,smb=${DIRECT}/xinhao"
+set -- "${@}" "-net" "user"
+set -- "${@}" "-net" "nic,model=e1000" ;;
 esac
 case $display in
 	wlan_vnc) ;;
@@ -1157,13 +1170,13 @@ esac
 echo -e "请选择${YELLOW}网卡${RES}"
 read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 case $input in
-	1|"")	set -- "${@}" "-device" "e1000,netdev=user0"
-		set -- "${@}" "-netdev" "user,id=user0" ;;
 	2) set -- "${@}" "-device" "rtl8139,netdev=user0"
 		set -- "${@}" "-netdev" "user,id=user0" ;;
 	3) set -- "${@}" "-device" "virtio-net-pci,netdev=user0"
 		set -- "${@}" "-netdev" "user,id=user0" ;;
 	0) set -- "${@}" "-net" "none" ;;
+	*)   set -- "${@}" "-device" "e1000,netdev=user0"
+		set -- "${@}" "-netdev" "user,id=user0" ;;
 esac
 case $display in
 	wlan_vnc) ;;
@@ -1192,7 +1205,8 @@ read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数) 6)hda(修�
                 esac
 		;;
 esac
-	fi	
+	fi
+	fi
 ####################
 #进阶选项
 
