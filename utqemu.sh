@@ -1,8 +1,9 @@
 #!/data/data/com.termux/files/usr/bin/bash
 cd $(dirname $0)
 ####################
+
 INFO() {
-#clear
+clear
 echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
 	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
 	应用维护项加入最新aspice安卓版下载地址
@@ -20,7 +21,7 @@ echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
 }
 ###################
 NOTE() {
-#clear
+clear
 echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -162,19 +163,28 @@ uname -a | grep 'Android' -q
         fi
 }
 #################
+HDA_READ() {
+	while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
+	do
+		if [ -n "$hda_name" ]; then
+			echo -e "\n${RED}未匹配到镜像，请重试${RES}"
+			sleep 1
+			fi
+			echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（例如andows.img），退出请输${YELLOW}0${RES}，请输入: "
+			read  hda_name
+		done
+		if [ $hda_name == '0' ]; then
+			QEMU_SYSTEM
+			fi
+}
+#################
+LIST() {
+echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
+ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
+sleep 1
+}
+#################
 LOGIN() {
-	if [ -n $DEBIAN ]; then
-		echo ""
-	else
-	echo -e "\n${YELLOW}请选择拟登录的系统${RES}
-	1) 5.0以下版本
-	2）5.0以上版本"
-	read -r -p "请选择: " input
-	case $input in
-		1) DEBIAN=buster ;;
-		2) DEBIAN=bullseye ;;
-	esac
-	fi
 pulseaudio --start & 2>/dev/null
 echo "" &
 unset LD_PRELOAD
@@ -257,7 +267,6 @@ fi
 cp utqemu.sh $sys_name/root/utqemu.sh
 sed -i "s/qemu-system-x86-64-headless/qemu-system-x86 xserver-xorg x11-utils/" $sys_name/root/utqemu.sh
 sed -i 's/qemu-system-i386-headless/-y \&\& apt --reinstall install pulseaudio/' $sys_name/root/utqemu.sh
-#echo "bash utqemu.sh" >>$sys_name/etc/profile
 echo "bash utqemu.sh" >>$sys_name/root/.bashrc
 echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
 sleep 2
@@ -407,8 +416,7 @@ do
 		case $input in
 			1) ;;
 			0) exit 0 ;;
-			*) unset FORMAT_
-				unset FORMAT
+			*) unset FORMAT_ FORMAT
 				QEMU_ETC ;;
 		esac
 		fi
@@ -485,8 +493,7 @@ fi ;;
 fi
 	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
 	CONFIRM
-	unset CURL
-	unset CURL_
+	unset CURL CURL_
 	while ( [ "$CURL" != '0' ] && [[ ! $CURL_ =~ apk ]] )
 do
 	CURL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2 `
@@ -515,8 +522,7 @@ esac
 QEMU_ETC ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
 esac
-	unset FORMAT_
-	unset FORMAT
+	unset FORMAT_ FORMAT
 	QEMU_ETC
 }
 ##################
@@ -645,16 +651,16 @@ echo -e "请选择拟模拟的系统"
 read -r -p "1)winxp 2)win7 9)返回 " input
 case $input in
 1) echo -e "\nqemu5.0以上版本模拟winxp开机比较慢\n"
-	echo -e -n "请输镜像全名: "
-	read hda
+	LIST
+	HDA_READ
 	if (( $mem >= 512 )); then
 	mem_=1024
 else
 	mem_=512
 fi
-	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}/xinhao/windows/$hda,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
-2) echo -e -n "请输镜像全名: "
-	read hda
+	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}/xinhao/windows/$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
+2) 	LIST
+	HDA_READ
 	if (( $mem >= 2048 )); then
 	mem_=3072
 elif (( $mem >= 1536 )); then
@@ -666,7 +672,7 @@ elif (( $mem >= 512 )); then
 else
 	mem_=512
 fi
-	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}/xinhao/windows/$hda,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
 9) QEMU_SYSTEM ;;
 *) INVALID_INPUT
@@ -686,7 +692,6 @@ EOF
 printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
 printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 $START >/dev/null 2>>${HOME}/.utqemu_log
-#-drive file=fat:rw:/sdcard/xinhao/share,if=ide,media=disk,aio=threads,cache=writeback
 	exit 1 ;;
 esac
 			;;
@@ -852,21 +857,8 @@ esac
 		CONFIRM
 		QEMU_SYSTEM
 	fi
-		echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-		ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
-		sleep 1
-while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
-do
-	if [ -n "$hda_name" ]; then
-		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
-		sleep 1
-	fi
-	echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（例如andows.img），退出请输${YELLOW}0${RES}，请输入: "
-	read  hda_name
-done
-	if [ $hda_name == '0' ]; then
-		QEMU_SYSTEM
-	fi
+	LIST
+		HDA_READ
 	case $SYS in
 		QEMU_ADV) 
 			case $QEMU_MODE in
@@ -1674,27 +1666,10 @@ else
 	QEMU_SYSTEM
 	fi
 	fi
-	echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-	ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso"
-	sleep 1
-	while [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ]
-	do
-		if [ -n "$hda_name" ]; then
-		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
-		sleep 1
-	fi
-	echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（例如andows.img）请输入: "
-	read hda_name
-done
-	while [ ! -f "${DIRECT}/xinhao/windows/$iso_name" ]
-	do
-		if [ -n "$iso_name" ]; then
-		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
-		sleep 1
-	fi
+	LIST
+	HDA_READ
 	echo -n -e "请输入${YELLOW}virtio驱动盘${RES}全名,（例如virtio-win-0.1.185.iso）: "
         read iso_name
-done
 	echo -e "\e[33m即将开机，参数是默认的，开机过程会比较慢，Windows会自动检测fake磁盘，并搜索适配的驱动。如果失败了，前往Device Manager，找到SCSI驱动器（带有感叹号图标，应处于打开状态），点击Update driver并选择虚拟的CD-ROM。不要定位到CD-ROM内的文件夹了，只选择CD-ROM设备就行，Windows会自动找到合适的驱动的。完成后请关机，然后正常启动qemu-system-x86_64(qemu-system-i386)方式并选择磁盘接口virtio。${RES}"
 	CONFIRM
 qemu-system-x86_64 -m 1g -drive file=${DIRECT}/xinhao/windows/$hda_name,if=ide -drive file=${DIRECT}/xinhao/windows/fake.qcow2,if=virtio -cdrom ${DIRECT}/xinhao/windows/$iso_name -vnc :0 2>>${HOME}/.utqemu_log
@@ -1709,11 +1684,7 @@ esac ;;
 esac
 }
 ###################
-MAIN() {
-	ARCH_CHECK
-	QEMU_VERSION
-	SYSTEM_CHECK
-	INFO
+LOGIN_() {
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
 	echo -e "\n\e[33m请选择qemu-system-x86的运行环境\e[0m\n
@@ -1754,6 +1725,14 @@ esac
 else
 	QEMU_SYSTEM
 	fi
+}
+####################
+MAIN(){ 
+ARCH_CHECK
+QEMU_VERSION
+SYSTEM_CHECK
+INFO
+LOGIN_
 }
 ####################
 MAIN "$@"
