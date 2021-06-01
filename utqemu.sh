@@ -666,19 +666,26 @@ elif (( $mem >= 512 )); then
 else
 	mem_=512
 fi
-	MA=pc VIDEO="-device ati-vga,model=rage128p" DRIVE="-drive id=disk,file=/sdcard/xinhao/windows/$hda,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}/xinhao/windows/$hda,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
 9) QEMU_SYSTEM ;;
 *) INVALID_INPUT
 	QEMU_SYSTEM ;;
 esac
-echo "qemu-system-x86_64 -machine $MA,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5120,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on"
 printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
 printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
-qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5120,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on >/dev/null 2>>${HOME}/.utqemu_log
+START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on"
+#-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
+
+cat <<-EOF
+$START
+EOF
+printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
+printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
+$START >/dev/null 2>>${HOME}/.utqemu_log
 #-drive file=fat:rw:/sdcard/xinhao/share,if=ide,media=disk,aio=threads,cache=writeback
 	exit 1 ;;
 esac
@@ -792,7 +799,7 @@ read -r -p "1)tcg 2)自动检测 " input
 	case $input in
 		1)
 	set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG" ;;
-	3) if [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
+	3) if [[ $(qemu-system-x86_64 --version) =~ :[4-5] ]] ; then
 		echo -e "${RED}你选了隐藏选项，注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 		read TB
@@ -820,7 +827,7 @@ esac ;;
 read -r -p "1)tcg 2)自动检测 " input
 case $input in
 	1) set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG" ;;
-	3) if [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
+	3) if [[ $(qemu-system-x86_64 --version) =~ :[4-5] ]] ; then
 		echo -e "${RED}你选了隐藏选项，注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 		read TB
@@ -1222,9 +1229,9 @@ read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数) 6)hda(修�
 #周期长度out.period-length=2500
 #pa参数
 #采样率out.frequency=8000
-			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5120,out.period-length=1024"
+			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
 				set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
-			6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5120,out.period-length=1024"
+			6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
 				set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
 			*) set -- "${@}" "-device" "AC97" ;;
                 esac
