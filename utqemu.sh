@@ -2,7 +2,7 @@
 cd $(dirname $0)
 ####################
 INFO() {
-clear
+#clear
 echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
 	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
 	应用维护项加入最新aspice安卓版下载地址
@@ -20,7 +20,7 @@ echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
 }
 ###################
 NOTE() {
-clear
+#clear
 echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -521,6 +521,7 @@ esac
 }
 ##################
 QEMU_SYSTEM() {
+	unset hda_name display hdb_name iso_name iso1_name
 	QEMU_VERSION
 	NOTE
 echo -e "
@@ -777,30 +778,31 @@ esac
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
 MA="usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off"
+TCG="tcg,thread=multi"
 read -r -p "1)pc 2)q35 " input
 		case $input in
 			1|"")
 			case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 case $SYS in
-	QEMU_PRE) set -- "${@}" "-machine" "pc" "--accel" "tcg,thread=multi" ;;
+	QEMU_PRE) set -- "${@}" "-machine" "pc" "--accel" "$TCG" ;;
 	*)
 echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 " input
 	case $input in
 		1)
-	set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
+	set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG" ;;
 	3) if [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
 		echo -e "${RED}你选了隐藏选项，注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 		read TB
 		if [ -n "$TB" ]; then
-		set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$TB"
+		set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "$TCG,tb-size=$TB"
 	else
-		set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi"
+		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
 		fi
 		else
-			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi"
+			set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
 			fi ;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,$MA" ;;
 	esac ;;
@@ -812,22 +814,22 @@ esac ;;
 				case $(dpkg --print-architecture) in
 					arm*|aarch64) 
 						case $SYS in
-							QEMU_PRE) set -- "${@}" "-machine" "q35" "--accel" "tcg,thread=multi" ;;
+							QEMU_PRE) set -- "${@}" "-machine" "q35" "--accel" "$TCG" ;;
 							*)
 						echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 read -r -p "1)tcg 2)自动检测 " input
 case $input in
-	1) set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi" ;;
+	1) set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG" ;;
 	3) if [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
 		echo -e "${RED}你选了隐藏选项，注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 		read TB
 		if [ -n "$TB" ]; then
-			set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$TB"
+			set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "$TCG,tb-size=$TB"
 		else
-			set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi"
+			set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG"
 			fi
-			else                                                            set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi"
+			else                                                            set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
 				fi ;;
 
 	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA" ;;
@@ -1346,7 +1348,6 @@ EOF
 	case $QEMU_MODE in
 		VIRTIO_MODE)
 		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide"
-#		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,if=virtio"
 		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=virtio"
 		set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name" ;;
 		*)
