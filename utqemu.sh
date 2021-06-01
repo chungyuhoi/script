@@ -789,8 +789,19 @@ echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似�
 read -r -p "1)tcg 2)自动检测 " input
 	case $input in
 		1)
-#	set -- "${@}" "-machine" "pc-i440fx-3.1,$MA" "--accel" "tcg,thread=multi" ;;
 	set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi" ;;
+	3) if [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
+		echo -e "${RED}你选了隐藏选项，注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
+		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
+		read TB
+		if [ -n "$TB" ]; then
+		set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$TB"
+	else
+		set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi"
+		fi
+		else
+			set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi"
+			fi ;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,$MA" ;;
 	esac ;;
 esac ;;
@@ -807,6 +818,18 @@ esac ;;
 read -r -p "1)tcg 2)自动检测 " input
 case $input in
 	1) set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi" ;;
+	3) if [[ $(qemu-system-x86_64 --version) =~ :5 ]] ; then
+		echo -e "${RED}你选了隐藏选项，注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
+		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
+		read TB
+		if [ -n "$TB" ]; then
+			set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "tcg,thread=multi,tb-size=$TB"
+		else
+			set -- "${@}" "-machine" "q35,$MA" "--accel" "tcg,thread=multi"
+			fi
+			else                                                            set -- "${@}" "-machine" "pc,$MA" "--accel" "tcg,thread=multi"
+				fi ;;
+
 	*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA" ;;
 esac ;;
 esac ;;
