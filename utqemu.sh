@@ -1040,7 +1040,7 @@ esac
 	uname -a | grep 'Android' -q 
 	if [ $? == 0 ]; then
 echo -e "请选择${YELLOW}显卡${RES}"
-read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
+read -r -p "1)cirrus 2)vmware 3)vga 4)virtio " input
 	case $input in 
 		1) set -- "${@}" "-device" "cirrus-vga" ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
@@ -1048,8 +1048,8 @@ read -r -p "1)cirrus 2)vmware 3)std 4)virtio " input
 				1|"") set -- "${@}" "-device" "vmware-svga" ;;
 				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
 			esac ;;
-		4) set -- "${@}" "-vga" "virtio" ;;
-		*) set -- "${@}" "-vga" "std" ;;
+		4) set -- "${@}" "-device" "virtio-vga" ;;
+		*) set -- "${@}" "-device" "VGA" ;;
         esac
 
 
