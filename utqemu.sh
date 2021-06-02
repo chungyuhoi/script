@@ -41,7 +41,7 @@ else
 }
 ###################
 ABOUT_UTQEMU(){
-	clear
+clear
 printf "%s
 ${YELLOW}关于utqemu脚本${RES}
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n"
@@ -461,24 +461,30 @@ QEMU_ETC
 else
 	read -r -p "1)中科源 2)北外源 9)返回主目录 0)退出 " input
 	case $input in
-		1) if grep -q 'bullseye' /etc/os-release ;then
-			echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >/etc/apt/sources.list
+		1) 
+URL="deb http://mirrors.ustc.edu.cn/debian"
+DEB="main contrib non-free"
+			if grep -q 'bullseye' /etc/os-release ;then
+			echo "${URL} sid ${DEB}" >/etc/apt/sources.list
 		elif grep -q 'buster' /etc/os-release ;then
-			echo "deb http://mirrors.ustc.edu.cn/debian stable main contrib non-free
-deb http://mirrors.ustc.edu.cn/debian stable-updates main contrib non-free" >/etc/apt/sources.list
+			echo "${URL} stable ${DEB}
+${URL} stable-updates ${DEB}" >/etc/apt/sources.list
 		fi
 		sudo_
 	       	$sudo apt update ;;
-		2) if grep -q 'bullseye/sid' /etc/os-release ;then
-			echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian/ bullseye-backports main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >/etc/apt/sources.list
+		2) 
+URL="deb http://mirrors.bfsu.edu.cn/debian"
+DEB="main contrib non-free"
+			if grep -q 'bullseye/sid' /etc/os-release ;then
+			echo "${URL}/ bullseye ${DEB}
+${URL}/ bullseye-updates ${DEB}
+${URL}/ bullseye-backports ${DEB}
+${URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
 elif grep -q 'buster' /etc/os-release ;then
-	echo "deb http://mirrors.bfsu.edu.cn/debian buster main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian buster-updates main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian buster-backports main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian-security buster/updates main contrib non-free" >/etc/apt/sources.list
+	echo "$URL buster ${DEB}
+${URL} buster-updates ${DEB}
+${URL} buster-backports ${DEB}
+${URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 fi
 	sudo_
        	$sudo apt update ;;
@@ -1088,11 +1094,11 @@ set -- "${@}" "-vga" "${VGA_MODEL}"
 
 echo -e "请选择${YELLOW}网卡${RES}"
 read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
-case $input in
-	2) NET_MODEL="nic,model=rtl8139" ;;
-	3) NET_MODEL="nic,model=virtio" ;;
-	0) ;;
-	*) NET_MODEL="nic,model=e1000" ;;
+	case $input in
+		2) NET_MODEL="nic,model=rtl8139" ;;
+		3) NET_MODEL="nic,model=virtio" ;;
+		0) ;;
+		*) NET_MODEL="nic,model=e1000" ;;
 #set -- "${@}" "-net" "nic"
 #set -- "${@}" "-net" "user,smb=${DIRECT}/xinhao"
 esac
