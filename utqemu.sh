@@ -542,7 +542,7 @@ esac
 }
 ##################
 QEMU_SYSTEM() {
-	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL
+	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL
 	QEMU_VERSION
 	NOTE
 echo -e "
@@ -1097,14 +1097,17 @@ set -- "${@}" "-device" "${VGA_MODEL}"
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 	case $input in
-		2) set -- "${@}" "-device" "rtl8139,netdev=user0"
-			set -- "${@}" "-netdev" "user,id=user0" ;;
-		3) set -- "${@}" "-device" "virtio-net-pci,netdev=user0"
-			set -- "${@}" "-netdev" "user,id=user0" ;;
-		0) set -- "${@}" "-net" "none" ;;
-		*)   set -- "${@}" "-device" "e1000,netdev=user0"
-			set -- "${@}" "-netdev" "user,id=user0" ;;
+		2) NET_MODEL=rtl8139,netdev=user0 ;;
+		3) NET_MODEL=virtio-net-pci,netdev=user0 ;;
+		0) ;;
+		*) NET_MODEL=e1000,netdev=user0 ;;
 esac
+if [ -n "${NET_MODEL}" ]; then
+	set -- "${@}" "-device" "${NET_MODEL}"
+	set -- "${@}" "-netdev" "user,id=user0"
+else
+	set -- "${@}" "-net" "none"
+fi
 else
 ##################
 #PROOT
@@ -1128,17 +1131,20 @@ set -- "${@}" "-vga" "${VGA_MODEL}"
 echo -e "请选择${YELLOW}网卡${RES}"
 read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 case $input in
-	2) set -- "${@}" "-net" "user"
-		set -- "${@}" "-net" "nic,model=rtl8139" ;;
-	3) set -- "${@}" "-net" "user"
-		set -- "${@}" "-net" "nic,model=virtio" ;;
-	0) set -- "${@}" "-net" "none" ;;
+	2) NET_MODEL="nic,model=rtl8139" ;;
+	3) NET_MODEL="nic,model=virtio" ;;
+	0) ;;
 	*)
 #set -- "${@}" "-net" "nic"
 #set -- "${@}" "-net" "user,smb=${DIRECT}/xinhao"
-set -- "${@}" "-net" "user"
-set -- "${@}" "-net" "nic,model=e1000" ;;
+NET_MODEL="nic,model=e1000" ;;
 esac
+if [ -n "${NET_MODEL}" ]; then
+	set -- "${@}" "-net" "${NET_MODEL}"
+	set -- "${@}" "-net" "user"
+else
+	set -- "${@}" "-net" "none"
+fi
 case $display in
 	wlan_vnc) ;;
 	*)
@@ -1215,14 +1221,17 @@ esac
 echo -e "请选择${YELLOW}网卡${RES}"
 read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 case $input in
-	2) set -- "${@}" "-device" "rtl8139,netdev=user0"
-		set -- "${@}" "-netdev" "user,id=user0" ;;
-	3) set -- "${@}" "-device" "virtio-net-pci,netdev=user0"
-		set -- "${@}" "-netdev" "user,id=user0" ;;
-	0) set -- "${@}" "-net" "none" ;;
-	*)   set -- "${@}" "-device" "e1000,netdev=user0"
-		set -- "${@}" "-netdev" "user,id=user0" ;;
+	2) NET_MODEL="rtl8139,netdev=user0" ;;
+	3) NET_MODEL="virtio-net-pci,netdev=user0" ;;
+	0) ;;
+	*) NET_MODEL="e1000,netdev=user0" ;;
 esac
+if [ -n "${NET_MODEL}" ]; then
+	set -- "${@}" "-device" "${NET_MODEL}"
+	set -- "${@}" "-netdev" "user,id=user0"
+else
+	set -- "${@}" "-net" "none"
+fi
 case $display in
 	wlan_vnc) ;;
 	*)
