@@ -95,6 +95,13 @@ else
 	fi
 fi
 ####################
+sudo_() {
+	date_t=`date +"%D"`
+if ! grep -q $date_t ".utqemu_log" 2>/dev/null; then
+        $sudo apt update
+	echo $date_t >>.utqemu_log 2>&1
+fi
+}
 if [ `whoami` != "root" ];then
 	sudo="sudo"
 else
@@ -300,7 +307,7 @@ esac
 if [ $? != 0 ]; then
 	echo -e "${YELLOW}检测到你未安装pulseaudio，为保证声音正常输出，将自动安装${RES}"
 	sleep 2
-	apt update && apt install pulseaudio -y
+	pkg update && pkg install pulseaudio -y
 fi
 if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
 then
@@ -313,7 +320,7 @@ sed -i '/exit-idle/d' ${PREFIX}/etc/pulse/daemon.conf
 echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
 fi
 if [ ! $(command -v proot) ]; then
-	apt update && apt install proot -y
+	pkg update && pkg install proot -y
 fi
 	fi
 }
@@ -323,13 +330,15 @@ WEB_SERVER() {
 	if [ $? == 0 ]; then
 		if [ ! $(command -v python) ]; then
 			echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
-			apt update && apt install python -y
+			sudo_
+		       	$sudo apt install python -y
 		fi
 		else
 if [ ! $(command -v python3) ]; then
                 echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
                 sleep 2
-                apt update && $sudo apt install python3 python3-pip -y && mkdir -p /root/.config/pip && echo "[global]
+                sudo_
+	       	$sudo apt install python3 python3-pip -y && mkdir -p /root/.config/pip && echo "[global]
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.conf
         fi
 		fi
@@ -355,7 +364,8 @@ QEMU_ETC() {
 	read -r -p "请选择: " input
 	case $input in
 		1) if [ ! $(command -v qemu-img) ]; then
-			apt update && apt install qemu-img
+			sudo_
+		       	$sudo apt install qemu-img
 		fi
 			echo -e "\n对于普通玩家这两个格式没什么区别，不用纠结"
 			read -r -p "请选择格式 1)qcow2 2)vmdk : " input
@@ -383,7 +393,8 @@ else
 	fi
 	CONFIRM ;;
 2) if [ ! $(command -v qemu-img) ]; then
-	apt update && apt install qemu-img
+	sudo_
+       	$sudo apt install qemu-img
 fi
 	echo ""
 	read -r -p "请选择转换后格式 1)qcow2 2)vmdk : " input
@@ -456,7 +467,8 @@ else
 			echo "deb http://mirrors.ustc.edu.cn/debian stable main contrib non-free
 deb http://mirrors.ustc.edu.cn/debian stable-updates main contrib non-free" >/etc/apt/sources.list
 		fi
-		apt update ;;
+		sudo_
+	       	$sudo apt update ;;
 		2) if grep -q 'bullseye/sid' /etc/os-release ;then
 			echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
@@ -468,7 +480,8 @@ deb http://mirrors.bfsu.edu.cn/debian buster-updates main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian buster-backports main contrib non-free
 deb http://mirrors.bfsu.edu.cn/debian-security buster/updates main contrib non-free" >/etc/apt/sources.list
 fi
-	apt update ;;
+	sudo_
+       	$sudo apt update ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
 		*) INVALID_INPUT && QEMU_ETC ;;
@@ -476,7 +489,8 @@ esac
 fi ;;
 5) echo -e "${GREEN}aqemu是qemu的前端，适用于图形界面下简易配置操作qemu，安装完aqemu，首次启动时请搜索并绑定qemu-system-x86_64${RES}"
 	CONFIRM
-	apt update && $sudo apt install aqemu -y
+	sudo_
+       	$sudo apt install aqemu -y
 	if [ ! $(command -v aqemu ) ]; then
 		echo -e "${RED}安装失败，请重试${RES}"
 		sleep 1
@@ -489,7 +503,8 @@ fi ;;
 6) if [ ! $(command -v curl) ]; then
 	echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
 	sleep 2
-	apt update && apt install curl -y
+	sudo_ 
+	$sudo apt install curl -y
 fi
 	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
 	CONFIRM
@@ -527,7 +542,7 @@ esac
 }
 ##################
 QEMU_SYSTEM() {
-	unset hda_name display hdb_name iso_name iso1_name
+	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL
 	QEMU_VERSION
 	NOTE
 echo -e "
@@ -550,9 +565,11 @@ case $input in
 	sleep 2
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
-	apt update && apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless -y
+	sudo_ 
+	$sudo apt --fix-broken install -y && $sudo apt install qemu-system-x86-64-headless qemu-system-i386-headless -y
 else
-	apt update && $sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio -y
+	sudo_
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio -y
 #apt install samba
 	fi
         QEMU_SYSTEM
@@ -747,7 +764,6 @@ SELECT_EMU() {
                 1) QEMU_SYS=qemu-system-x86_64 ;;
                 2) QEMU_SYS=qemu-system-i386 ;;
 		3) echo -e "\n${GREEN}你选择了磁盘接口virtio驱动安装模式，此模式下的系统磁盘接口为ide，共享文件接口为virtio，请务必准备好virtio驱动光盘\n如启动安装失败，也请在(VIRTIO驱动相关)选项中进行兼容启动安装${RES}"
-#echo -e "${GREEN}你选择了磁盘接口virtio驱动安装模式，此模式下的系统磁盘接口为ide，分区接口为virtio，请务必准备好分区镜像(可为空盘)及virtio驱动光盘\n空盘可在(VIRTIO驱动相关)选项中创建，如启动安装失败，也请在(VIRTIO驱动相关)选项中进行兼容启动安装${RES}"
 			read -r -p "1)继续 9)返回 0)退出 " input
 			case $input in
 				1) QEMU_MODE=VIRTIO_MODE
@@ -889,7 +905,6 @@ esac
 	else
 		case $ARCH in
 			tablet) 
-#				set -- "${@}" "-m" "$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)"
 mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
 if (( $mem >= 2048 )); then
 	set -- "${@}" "-m" "3072"
@@ -957,6 +972,7 @@ fi
 ;;
 		*) ;;
 esac
+#GenuineIntel AuthenticAMD
 	echo -e "是否自定义${YELLOW}逻辑cpu${RES}数量"
 	read -r -p "1)默认配置 2)自定义 " input
 	case $input in
@@ -983,56 +999,56 @@ esac
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
 #部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
         case $input in
-        1) set -- "${@}" "-cpu" "n270"
+        1) CPU_MODEL=n270
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
                 set -- "${@}" "-smp" "2,cores=1,threads=2,sockets=1"
 		fi ;;
-        2) set -- "${@}" "-cpu" "athlon"
+        2) CPU_MODEL=athlon
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
                 set -- "${@}" "-smp" "2,cores=2,threads=1,sockets=1"
 			fi ;;
-        3) set -- "${@}" "-cpu" "pentium2"
+        3) CPU_MODEL=pentium2
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
                 set -- "${@}" "-smp" "1,cores=1,threads=1,sockets=1"
 			fi ;;
-        4) set -- "${@}" "-cpu" "core2duo"
+        4) CPU_MODEL=core2duo
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
                 set -- "${@}" "-smp" "2,cores=2,threads=1,sockets=1"
 		fi ;;
-	5) set -- "${@}" "-cpu" "Skylake-Server-IBRS"
+	5) CPU_MODEL=Skylake-Server-IBRS
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
 		set -- "${@}" "-smp" "4,cores=2,threads=1,sockets=2"
 			fi ;;
-	6) set -- "${@}" "-cpu" "Nehalem-IBRS"
+	6) CPU_MODEL=Nehalem-IBRS
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
 			set -- "${@}" "-smp" "8,cores=8,threads=1,sockets=1"
 			fi ;;
-	7) set -- "${@}" "-cpu" "Opteron_G5"
+	7) CPU_MODEL=Opteron_G5
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
 			set -- "${@}" "-smp" "8,cores=8,threads=1,sockets=1"
 			fi ;;
 	8) case $SYS in
-		QEMU_ADV|ANDROID) set -- "${@}" "-cpu" "Dhyana"
+		QEMU_ADV|ANDROID) CPU_MODEL=Dhyana
 		if [ -n "$_SMP" ]; then
 			set -- "${@}" "-smp" "$_SMP"
 		else
 			set -- "${@}" "-smp" "8,cores=8,threads=1,sockets=1"
 			fi ;;
-		*) set -- "${@}" "-cpu" "max"
+		*) CPU_MODEL=max
 			if [ -n "$CPU" ]; then
 				set -- "${@}" "-smp" "$CPU"
 			else
@@ -1040,25 +1056,26 @@ esac
 				fi ;;
 	esac
 	;;
-	0) set -- "${@}" "-cpu" "max,-hle,-rtm"
+	0) CPU_MODEL=max,-hle,-rtm
 		if [ -n "$CPU" ]; then
 			set -- "${@}" "-smp" "$CPU"
 		else
 			set -- "${@}" "-smp" "4"
 		fi ;;
-	9) set -- "${@}" "-cpu" "max,level=0xd,vendor=GenuineIntel"
+	9) CPU_MODEL=max,level=0xd,vendor=GenuineIntel
 		if [ -n "$CPU" ]; then
 			set -- "${@}" "-smp" "$CPU"
 		else
 		set -- "${@}" "-smp" "4"
 		fi ;;
-        *)      set -- "${@}" "-cpu" "max"
+        *)      CPU_MODEL=max
 		if [ -n "$CPU" ]; then
                 set -- "${@}" "-smp" "$CPU"
 	else
 		set -- "${@}" "-smp" "4"
 		fi ;;
 esac
+	set -- "${@}" "-cpu" "${CPU_MODEL}"
 #####################
 #TERMUX
 	uname -a | grep 'Android' -q 
@@ -1066,16 +1083,16 @@ esac
 echo -e "请选择${YELLOW}显卡${RES}"
 read -r -p "1)cirrus 2)vmware 3)vga 4)virtio " input
 	case $input in 
-		1) set -- "${@}" "-device" "cirrus-vga" ;;
+		1) VGA_MODEL=cirrus-vga ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 			case $input in
-				1|"") set -- "${@}" "-device" "vmware-svga" ;;
-				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
+				1|"") VGA_MODEL=vmware-svga ;;
+				*) VGA_MODEL=vmware-svga,vgamem_mb=512 ;;
 			esac ;;
-		4) set -- "${@}" "-device" "virtio-vga" ;;
-		*) set -- "${@}" "-device" "VGA" ;;
+		4) VGA_MODEL=virtio-vga ;;
+		*) VGA_MODEL=VGA ;;
         esac
-
+set -- "${@}" "-device" "${VGA_MODEL}"
 
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
@@ -1098,12 +1115,13 @@ else
 echo -e "请选择${YELLOW}显卡${RES}"
 	read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
         case $input in
-                1) set -- "${@}" "-vga" "cirrus" ;;
-                2) set -- "${@}" "-vga" "vmware" ;;
-		4) set -- "${@}" "-vga" "virtio" ;;
-		5) set -- "${@}" "-vga" "qxl" ;;
-		*) set -- "${@}" "-vga" "std" ;;
+                1) VGA_MODEL=cirrus ;;
+                2) VGA_MODEL=vmware ;;
+		4) VGA_MODEL=virtio ;;
+		5) VGA_MODEL=qxl ;;
+		*) VGA_MODEL=std ;;
 esac
+set -- "${@}" "-vga" "${VGA_MODEL}"
 #内存锁，默认打开
 		set -- "${@}" "-realtime" "mlock=off"
 
@@ -1127,13 +1145,14 @@ case $display in
 			echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
 			read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
                         case $input in
-                1|"") set -- "${@}" "-soundhw" "ac97" ;;
-                2) set -- "${@}" "-soundhw" "sb16" ;;
+                1|"") SOUND_MODEL=ac97 ;;
+                2) SOUND_MODEL=sb16 ;;
                 0) ;;
-                3) set -- "${@}" "-soundhw" "es1370" ;;
-		4) set -- "${@}" "-soundhw" "hda" ;;
-		*) set -- "${@}" "-soundhw" "all" ;;
+                3) SOUND_MODEL=es1370 ;;
+		4) SOUND_MODEL=hda ;;
+		*) SOUND_MODEL=all ;;
 esac
+set -- "${@}" "-soundhw" "${SOUND_MODEL}"
 ;;
 esac
         else
@@ -1177,7 +1196,7 @@ read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 					esac ;;
 			esac ;;
 		5) set -- "${@}" "-device" "qxl-vga"
-cat >/dev/null <<EOF
+: <<\EOF
 set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
 #set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
 set -- "${@}" "-device" "ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on"
@@ -1602,7 +1621,8 @@ case $input in
 	1) if [ ! $(command -v curl) ]; then
 		echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
 		sleep 2
-		apt update && apt install curl -y
+		sudo_
+	       	$sudo apt install curl -y
 	fi
 		echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
 		DATE=`date +"%Y"`
