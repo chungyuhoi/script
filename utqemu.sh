@@ -706,7 +706,7 @@ printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
-START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on"
+START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=8004,out.period-length=1020 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on"
 #-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
 
 cat <<-EOF
@@ -1209,14 +1209,14 @@ read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数) 6)hda(修�
 #adc in dac out				
 #alsa参数			       	
 #延迟timer-period=10000
-#采样率out.frequency=8000
+#采样率out.frequency=5124
 #缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
-#周期长度out.period-length=2500
+#周期长度out.period-length=1024
 #pa参数
 #采样率out.frequency=8000
-			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=8004,out.period-length=1020"
 				set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
-			6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+			6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=8004,out.period-length=1020"
 				set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
 			*) set -- "${@}" "-device" "AC97" ;;
                 esac
