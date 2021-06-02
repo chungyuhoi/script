@@ -1152,7 +1152,9 @@ case $display in
 		4) SOUND_MODEL=hda ;;
 		*) SOUND_MODEL=all ;;
 esac
+if [ -n "${SOUND_MODEL}" ]; then
 set -- "${@}" "-soundhw" "${SOUND_MODEL}"
+fi
 ;;
 esac
         else
