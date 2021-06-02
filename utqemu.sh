@@ -548,7 +548,7 @@ esac
 }
 ##################
 QEMU_SYSTEM() {
-	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL
+	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP
 	QEMU_VERSION
 	NOTE
 echo -e "
@@ -1023,13 +1023,17 @@ esac
 		QEMU_ADV|ANDROID) CPU_MODEL=Dhyana
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 		*) CPU_MODEL=max
+			unset _SMP
 			SMP_=4 ;;
 	esac ;;
 	0) CPU_MODEL="max,-hle,-rtm"
+		unset _SMP
 		SMP_=4 ;;
 	9) CPU_MODEL="max,level=0xd,vendor=GenuineIntel"
+		unset _SMP
 		SMP_=4 ;;
         *)      CPU_MODEL=max
+		unset _SMP
 		SMP_=4 ;;
 esac
 	set -- "${@}" "-cpu" "${CPU_MODEL}"
