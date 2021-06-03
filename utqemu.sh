@@ -7,15 +7,7 @@ INFO() {
 echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
 	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
 	应用维护项加入最新aspice安卓版下载地址
-	简化参数内容
-	取消tcg缓存设置与usb-audio选项(相关参数在qemu6.0被取消)	
 	qemu5.0版本的声卡选项增加ac97与hda修改参数项，该选项参数做了调整，如果声音不流畅可尝试该选项
-	将qxl显卡选项下的spice传输协议移到spice视频输出选项下(该选项参数需模拟系统安装virtio驱动，能解决win7声音卡顿问题)
-	增加qemu5.0以下版本与5.0相同的一些选项
-	增加qemu5.0以下旧版容器下载，winxp推荐此版本
-	取消默认加载共享文件夹，可在进阶选项中选择加载
-	增加独立系统(容器)支持多架构下载，由原来的arm64,aarch64增加amd64,i386,armhf,armel等架构，新增架构目前只测试过i386，其他架构有待验证
-	简化磁盘接口virtio驱动安装模式，无需创建加载分区，默认为共享文件夹
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -176,6 +168,7 @@ else
 			fi ;;
 		*) echo -e "${RED}不支持你设备的架构${RES}" ;;
 esac
+STORAGE=/xinhao/windows/
 }
 ####################
 ####################
@@ -193,7 +186,7 @@ uname -a | grep 'Android' -q
 }
 #################
 HDA_READ() {
-	while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$hda_name" ] )
+	while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}${STORAGE}$hda_name" ] )
 	do
 		if [ -n "$hda_name" ]; then
 			echo -e "\n${RED}未匹配到镜像，请重试${RES}"
@@ -209,7 +202,7 @@ HDA_READ() {
 #################
 LIST() {
 echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-ls ${DIRECT}/xinhao/windows | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
+ls ${DIRECT}${STORAGE} | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
 sleep 1
 }
 #################
@@ -407,8 +400,8 @@ QEMU_ETC() {
 done
 echo -n "请输入你拟创建的磁盘容量，以G为单位(例如4g则输4): "
 	read capacity
-	qemu-img create -f $FORMAT ${DIRECT}/xinhao/windows/${disk_name}.$FORMAT ${capacity}G
-	if [ -f ${DIRECT}/xinhao/windows/${disk_name}.$FORMAT ]; then
+	qemu-img create -f $FORMAT ${DIRECT}${STORAGE}${disk_name}.$FORMAT ${capacity}G
+	if [ -f ${DIRECT}${STORAGE}${disk_name}.$FORMAT ]; then
 	echo -e "${GREEN}已为你创建$FORMAT格式磁盘${disk_name}.$FORMAT 容量${capacity}G，仍需你登录系统，在控制面板通过磁盘管理进行格式化并分区方可正常使用${RES}"
 else
 	echo -e "${RED}创建失败，请重试${RES}"
@@ -429,9 +422,9 @@ fi
 		QEMU_ETC ;;
 esac
 echo -e "\n已为你列出镜像文件夹中的文件（仅供参考）\n"
-ls ${DIRECT}/xinhao/windows
+ls ${DIRECT}${STORAGE}
 sleep 1
-	while ( [ "$FORMAT_" != '0' ] && [ ! -f "${DIRECT}/xinhao/windows/$FORMAT_" ] ) 
+	while ( [ "$FORMAT_" != '0' ] && [ ! -f "${DIRECT}${STORAGE}$FORMAT_" ] ) 
 do
 	if [ -n "$FORMAT_" ]; then
 		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
@@ -443,7 +436,7 @@ do
 	if [ $FORMAT_ == '0' ]; then
 		exit 0
 	fi
-	if [ -f ${DIRECT}/xinhao/windows/${FORMAT_%%.*}.$FORMAT ]; then
+	if [ -f ${DIRECT}${STORAGE}${FORMAT_%%.*}.$FORMAT ]; then
 		echo -e "\n${RED}检测到目录下已有转换后同名文件名，请确认，以免造成误操作${RES}"
 		read -r -p "1)继续 9)返回 0)退出 " input
 		case $input in
@@ -455,10 +448,10 @@ do
 		fi
 	echo -e "\e[33m转换过程需要点时间，请耐心等待...${RES}"
 	case "${FORMAT_##*.}" in
-		img) qemu-img convert -f raw -O $FORMAT ${DIRECT}/xinhao/windows/$FORMAT_ ${DIRECT}/xinhao/windows/${FORMAT_%%.*}.$FORMAT ;;
-		*) qemu-img convert -f "${FORMAT_##*.}" ${DIRECT}/xinhao/windows/$FORMAT_ -O $FORMAT ${DIRECT}/xinhao/windows/${FORMAT_%%.*}.$FORMAT ;;
+		img) qemu-img convert -f raw -O $FORMAT ${DIRECT}${STORAGE}$FORMAT_ ${DIRECT}${STORAGE}${FORMAT_%%.*}.$FORMAT ;;
+		*) qemu-img convert -f "${FORMAT_##*.}" ${DIRECT}${STORAGE}$FORMAT_ -O $FORMAT ${DIRECT}${STORAGE}${FORMAT_%%.*}.$FORMAT ;;
 	esac
-	if [ -f ${DIRECT}/xinhao/windows/${FORMAT_%%.*}.$FORMAT ]; then
+	if [ -f ${DIRECT}${STORAGE}${FORMAT_%%.*}.$FORMAT ]; then
 		echo -e "\n${GREEN}已转换，${FORMAT_%%.*}.$FORMAT${RES}\n"
 	else
 		echo -e "\n${RED}转换失败${RES}\n"
@@ -603,13 +596,13 @@ else
 	ln  -s /root/sd /sdcard
 fi
 	echo -e "创建windows镜像目录及共享目录\n"
-        if [ ! -e "${DIRECT}/xinhao/windows" ]; then
-                mkdir -p ${DIRECT}/xinhao/windows
+        if [ ! -e "${DIRECT}${STORAGE}" ]; then
+                mkdir -p ${DIRECT}${STORAGE}
         fi
         if [ ! -e "${DIRECT}/xinhao/share/" ]; then
                 mkdir -p ${DIRECT}/xinhao/share
         fi
-        if [ ! -e "${DIRECT}/xinhao/windows" ]; then        
+        if [ ! -e "${DIRECT}${STORAGE}" ]; then        
 	echo -e "${RED}创建目录失败${RES}"
         else
                 echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
@@ -622,7 +615,7 @@ fi
 	sleep 2
 	QEMU_SYSTEM
 fi
-	if [ ! -d /sdcard/xinhao ]; then
+	if [ ! -d ${DIRECT}/xinhao ]; then
 		echo -e "\n${RED}未检测到你的镜像目录，请确认已赋予手机存储权限并创建镜像目录${RES}"
 		CONFIRM
 fi
@@ -700,10 +693,10 @@ case $input in
 else
 	mem_=512
 fi
-	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}/xinhao/windows/$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
+	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
 2) 	LIST
 	HDA_READ
-	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
 9) QEMU_SYSTEM ;;
 *) INVALID_INPUT
@@ -802,8 +795,8 @@ SELECT_EMU() {
 	esac
 	case $ARCH in
 		tablet)
-	echo -e "\n${GREEN}请确认系统镜像已放入手机目录/xinhao/windows里${RES}\n" ;;
-*) echo -e "\n${GREEN}请确认系统镜像已放入目录/xinhao/windows里${RES}\n" ;;
+	echo -e "\n${GREEN}请确认系统镜像已放入手机目录${STORAGE}里${RES}\n" ;;
+*) echo -e "\n${GREEN}请确认系统镜像已放入目录${STORAGE}里${RES}\n" ;;
 esac
 	sleep 1
 #       pkill -9 qemu-system-x86
@@ -882,7 +875,7 @@ esac ;;
 ;;
 		esac ;;
 esac
-	if [ ! -d "${DIRECT}/xinhao/windows/" ];then
+	if [ ! -d "${DIRECT}${STORAGE}" ];then
 		echo -e "${RED}未获取到镜像目录，请确认已创建镜像目录${RES}\n"
 		CONFIRM
 		QEMU_SYSTEM
@@ -942,7 +935,7 @@ esac
 #qemu monitor protocol协议，对qemu虚拟机进行交互
 #	set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
 #使用bios配置
-#	set -- "${@}" "-L" "${DIRECT}/xinhao/windows/"
+#	set -- "${@}" "-L" "${DIRECT}${STORAGE}"
 #使用bzImage内核镜像
 #	set -- "${@}" "-kernel" "bzImage"
 #使用cmdline作为内核命令行
@@ -1234,10 +1227,10 @@ esac
 echo -e "是否加载${YELLOW}UEFI${RES}"
 read -r -p "1)加载 2)不加载 " input
 case $input in
-	1) echo -n -e "请确认UEFI已放进xinhao/windows文件夹内，输入UEFI全名(例如OVMF_CODE.fd)，使用qemu的默认UEFI请直接回车 "
+	1) echo -n -e "请确认UEFI已放进${STORAGE}文件夹内，输入UEFI全名(例如OVMF_CODE.fd)，使用qemu的默认UEFI请直接回车 "
 	read UEFI
 	if [ -n "$UEFI" ]; then
-		set -- "${@}" "-pflash" "${DIRECT}/xinhao/windows/$UEFI"
+		set -- "${@}" "-pflash" "${DIRECT}${STORAGE}$UEFI"
 	else
 		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_CODE.fd"
 		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_VARS.fd"
@@ -1323,9 +1316,9 @@ id=NAME：设置该驱动器的id，这个id可以在qemu monitor中用info bloc
 EOF
 	case $QEMU_MODE in
 		VIRTIO_MODE)
-		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide"
 		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=virtio"
-		set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name" ;;
+		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso_name" ;;
 		*)
 		echo -e "\n请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
 		read -r -p "1)ide 2)sata 3)virtio 4)测试用(勿选) " input
@@ -1333,18 +1326,18 @@ EOF
 ##################
 #IDE			
 			1)
-		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,if=ide,index=0,media=disk,aio=threads,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=none"
 		if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
 		fi
 		if [ -n "$iso1_name" ]; then
-			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
+			set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
 		if [ -n "$iso_name" ]; then 
-		       set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,if=ide,media=cdrom"
+		       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom"
 		fi
 	else
 		if [ -n "$iso_name" ]; then
-			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,if=ide,index=2,media=cdrom"
+			set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,index=2,media=cdrom"
 		fi
 		fi
 		case $SHARE in
@@ -1357,19 +1350,19 @@ EOF
 
 ##################
 #SATA        
-		set -- "${@}" "-drive" "id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none"
+		set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none"
 		set -- "${@}" "-device" "ahci,id=ahci"
 		set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
 
 		if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}/xinhao/windows/$hdb_name,if=none"
+		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none"
 		set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
 		fi
 		if [ -n "$iso1_name" ]; then
-			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
+			set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
 		fi
 		if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}/xinhao/windows/$iso_name,if=none"     
+		set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}${STORAGE}$iso_name,if=none"     
 		set -- "${@}" "-device" "ide-cd,drive=cdrom,bus=ahci.2"
 		fi
 		case $SHARE in
@@ -1382,18 +1375,18 @@ esac ;;
 ##################
 #VIRTIO
 
-	3) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk,if=virtio"
+	3) set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio"
 if [ -n "$hdb_name" ]; then
-			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk,if=virtio"
+			set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk,if=virtio"
 		fi
 		if [ -n "$iso1_name" ]; then
-			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso1_name"
+			set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
 			if [ -n "$iso_name" ]; then
-				set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,media=cdrom"
+				set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,media=cdrom"
 			fi
 		else
 		if [ -n "$iso_name" ]; then
-			set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,index=2,media=cdrom"
+			set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,index=2,media=cdrom"
 		fi
 		fi
 		case $SHARE in
@@ -1408,12 +1401,12 @@ if [ -n "$hdb_name" ]; then
 		esac ;;
 ##################
 #test
-	4) set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hda_name,index=0,media=disk"
+	4) set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk"
 if [ -n "$hdb_name" ]; then
-	set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$hdb_name,index=1,media=disk"
+	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk"
 	fi
 	if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}/xinhao/windows/$iso_name,index=2,media=cdrom"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,index=2,media=cdrom"
 	fi
 	case $SHARE in
 		true)
@@ -1423,12 +1416,12 @@ esac
 				;;
 ##################
 #hda
-		*) set -- "${@}" "-hda" "${DIRECT}/xinhao/windows/$hda_name" 
+		*) set -- "${@}" "-hda" "${DIRECT}${STORAGE}$hda_name" 
 	if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-hdb" "${DIRECT}/xinhao/windows/$hdb_name"
+		set -- "${@}" "-hdb" "${DIRECT}${STORAGE}$hdb_name"
 		fi
 		if [ -n "$iso_name" ]; then
-			set -- "${@}" "-cdrom" "${DIRECT}/xinhao/windows/$iso_name"
+			set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso_name"
 			fi
 			case $SHARE in
 				true)
@@ -1598,10 +1591,10 @@ if [ $? -ne 0 ]; then
 		1)
 curl -O ${FED_CURL}$VERSION$VERSION_
 if [ -f $VERSION_ ]; then
-	echo -e "移到/sdcard/xinhao/windows目录中..."
-	mv -v $VERSION_ /sdcard/xinhao/windows
-	if [ -f /sdcard/xinhao/windows/$VERSION_ ]; then
-		echo -e "\n已下载至/sdcard/xinhao/windows/目录"
+	echo -e "移到${DIRECT}${STORAGE}目录中..."
+	mv -v $VERSION_ ${DIRECT}${STORAGE}
+	if [ -f ${DIRECT}${STORAGE}$VERSION_ ]; then
+		echo -e "\n已下载至${DIRECT}${STORAGE}目录"
 		sleep 2
 	fi
 else
@@ -1616,9 +1609,9 @@ fi
 
 	2) case $SYS in
 		QEMU_ADV)
-		echo -e "\n${GREEN}本次操作默认vnc输出，地址127.0.0.1:0\n请确认系统镜像与virtio驱动盘已放入手机目录/xinhao/windows里${RES}"
+		echo -e "\n${GREEN}本次操作默认vnc输出，地址127.0.0.1:0\n请确认系统镜像与virtio驱动盘已放入手机目录${STORAGE}里${RES}"
 	CONFIRM
-	if [ ! -e "${DIRECT}/xinhao/windows" ]; then
+	if [ ! -e "${DIRECT}${STORAGE}" ]; then
 		echo -e "\n${RED}请选创建windows镜像目录及共享目录，并把系统镜像与驱动盘放入该目录${RES}\n"
 		sleep 2
 		QEMU_SYSTEM
@@ -1627,11 +1620,11 @@ killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 #	pkill -9 qemu-system-x86
 #	pkill -9 qemu-system-i38
-	if [ ! -e "${DIRECT}/xinhao/windows/fake.qcow2" ]; then
+	if [ ! -e "${DIRECT}${STORAGE}fake.qcow2" ]; then
 	echo -e "\n将为你创建一个新的磁盘镜像，用于搜索virtio驱动\n"
 	sleep 2
-	qemu-img create -f qcow2 ${DIRECT}/xinhao/windows/fake.qcow2 1G 2>/dev/null
-	if [ -e "${DIRECT}/xinhao/windows/fake.qcow2" ]; then
+	qemu-img create -f qcow2 ${DIRECT}${STORAGE}fake.qcow2 1G 2>/dev/null
+	if [ -e "${DIRECT}${STORAGE}fake.qcow2" ]; then
 	echo -e "\n${GREEN}已创建fake.qcow2磁盘镜像${RES}"
 else
 	echo -e "创建失败，请重试"
@@ -1645,7 +1638,7 @@ else
         read iso_name
 	echo -e "\e[33m即将开机，参数是默认的，开机过程会比较慢，Windows会自动检测fake磁盘，并搜索适配的驱动。如果失败了，前往Device Manager，找到SCSI驱动器（带有感叹号图标，应处于打开状态），点击Update driver并选择虚拟的CD-ROM。不要定位到CD-ROM内的文件夹了，只选择CD-ROM设备就行，Windows会自动找到合适的驱动的。完成后请关机，然后正常启动qemu-system-x86_64(qemu-system-i386)方式并选择磁盘接口virtio。${RES}"
 	CONFIRM
-qemu-system-x86_64 -m 1g -drive file=${DIRECT}/xinhao/windows/$hda_name,if=ide -drive file=${DIRECT}/xinhao/windows/fake.qcow2,if=virtio -cdrom ${DIRECT}/xinhao/windows/$iso_name -vnc :0 2>>${HOME}/.utqemu_log
+qemu-system-x86_64 -m 1g -drive file=${DIRECT}${STORAGE}$hda_name,if=ide -drive file=${DIRECT}${STORAGE}fake.qcow2,if=virtio -cdrom ${DIRECT}${STORAGE}$iso_name -vnc :0 2>>${HOME}/.utqemu_log
 exit 1 ;;
 *)	INVALID_INPUT && VIRTIO
 ;;
