@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 
 INFO() {
-clear
+#clear
 echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
 	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
 	应用维护项加入最新aspice安卓版下载地址
@@ -21,7 +21,7 @@ echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
 }
 ###################
 NOTE() {
-clear
+#clear
 echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -107,6 +107,28 @@ if [ `whoami` != "root" ];then
 else
 	sudo=""
 fi
+####################
+BF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/"
+BF_URL="deb http://mirrors.bfsu.edu.cn/debian"
+DEB="main contrib non-free"
+####################
+MEM() {
+case $ARCH in
+	tablet) mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1) ;;
+	*) mem=$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1) ;;
+esac
+if (( $mem >= 2048 )); then
+	mem_=3072
+elif (( $mem >= 1536 )); then
+	mem_=2048
+elif (( $mem >= 1024 )); then
+	mem_=1536
+elif (( $mem >= 512 )); then
+	mem_=1024
+else
+	mem_=512
+fi
+}
 ####################
 INVALID_INPUT() {
 	echo -e "\n${RED}重入无效，请重新输入${RES}" \\n
@@ -223,15 +245,15 @@ SYS_DOWN() {
 	sleep 2
 case $(dpkg --print-architecture) in
 	arm64|aarch*)
-                DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/arm64/default/" ;;
+                DEF_CUR="${BF_CUR}${DEBIAN}/arm64/default/" ;;
 	x86_64|amd64)
-		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/amd64/default/" ;;
+		DEF_CUR="${BF_CUR}${DEBIAN}/amd64/default/" ;;
 	i*86|x86)
-		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/i386/default/" ;;
+		DEF_CUR="${BF_CUR}${DEBIAN}/i386/default/" ;;
 	armv7*|armv8l)
-		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/armhf/default/" ;;
+		DEF_CUR="${BF_CUR}${DEBIAN}/armhf/default/" ;;
 	armv6*|armv5*)
-		DEF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/$DEBIAN/armel/default/" ;;
+		DEF_CUR="${BF_CUR}${DEBIAN}/armel/default/" ;;
 		esac
 		BAGNAME="rootfs.tar.xz"
         if [ -e ${BAGNAME} ]; then
@@ -473,18 +495,16 @@ ${URL} stable-updates ${DEB}" >/etc/apt/sources.list
 		sudo_
 	       	$sudo apt update ;;
 		2) 
-URL="deb http://mirrors.bfsu.edu.cn/debian"
-DEB="main contrib non-free"
 			if grep -q 'bullseye/sid' /etc/os-release ;then
-			echo "${URL}/ bullseye ${DEB}
-${URL}/ bullseye-updates ${DEB}
-${URL}/ bullseye-backports ${DEB}
-${URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
+			echo "${BF_URL}/ bullseye ${DEB}
+${BF_URL}/ bullseye-updates ${DEB}
+${BF_URL}/ bullseye-backports ${DEB}
+${BF_URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
 elif grep -q 'buster' /etc/os-release ;then
-	echo "$URL buster ${DEB}
-${URL} buster-updates ${DEB}
-${URL} buster-backports ${DEB}
-${URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
+	echo "$BF_URL buster ${DEB}
+${BF_URL} buster-updates ${DEB}
+${BF_URL} buster-backports ${DEB}
+${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 fi
 	sudo_
        	$sudo apt update ;;
@@ -514,12 +534,11 @@ fi ;;
 fi
 	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
 	CONFIRM
-	unset CURL CURL_
-	while ( [ "$CURL" != '0' ] && [[ ! $CURL_ =~ apk ]] )
+	while ( [ "$SPI_URL" != '0' ] && [[ ! $SPI_URL_ =~ apk ]] )
 do
-	CURL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2 `
-CURL_=`curl --connect-timeout 5 -m 8 https://github.com$CURL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
-if [[ ! $CURL_ =~ apk ]]; then
+	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2 `
+SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
+if [[ ! $SPI_URL_ =~ apk ]]; then
 read -r -p "获取失败，重试请回车，退出请输0 " input
 case $input in
 	0) QEMU_ETC ;;
@@ -527,7 +546,7 @@ case $input in
 esac
 fi
 done
-echo -e "\n下载地址\n${GREEN}https://github.com/iiordanov/remote-desktop-clients/releases/download/v5.0.4/$CURL_${RES}\n"
+echo -e "\n下载地址\n${GREEN}https://github.com/$SPI_URL_/$SPI_URL_${RES}\n"
 CONFIRM
 QEMU_ETC ;;
 7) echo -e "\n通常情况下，参数rtc可以解决，但可能由于容器时区问题导致，可通过修改时区来解决\n"
@@ -548,7 +567,7 @@ esac
 }
 ##################
 QEMU_SYSTEM() {
-	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP
+	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP CURL
 	QEMU_VERSION
 	NOTE
 echo -e "
@@ -684,17 +703,6 @@ fi
 	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}/xinhao/windows/$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
 2) 	LIST
 	HDA_READ
-	if (( $mem >= 2048 )); then
-	mem_=3072
-elif (( $mem >= 1536 )); then
-	mem_=2048
-elif (( $mem >= 1024 )); then
-	mem_=1536
-elif (( $mem >= 512 )); then
-	mem_=1024
-else
-	mem_=512
-fi
 	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}/xinhao/windows/$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
 9) QEMU_SYSTEM ;;
@@ -831,7 +839,7 @@ read -r -p "1)tcg 2)自动检测 " input
 		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 		read TB
 		if [ -n "$TB" ]; then
-		set -- "${@}" "-machine" "pc,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "$TCG,tb-size=$TB"
+		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG,tb-size=$TB"
 	else
 		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
 		fi
@@ -859,7 +867,7 @@ case $input in
 		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 		read TB
 		if [ -n "$TB" ]; then
-			set -- "${@}" "-machine" "q35,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off" "--accel" "$TCG,tb-size=$TB"
+			set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG,tb-size=$TB"
 		else
 			set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG"
 			fi
@@ -909,35 +917,7 @@ esac
 	if [ -n "$mem" ]; then
 		set -- "${@}" "-m" "$mem"
 	else
-		case $ARCH in
-			tablet) 
-mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
-if (( $mem >= 2048 )); then
-	set -- "${@}" "-m" "3072"
-elif (( $mem >= 1536 )); then
-	set -- "${@}" "-m" "2048"
-elif (( $mem >= 1024 )); then
-	set -- "${@}" "-m" "1536"
-	elif (( $mem >= 512 )); then
-		set -- "${@}" "-m" "1024"
-	else set -- "${@}" "-m" "512"
-fi
-	;;
-			*) 
-#				set -- "${@}" "-m" "$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1)"
-mem=$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1)
-if (( $mem >= 2048 )); then
-	set -- "${@}" "-m" "3072"
-elif (( $mem >= 1536 )); then
-	set -- "${@}" "-m" "2048"
-elif (( $mem >= 1024 )); then
-	set -- "${@}" "-m" "1536"
-elif (( $mem >= 512 )); then
-	set -- "${@}" "-m" "1024"
-else set -- "${@}" "-m" "512"
-fi
-;;
-		esac
+		set -- "${@}" "-m" "$mem_"
 	fi
 
 
@@ -1292,7 +1272,7 @@ case $(dpkg --print-architecture) in
 			mktemp -t hugepages.XXX
   			fi
 			HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
-			set -- "${@}" "-mem-path" "$HUGEPAGES"
+#			set -- "${@}" "-mem-path" "$HUGEPAGES,share=yes,size=4294967296"
 			set -- "${@}" "-mem-prealloc" ;;
 			*)	esac ;;
 esac
@@ -1498,8 +1478,6 @@ esac ;;
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
-#pkill -9 qemu-system-x86
-#pkill -9 qemu-system-i38
 export PULSE_SERVER=tcp:127.0.0.1:4713
 export DISPLAY=127.0.0.1:0
 ${@}
@@ -1509,8 +1487,6 @@ EOF
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
-#pkill -9 qemu-system-x86
-#pkill -9 qemu-system-i38
 export PULSE_SERVER=tcp:127.0.0.1:4713
 ${@}
 EOF
@@ -1519,8 +1495,6 @@ EOF
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
-#pkill -9 qemu-system-x86
-#pkill -9 qemu-system-i38
 ${@}
 EOF
 ;;
@@ -1603,25 +1577,26 @@ case $input in
 	       	$sudo apt install curl -y
 	fi
 		echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
-		DATE=`date +"%Y"`
-		VERSION=`curl -s https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/ | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
-	       	if [ ! -n "$VERSION" ]; then
-			unset DATE
-			DATE=`date -d "-1 year" +%Y`
-			VERSION=`curl -s https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/ | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
-		fi
-VERSION_=`curl https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION | grep iso | cut -d ">" -f 3 | cut -d "<" -f 1 | head -n 1`
+DATE=`date +"%Y"`
+FED_CURL="https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/"
+VERSION=`curl -s ${FED_CURL} | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
+	if [ ! -n "$VERSION" ]; then
+		unset DATE
+		DATE=`date -d "-1 year" +%Y`
+		VERSION=`curl -s ${FED_CURL} | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
+	fi
+VERSION_=`curl ${FED_CURL}$VERSION | grep iso | cut -d ">" -f 3 | cut -d "<" -f 1 | head -n 1`
 echo "$VERSION_" | grep iso -q
 if [ $? -ne 0 ]; then
 	echo -e "${RED}无法连接地址${RES}"
 	sleep 2
                 QEMU_SYSTEM
         else
-        echo -e "${YELLOW}下载地址链接为\n\n${GREEN}https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION$VERSION_${RES}\n"
+        echo -e "${YELLOW}下载地址链接为\n\n${GREEN}${FED_CURL}$VERSION$VERSION_${RES}\n"
 	read -r -p "1)下载 0)返回 " input
 	case $input in
 		1)
-curl -O https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/$VERSION$VERSION_
+curl -O ${FED_CURL}$VERSION$VERSION_
 if [ -f $VERSION_ ]; then
 	echo -e "移到/sdcard/xinhao/windows目录中..."
 	mv -v $VERSION_ /sdcard/xinhao/windows
@@ -1727,6 +1702,7 @@ else
 ####################
 MAIN(){ 
 ARCH_CHECK
+MEM
 QEMU_VERSION
 SYSTEM_CHECK
 INFO
