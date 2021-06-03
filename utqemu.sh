@@ -102,6 +102,7 @@ fi
 ####################
 BF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/"
 BF_URL="deb http://mirrors.bfsu.edu.cn/debian"
+US_URL="deb http://mirrors.ustc.edu.cn/debian"
 DEB="main contrib non-free"
 ####################
 MEM() {
@@ -273,15 +274,15 @@ echo -e "${BLUE}正在解压系统包${RES}"
 nameserver 223.6.6.6" >$sys_name/etc/resolv.conf
         echo "export  TZ='Asia/Shanghai'" >> $sys_name/root/.bashrc
 	case $DEBIAN in
-		bullseye) echo "deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free" >$sys_name/etc/apt/sources.list ;;
-		buster) echo "deb http://mirrors.ustc.edu.cn/debian stable main contrib non-free
-deb http://mirrors.ustc.edu.cn/debian stable-updates main contrib non-free" >$sys_name/etc/apt/sources.list ;;
+		bullseye) echo "${US_URL} sid ${DEB}" >$sys_name/etc/apt/sources.list ;;
+		buster) echo "${US_URL} stable ${DEB}
+${US_URL} stable-updates ${DEB}" >$sys_name/etc/apt/sources.list ;;
 esac
 	cat >/dev/null <<EOF
-echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian/ bullseye-backports main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >$sys_name/etc/apt/sources.list
+echo "${BF_URL}/ bullseye ${DEB}
+${BF_URL}/ bullseye-updates ${DEB}
+${BF_URL}/ bullseye-backports ${DEB}
+${BF_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
 EOF
 if [ ! -e ./utqemu.sh ]; then
 curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
@@ -477,13 +478,11 @@ else
 	read -r -p "1)中科源 2)北外源 9)返回主目录 0)退出 " input
 	case $input in
 		1) 
-URL="deb http://mirrors.ustc.edu.cn/debian"
-DEB="main contrib non-free"
 			if grep -q 'bullseye' /etc/os-release ;then
-			echo "${URL} sid ${DEB}" >/etc/apt/sources.list
+			echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list
 		elif grep -q 'buster' /etc/os-release ;then
-			echo "${URL} stable ${DEB}
-${URL} stable-updates ${DEB}" >/etc/apt/sources.list
+			echo "${US_URL} stable ${DEB}
+${US_URL} stable-updates ${DEB}" >/etc/apt/sources.list
 		fi
 		sudo_
 	       	$sudo apt update ;;
@@ -560,7 +559,7 @@ esac
 }
 ##################
 QEMU_SYSTEM() {
-	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP CURL
+	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL
 	QEMU_VERSION
 	NOTE
 echo -e "
@@ -646,6 +645,9 @@ fi
 printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 sleep 1
 $script_name >/dev/null 2>>${HOME}/.utqemu_log
+if [ $? == 1 ]; then
+	printf "%s\n\n${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+fi
 				exit 1
 			else
 				echo -e "\n${RED}未获取到你的快捷脚本${RES}\n"
@@ -702,8 +704,6 @@ fi
 *) INVALID_INPUT
 	QEMU_SYSTEM ;;
 esac
-printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
-printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
@@ -716,6 +716,9 @@ EOF
 printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
 printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 $START >/dev/null 2>>${HOME}/.utqemu_log
+if [ $? == 1 ]; then
+	printf "%s\n\n${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+fi
 	exit 1 ;;
 esac
 			;;
@@ -1513,6 +1516,9 @@ esac
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
+	if [ $? == 1 ]; then
+		printf "%s\n\n${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+	fi
 	exit 1
         ;;
 4) WEB_SERVER ;;
