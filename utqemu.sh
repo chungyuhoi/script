@@ -933,8 +933,6 @@ esac
 ;;
 		*) ;;
 	esac
-#更改消息的格式，时间戳
-	set -- "${@}" "-msg" "timestamp=off"
 #qemu monitor protocol协议，对qemu虚拟机进行交互
 #	set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
 #使用bios配置
@@ -945,6 +943,8 @@ esac
 #	set -- "${@}" "-append" "cmdline"
 	case $QEMU_SYS in
 		qemu-system-i386)
+#更改消息的格式，时间戳
+	set -- "${@}" "-msg" "timestamp=off"
 #取消高精度定时器
 	set -- "${@}" "-no-hpet"
 #取消软盘启动检测
