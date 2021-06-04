@@ -707,7 +707,7 @@ esac
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
-START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -vnc :0,lossy=on"
+START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off,mem-merge=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 #-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
 
 cat <<-EOF
@@ -808,14 +808,15 @@ esac
 	killall -9 qemu-system-i38 2>/dev/null
 		echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
 #cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
-#kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。
+#kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。仅kvm
 #vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
 #dump-guest-core=on|off将客户机内存包括在核心转储中，类似于dump日志。默认为开。
 #tb-size=n (TCG translation block cache size)，Controls the size (in MiB) of the TCG translation block cache.Host instruction codes are stored in code_gen_buffer[]. The default buffer size is 32MB.(Ram_size/4, while ram_size default value is 128MB).
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
-MA="usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off"
+MA="usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off,mem-merge=off"
+#enforce-config-section=on
 TCG="tcg,thread=multi"
 read -r -p "1)pc 2)q35 " input
 		case $input in
@@ -1282,7 +1283,10 @@ esac
 echo -e "请选择${YELLOW}系统时间${RES}标准"
 read -r -p "1)utc 2)localtime " input
 case $input in
-	1) set -- "${@}" "-rtc" "base=utc,clock=host,driftfix=slew" ;;
+	1) case $QEMU_SYS in
+		qemu-system-i386) set -- "${@}" "-rtc" "base=utc,clock=host" ;;
+		*) set -- "${@}" "-rtc" "base=utc,clock=host,driftfix=slew" ;;
+esac ;;
 	*) set -- "${@}" "-rtc" "base=localtime" ;;
 #       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
 esac
@@ -1438,9 +1442,9 @@ esac ;;
 ########################
 		if [ -n "$display" ]; then
 			case $display in
-				wlan_vnc) set -- "${@}" "-vnc" "$IP:0,lossy=on" ;;
+				wlan_vnc) set -- "${@}" "-display" "vnc=$IP:0,lossy=on,non-adaptive=off" ;;
 				vnc) 
-					set -- "${@}" "-vnc" ":0,lossy=on"
+					set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 				xsdl) export DISPLAY=127.0.0.1:0
 					export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
