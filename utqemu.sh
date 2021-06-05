@@ -3,7 +3,7 @@
 ####################
 
 INFO() {
-#clear
+clear
 echo -e "\n\e[33m更新日期2021.6.5 更新内容\e[0m
 	新增镜像目录自定义，该功能暂不支持共享目录
 	屏蔽termux(utermux)环境qemu不适用的参数选项
@@ -15,7 +15,7 @@ echo -e "\n\e[33m更新日期2021.6.5 更新内容\e[0m
 }
 ###################
 NOTE() {
-#clear
+clear
 echo -e "\n\e[33m注意事项\e[0m
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -566,7 +566,7 @@ sed -i "1i\export TZ='Asia/Shanghai'" /etc/profile
 	QEMU_ETC ;;
 8) echo -e "\n目前仅支持镜像目录，共享目录暂不支持，此操作并不能修改本脚本参数，会创建一个名为${YELLOW}.utqemu_${RES}的文件，如删除文件则指定目录将失效\n"
 	CONFIRM
-	echo -n -e "请输入目录路径(例如/xinhao/windows) " 
+	echo -n -e "请输入目录路径(例如/xinhao注意'/') " 
 	read path_
 	sed -i "/STORAGE/d" ${HOME}/.utqemu_
 	echo "STORAGE=$path_" >>${HOME}/.utqemu_
