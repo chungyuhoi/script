@@ -4,7 +4,8 @@ cd $(dirname $0)
 
 INFO() {
 #clear
-echo -e "\n\e[33m更新日期2021.5.31 更新内容\e[0m
+echo -e "\n\e[33m更新日期2021.6.5 更新内容\e[0m
+	屏蔽termux(utermux)环境qemu不适用的参数选项
 	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
 	应用维护项加入最新aspice安卓版下载地址
 	qemu5.0版本的声卡选项增加ac97与hda修改参数项，该选项参数做了调整，如果声音不流畅可尝试该选项
@@ -788,6 +789,9 @@ SELECT_EMU() {
         esac
 }
 ###################
+	case $SYS in
+		ANDROID) SELECT_EMU_MODE ;;
+		*)
 	case $QEMU_MODE in
 		VIRTIO_MODE) SELECT_EMU_MODE ;;
 		*) case $SYS in
@@ -795,7 +799,12 @@ SELECT_EMU() {
 			*) SELECT_EMU ;;
 		esac ;;
 
-	esac
+	esac ;;
+esac
+
+
+
+
 	case $ARCH in
 		tablet)
 	echo -e "\n${GREEN}请确认系统镜像已放入手机目录${STORAGE}里${RES}\n" ;;
@@ -1116,37 +1125,37 @@ read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 	case $input in
 		1) set -- "${@}" "-device" "cirrus-vga" ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
-			case $input in
-				1|"") set -- "${@}" "-device" "vmware-svga" ;;
-				*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
-			esac ;;
-				4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
-		read -r -p "1)不设置3D参数 2)设置3D参数 " input
-		case $input in
-			1|"")
-#				set -- "${@}" "-vga" "virtio"
-				set -- "${@}" "-device" "virtio-vga"
-#                       set -- "${@}" "-device" "virtio-vga,virgl=on"
+	case $input in
+		1|"") set -- "${@}" "-device" "vmware-svga" ;;
+		*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
+	esac ;;
+		4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
+	read -r -p "1)不设置3D参数 2)设置3D参数 " input
+	case $input in
+		1|"")
+#		set -- "${@}" "-vga" "virtio"
+		set -- "${@}" "-device" "virtio-vga"
+#		set -- "${@}" "-device" "virtio-vga,virgl=on"
 ;;
-			2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图形界面(桌面)显示${RES}"
-				CONFIRM
-				case $display in
-					xsdl) set -- "${@}" "-device" "virtio-vga" "-display" "sdl,gl=on" ;;
-					vnc|wlan_vnc)
-						set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
-#                               set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
+		2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图形界面(桌面)显示${RES}"
+	CONFIRM
+	case $display in
+		xsdl) set -- "${@}" "-device" "virtio-vga" "-display" "sdl,gl=on" ;;
+		vnc|wlan_vnc)
+		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
+#		set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
 ;;
-					spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
-				esac
-				unset display
-				case $ARCH in
-					computer) ;;
-					*) env | grep 'PULSE_SERVER' -q
-						if [ $? != 0 ]; then
-							export PULSE_SERVER=tcp:127.0.0.1:4713
-							fi ;;
-					esac ;;
-			esac ;;
+		spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
+	esac
+	unset display
+	case $ARCH in
+		computer) ;;
+		*) env | grep 'PULSE_SERVER' -q
+	if [ $? != 0 ]; then
+		export PULSE_SERVER=tcp:127.0.0.1:4713
+		fi ;;
+esac ;;
+esac ;;
 		5) set -- "${@}" "-device" "qxl-vga"
 : <<\EOF
 set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
@@ -1159,34 +1168,34 @@ set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev1" "-device" 
 #set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev3" "-device" "usb-redir,chardev=usbredirchardev3,id=usbredirdev3"
 EOF
 ;;
-*) set -- "${@}" "-device" "VGA" ;;
+		*) set -- "${@}" "-device" "VGA" ;;
 esac
 
-echo -e "请选择${YELLOW}网卡${RES}"
-read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
-case $input in
-	2) NET_MODEL="rtl8139,netdev=user0" ;;
-	3) NET_MODEL="virtio-net-pci,netdev=user0" ;;
-	0) ;;
-	*) NET_MODEL="e1000,netdev=user0" ;;
-esac
-if [ -n "${NET_MODEL}" ]; then
-	set -- "${@}" "-device" "${NET_MODEL}"
-	set -- "${@}" "-netdev" "user,id=user0"
-else
-	set -- "${@}" "-net" "none"
-fi
-case $display in
-	wlan_vnc) ;;
-	*)
-echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数) 6)hda(修改参数) 0)不加载 " input
-                        case $input in
-                        1) set -- "${@}" "-device" "ES1370" ;;
-                        2) set -- "${@}" "-device" "sb16" ;;
-			3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
-                        0) ;;
-			5)
+	echo -e "请选择${YELLOW}网卡${RES}"
+	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
+	case $input in
+		2) NET_MODEL="rtl8139,netdev=user0" ;;
+		3) NET_MODEL="virtio-net-pci,netdev=user0" ;;
+		0) ;;
+		*) NET_MODEL="e1000,netdev=user0" ;;
+	esac
+	if [ -n "${NET_MODEL}" ]; then
+		set -- "${@}" "-device" "${NET_MODEL}"
+		set -- "${@}" "-netdev" "user,id=user0"
+	else
+		set -- "${@}" "-net" "none"
+	fi
+	case $display in
+		wlan_vnc) ;;
+		*)
+	echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
+	read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数) 6)hda(修改参数) 0)不加载 " input
+	case $input in
+		1) set -- "${@}" "-device" "ES1370" ;;
+		2) set -- "${@}" "-device" "sb16" ;;
+		3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
+                0) ;;
+		5)
 #adc in dac out				
 #alsa参数			       	
 #延迟timer-period=10000
@@ -1195,13 +1204,12 @@ read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数) 6)hda(修�
 #周期长度out.period-length=1020
 #pa参数
 #采样率out.frequency=8000
-			set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
-				set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
-			6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
-				set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
-			*) set -- "${@}" "-device" "AC97" ;;
-                esac
-		;;
+		set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
+		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
+		*) set -- "${@}" "-device" "AC97" ;;
+	esac	;;
 esac
 	fi
 	fi
@@ -1228,6 +1236,9 @@ esac
 #-L是DOS
 #-bios，启动现系统
 #-plash，启动UEFI 的BIOS
+case $SYS in
+	ANDROID) ;;
+	*)
 echo -e "是否加载${YELLOW}UEFI${RES}"
 read -r -p "1)加载 2)不加载 " input
 case $input in
@@ -1240,6 +1251,7 @@ case $input in
 		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_VARS.fd"
 	fi ;;
 *) ;;
+esac ;;
 esac
 #amd
 ####################
