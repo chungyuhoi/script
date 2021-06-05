@@ -1,10 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/bash
-cd $(dirname $0)
+#cd $(dirname $0)
 ####################
 
 INFO() {
 #clear
 echo -e "\n\e[33m更新日期2021.6.5 更新内容\e[0m
+	新增镜像目录自定义，该功能暂不支持共享目录
 	屏蔽termux(utermux)环境qemu不适用的参数选项
 	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
 	应用维护项加入最新aspice安卓版下载地址
@@ -140,8 +141,8 @@ ARCH_CHECK() {
 		arm*|aarch64) DIRECT="/sdcard"
 			ARCH=tablet ;;
 		i*86|x86*|amd64)
-		       if grep -E -q 'tablet|computer' ${HOME}/.utqemu_ 2>/dev/null; then	
-	case $(cat ${HOME}/.utqemu_) in
+			if grep -E -q 'tablet|computer' ${HOME}/.utqemu_ 2>/dev/null; then
+				case $(grep -E -q 'tablet|computer' ${HOME}/.utqemu_) in
 		tablet) DIRECT="/sdcard"
 			ARCH=tablet ;;
 		computer) DIRECT="${HOME}"
@@ -151,12 +152,12 @@ elif
 	grep -E -q 'Z3560|Z5800|Z2580' "/proc/cpuinfo" 2>/dev/null; then
 	read -r -p "请确认你使用的是否手机平板 1)是 2)否 " input
 	case $input in
-		1) echo "tablet" >${HOME}/.utqemu_
+		1) echo "tablet" >>${HOME}/.utqemu_
 			DIRECT="/sdcard"
 			ARCH=tablet
 			echo -e "${GREEN}已配置设备识别参数，请重新打开脚本，如发现选错，请在相关应用维护选项中修改${RES}"
         CONFIRM ;;
-		2) echo "computer" >${HOME}/.utqemu_
+		2) echo "computer" >>${HOME}/.utqemu_
 			DIRECT="${HOME}"
 			ARCH=computer
 			echo -e "${GREEN}已配置设备识别参数，请重新打开脚本，如发现选错，请在相关应用维护选项中修改${RES}"
@@ -170,7 +171,11 @@ else
 			fi ;;
 		*) echo -e "${RED}不支持你设备的架构${RES}" ;;
 esac
+if grep -q 'STORAGE' ${HOME}/.utqemu_ 2>/dev/null ; then
+	source ${HOME}/.utqemu_ 2>/dev/null
+else
 STORAGE=/xinhao/windows/
+fi
 }
 ####################
 ####################
@@ -379,6 +384,7 @@ QEMU_ETC() {
 5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
 6) 获取aspice安卓版下载地址(非永久有效)
 7) 模拟系统的时间不准
+8) 修改镜像目录
 9) 返回
 0) 退出\n"
 	read -r -p "请选择: " input
@@ -464,16 +470,18 @@ do
 		sleep 1 ;;
 3) read -r -p "1)手机平板 2)电脑 " input
 	case $input in
-		1) echo "tablet" >${HOME}/.utqemu_
-		       echo -e "${GREEN}已修改，请重新登录脚本${RES}"
-	       sleep 1 ;;
-		2) echo "computer" >${HOME}/.utqemu_
-		       echo -e "${GREEN}已修改，请重新登录脚本${RES}"
-	       sleep 1 ;;
+		1) sed -i '/computer/d' ${HOME}/.utqemu_
+			echo "tablet" >>${HOME}/.utqemu_
+		       echo -e "${GREEN}已修改，请重新登录脚本${RES}" ;;
+		2) sed -i '/tablet/d' ${HOME}/.utqemu_
+			echo "computer" >>${HOME}/.utqemu_
+		       echo -e "${GREEN}已修改，请重新登录脚本${RES}" ;;
 		*) INVALID_INPUT
 			sleep 2
 			QEMU_ETC ;;
-	esac ;;
+	esac
+	sleep 2
+	exit 1 ;;
 4) if ! grep -E -q 'buster|bullseye/sid' "/etc/os-release"; then
 	echo -e "\n${RED}只支持bullseye与buster${RES}\n"
 sleep 2
@@ -553,9 +561,26 @@ sed -i "/^export TZ=/d" /etc/profile
 sed -i "1i\export TZ='Asia/Shanghai'" /etc/profile
 	echo -e "\n${GREEN}请退出容器返回termux主界面，再重新进入${RES}\n"
 	sleep 2 ;;
-*) ;;
-esac
-QEMU_ETC ;;
+		*) ;;
+	esac
+	QEMU_ETC ;;
+8) echo -e "\n目前仅支持镜像目录，共享目录暂不支持，此操作并不能修改本脚本参数，会创建一个名为${YELLOW}.utqemu_${RES}的文件，如删除文件则指定目录将失效\n"
+	CONFIRM
+	echo -n -e "请输入目录路径(例如/xinhao/windows) " 
+	read path_
+	sed -i "/STORAGE/d" ${HOME}.utqemu_
+	echo "STORAGE=$path_" >>${HOME}.utqemu_
+	if [ ! -e "${DIRECT}${path_}" ]; then
+		mkdir -p ${DIRECT}${path_} 2>/dev/null
+	fi
+	if ! grep -q 'STORAGE' ${HOME}.utqemu_ 2>/dev/null ; then
+		echo -e "\n${RED}创建失败，请重试${RES}\n"
+	else
+		echo -e "\n${GREEN}创建成功，新的镜像目录为${DIRECT}${path_}，请重新登录脚本\n${RES}"
+		sleep 2
+	fi
+	exit 1
+	QEMU_ETC ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
 esac
 	unset FORMAT_ FORMAT
