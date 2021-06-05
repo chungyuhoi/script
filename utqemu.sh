@@ -142,7 +142,7 @@ ARCH_CHECK() {
 			ARCH=tablet ;;
 		i*86|x86*|amd64)
 			if grep -E -q 'tablet|computer' ${HOME}/.utqemu_ 2>/dev/null; then
-				case $(grep -E -q 'tablet|computer' ${HOME}/.utqemu_) in
+				case $(egrep 'tablet|computer' ${HOME}/.utqemu_) in
 		tablet) DIRECT="/sdcard"
 			ARCH=tablet ;;
 		computer) DIRECT="${HOME}"
