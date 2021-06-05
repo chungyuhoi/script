@@ -568,12 +568,12 @@ sed -i "1i\export TZ='Asia/Shanghai'" /etc/profile
 	CONFIRM
 	echo -n -e "请输入目录路径(例如/xinhao/windows) " 
 	read path_
-	sed -i "/STORAGE/d" ${HOME}.utqemu_
-	echo "STORAGE=$path_" >>${HOME}.utqemu_
+	sed -i "/STORAGE/d" ${HOME}/.utqemu_
+	echo "STORAGE=$path_" >>${HOME}/.utqemu_
 	if [ ! -e "${DIRECT}${path_}" ]; then
 		mkdir -p ${DIRECT}${path_} 2>/dev/null
 	fi
-	if ! grep -q 'STORAGE' ${HOME}.utqemu_ 2>/dev/null ; then
+	if ! grep -q 'STORAGE' ${HOME}/.utqemu_ 2>/dev/null ; then
 		echo -e "\n${RED}创建失败，请重试${RES}\n"
 	else
 		echo -e "\n${GREEN}创建成功，新的镜像目录为${DIRECT}${path_}，请重新登录脚本\n${RES}"
