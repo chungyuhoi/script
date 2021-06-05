@@ -205,6 +205,9 @@ HDA_READ() {
 LIST() {
 echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
 ls ${DIRECT}${STORAGE} | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
+if [ $? == 1 ]; then
+	echo -e "${GREEN}\n貌似没有符合格式的镜像，请以实际文件名为主${RES}"
+fi
 sleep 1
 }
 #################
