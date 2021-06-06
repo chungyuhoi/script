@@ -217,6 +217,9 @@ sleep 1
 }
 #################
 LOGIN() {
+	if [ ! -e $DEBIAN-qemu/dev/hugepages ]; then
+		mkdir -p $DEBIAN-qemu/dev/hugepages
+	fi
 pulseaudio --start & 2>/dev/null
 echo "" &
 unset LD_PRELOAD
@@ -227,6 +230,7 @@ command+=" -S $DEBIAN-qemu"
 command+=" -b /sdcard"
 command+=" -b $DEBIAN-qemu/root:/dev/shm"
 command+=" -b /sdcard:/root/sdcard"
+command+=" -b bullseye-qemu/dev/hugepages:/dev/hugepages"
 command+=" -w /root"
 command+=" /usr/bin/env -i"
 command+=" HOME=/root"
@@ -1304,12 +1308,13 @@ case $(dpkg --print-architecture) in
 		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试失败，提高响应速度，如出现闪退请关闭)"
    	read -r -p "1)加载 2)不加载 " input
 	case $input in
-		1) ls /tmp/hugepages.* 2>/dev/null
-			if [ $? != 0 ]; then
-			mktemp -t hugepages.XXX
-  			fi
-			HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
-#			set -- "${@}" "-mem-path" "$HUGEPAGES,share=yes,size=4294967296"
+		1) #ls /tmp/hugepages.* 2>/dev/null
+		#	if [ $? != 0 ]; then
+		#	mktemp -t hugepages.XXX
+  		#	fi
+		#	HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
+#		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=$(($mem_ * 1048576))"
+		set -- "${@}" "-mem-path" "/dev/hugepages"
 			set -- "${@}" "-mem-prealloc" ;;
 			*)	esac ;;
 esac
