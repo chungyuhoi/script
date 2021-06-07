@@ -3,8 +3,8 @@
 ####################
 
 INFO() {
-clear
-echo -e "\n\e[33m更新日期2021.6.5 更新内容\e[0m
+	clear
+	printf "${YELLOW}更新日期2021.6.5 更新内容${RES}
 	新增镜像目录自定义，该功能暂不支持共享目录
 	屏蔽termux(utermux)环境qemu不适用的参数选项
 	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
@@ -15,8 +15,8 @@ echo -e "\n\e[33m更新日期2021.6.5 更新内容\e[0m
 }
 ###################
 NOTE() {
-clear
-echo -e "\n\e[33m注意事项\e[0m
+	clear
+	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
 	如果模拟效率不佳，请尝试大退到termux主界面，并清设备后台，然后重新启动模拟。
@@ -29,23 +29,21 @@ echo -e "\n\e[33m注意事项\e[0m
 	if [ $(command -v qemu-system-x86_64) ]; then
 		echo -e "\e[33m检测到你已安装qemu-system-x86，版本是\e[0m"
 echo -e "\e[32m$(qemu-system-x86_64 --version | head -n 1)\e[0m"
-else
+	else
 	echo -e "\e[1;31m检测到你未安装qemu-system-x86，请先选择安装\e[0m"
 	fi
 }
 ###################
 ABOUT_UTQEMU(){
-clear
-printf "%s
-${YELLOW}关于utqemu脚本${RES}
+	clear
+	printf "${YELLOW}关于utqemu脚本${RES}
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n"
-CONFIRM
-QEMU_SYSTEM	
+	CONFIRM
+	QEMU_SYSTEM	
 }
 ABOUT_VIRTIO(){
-clear
-printf "%s
-${YELLOW}关于virtio驱动${RES}
+	clear
+	printf "${YELLOW}关于virtio驱动${RES}
 	引用官方说法：QEMU为用户提供并行虚拟化块设备和网络设备的能力，其是借助virtio驱动实现的，拥有更好的性能表现以及更低的开销。
 
 ${YELLOW}virtio驱动的安装${RES}
@@ -64,8 +62,8 @@ qemu-system-x86_64 -m 4G -drive file=系统镜像,if=ide -drive file=fake.qcow2,
 qemu-system-x86_64 -m 4G -drive file=系统镜像,if=virtio
 
 "
-CONFIRM
-VIRTIO
+	CONFIRM
+	VIRTIO
 }
 ####################
 
@@ -77,7 +75,7 @@ PINK="\e[35m"
 WHITE="\e[37m"
 RES="\e[0m"
 ####################
-`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
+	`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
 if [ $? != 0 ]; then
 	IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1)
 else
@@ -91,16 +89,16 @@ fi
 ####################
 sudo_() {
 	date_t=`date +"%D"`
-if ! grep -q $date_t ".utqemu_log" 2>/dev/null; then
+	if ! grep -q $date_t ".utqemu_log" 2>/dev/null; then
         $sudo apt update
 	echo $date_t >>.utqemu_log 2>&1
-fi
+	fi
 }
-if [ `whoami` != "root" ];then
+	if [ `whoami` != "root" ];then
 	sudo="sudo"
-else
+	else
 	sudo=""
-fi
+	fi
 ####################
 BF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/"
 BF_URL="deb http://mirrors.bfsu.edu.cn/debian"
@@ -108,21 +106,21 @@ US_URL="deb http://mirrors.ustc.edu.cn/debian"
 DEB="main contrib non-free"
 ####################
 MEM() {
-case $ARCH in
-	tablet) mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1) ;;
-	*) mem=$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1) ;;
-esac
-if (( $mem >= 2048 )); then
-	mem_=3072
-elif (( $mem >= 1536 )); then
-	mem_=2048
-elif (( $mem >= 1024 )); then
-	mem_=1536
-elif (( $mem >= 512 )); then
-	mem_=1024
-else
-	mem_=512
-fi
+	case $ARCH in
+		tablet) mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1) ;;
+		*) mem=$(free -m | awk '{print $2/2}' | sed -n 2p | cut -d '.' -f 1) ;;
+	esac
+	if (( $mem >= 2048 )); then
+		mem_=3072
+	elif (( $mem >= 1536 )); then
+		mem_=2048
+	elif (( $mem >= 1024 )); then
+		mem_=1536
+	elif (( $mem >= 512 )); then
+		mem_=1024
+	else
+		mem_=512
+	fi
 }
 ####################
 INVALID_INPUT() {
@@ -141,14 +139,14 @@ ARCH_CHECK() {
 		arm*|aarch64) DIRECT="/sdcard"
 			ARCH=tablet ;;
 		i*86|x86*|amd64)
-			if grep -E -q 'tablet|computer' ${HOME}/.utqemu_ 2>/dev/null; then
-				case $(egrep 'tablet|computer' ${HOME}/.utqemu_) in
+	if grep -E -q 'tablet|computer' ${HOME}/.utqemu_ 2>/dev/null; then
+		case $(egrep 'tablet|computer' ${HOME}/.utqemu_) in
 		tablet) DIRECT="/sdcard"
 			ARCH=tablet ;;
 		computer) DIRECT="${HOME}"
 			ARCH=computer ;;
-	esac
-elif
+		esac
+	elif
 	grep -E -q 'Z3560|Z5800|Z2580' "/proc/cpuinfo" 2>/dev/null; then
 	read -r -p "请确认你使用的是否手机平板 1)是 2)否 " input
 	case $input in
@@ -165,17 +163,17 @@ elif
 		*) INVALID_INPUT
 			ARCH_CHECK ;;
 	esac
-else
+	else
 			DIRECT="${HOME}"
 			ARCH=computer
 			fi ;;
 		*) echo -e "${RED}不支持你设备的架构${RES}" ;;
-esac
-if grep -q 'STORAGE' ${HOME}/.utqemu_ 2>/dev/null ; then
+	esac
+	if grep -q 'STORAGE' ${HOME}/.utqemu_ 2>/dev/null ; then
 	source ${HOME}/.utqemu_ 2>/dev/null
-else
-STORAGE=/xinhao/windows/
-fi
+	else
+		STORAGE=/xinhao/windows/
+	fi
 }
 ####################
 ####################
@@ -317,7 +315,7 @@ SYSTEM_CHECK() {
 		if [ ! -e ${HOME}/storage ]; then
 			termux-setup-storage
 		fi
-		grep -E -q 'bfsu|tsinghua|ustc|tencent|utqemucheck' ${PREFIX}/etc/apt/sources.list              
+	grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep -E 'bfsu|tsinghua|ustc|tencent|utqemucheck'
 		if [ $? != 0 ]; then  
 			echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
 			1) 换国内源    
@@ -1314,7 +1312,9 @@ case $(dpkg --print-architecture) in
   		#	fi
 		#	HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
 #		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=$(($mem_ * 1048576))"
+	if [ -d "/dev/hugepages" ]; then
 		set -- "${@}" "-mem-path" "/dev/hugepages"
+	fi
 			set -- "${@}" "-mem-prealloc" ;;
 			*)	esac ;;
 esac
@@ -1325,16 +1325,18 @@ case $input in
 	*) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
 esac
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
+#driftfix=slew i386存在时间漂移
 echo -e "请选择${YELLOW}系统时间${RES}标准"
 read -r -p "1)utc 2)localtime " input
 case $input in
 	1) case $QEMU_SYS in
-		qemu-system-i386) set -- "${@}" "-rtc" "base=utc,clock=host" ;;
-		*) set -- "${@}" "-rtc" "base=utc,clock=host,driftfix=slew" ;;
+		qemu-system-i386) set -- "${@}" "-rtc" "base=utc,clock=host,driftfix=slew" ;;
+		*) set -- "${@}" "-rtc" "base=utc,clock=host" ;;
 esac ;;
 	*) set -- "${@}" "-rtc" "base=localtime" ;;
 #       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
 esac
+#strict=on|off 是否受宿主机网络控制
 echo -e "请选择${YELLOW}启动顺序${RES}"
 read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
 case $input in
