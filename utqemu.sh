@@ -132,7 +132,7 @@ CONFIRM() {
 	read -r -p "按回车键继续" input
 	case $input in
 		*) ;; esac
-		}
+}
 ####################
 ARCH_CHECK() {
 	case $(dpkg --print-architecture) in
@@ -178,40 +178,53 @@ ARCH_CHECK() {
 ####################
 ####################
 QEMU_VERSION(){
-uname -a | grep 'Android' -q
+	uname -a | grep 'Android' -q
         if [ $? == 0 ]; then
                 SYS=ANDROID
 	elif [ ! $(command -v qemu-system-x86_64) ]; then
 		echo ""
         elif [[ $(qemu-system-x86_64 --version) =~ :[5-9] ]] ; then
-                        SYS=QEMU_ADV
-                else
-                        SYS=QEMU_PRE
+		SYS=QEMU_ADV
+	else
+		SYS=QEMU_PRE
         fi
 }
 #################
 HDA_READ() {
 	while ( [ "$hda_name" != '0' ] && [ ! -f "${DIRECT}${STORAGE}$hda_name" ] )
 	do
-		if [ -n "$hda_name" ]; then
-			echo -e "\n${RED}未匹配到镜像，请重试${RES}"
-			sleep 1
-			fi
-			echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（例如andows.img），退出请输${YELLOW}0${RES}，请输入: "
-			read  hda_name
-		done
-		if [ $hda_name == '0' ]; then
-			QEMU_SYSTEM
-			fi
+	if [ -n "$hda_name" ]; then
+		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
+		sleep 1
+	fi
+	echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（例如andows.img），退出请输${YELLOW}0${RES}，请输入: "
+	read  hda_name
+	done
+	if [ $hda_name == '0' ]; then
+		QEMU_SYSTEM
+	fi
 }
 #################
 LIST() {
-echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-ls ${DIRECT}${STORAGE} | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
-if [ $? == 1 ]; then
-	echo -e "${GREEN}\n貌似没有符合格式的镜像，请以实际文件名为主${RES}"
-fi
-sleep 1
+	echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
+	ls ${DIRECT}${STORAGE} | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
+	if [ $? == 1 ]; then
+		echo -e "${GREEN}\n貌似没有符合格式的镜像，请以实际文件名为主${RES}"
+	fi
+	sleep 1
+}
+#################
+FAIL() {
+FILE="No such file"
+SHARE_="515.06"
+PORT="Address already"
+echo -e "\n\n"
+case $(cat ${HOME}/.utqemu_log | tail -n 1) in
+	*$FILE*) echo -e "${YELLOW}错误：没有匹配的目录或文件名${RES}" ;;
+	*$SHARE*) echo -e "${YELLOW}错误：共享文件超过515.06 MB${RES}" ;;
+	*$PORT*) echo -e "${YELLOW}\n错误：视频输出端口占用${RES}" ;;
+	*)  ;;
+esac
 }
 #################
 LOGIN() {
@@ -238,11 +251,11 @@ command+=" TERM=xterm-256color"
 command+=" LANG=C.UTF-8"
 command+=" /bin/bash --login"
 com="$@"
-if [ -z "$1" ];then
-    exec $command
-else
-    $command -c "$com"
-fi
+	if [ -z "$1" ];then
+		exec $command
+	else
+		$command -c "$com"
+	fi
 }
 ##################
 SYS_DOWN() {
@@ -267,18 +280,18 @@ case $(dpkg --print-architecture) in
         curl -o ${BAGNAME} ${DEF_CUR}
                 VERSION=`cat ${BAGNAME} | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1`
                 curl -o ${BAGNAME} ${DEF_CUR}${VERSION}${BAGNAME}
-                if [ $? -ne 0 ]; then
-                        echo -e "${RED}下载失败，请重输${RES}\n" && MAIN
-                fi
-                if [ -e $sys_name ]; then
-                        rm -rf $sys_name
-                fi
+        if [ $? -ne 0 ]; then
+		echo -e "${RED}下载失败，请重输${RES}\n" && MAIN
+        fi
+        if [ -e $sys_name ]; then
+		rm -rf $sys_name
+        fi
                 mkdir $sys_name
 #tar xvf rootfs.tar.xz -C ${BAGNAME}
-echo -e "${BLUE}正在解压系统包${RES}"
-                tar xf ${BAGNAME} --checkpoint=100 --checkpoint-action=dot --totals -C $sys_name 2>/dev/null
-                rm ${BAGNAME}
-                echo -e "${BLUE}$sys_name系统已下载，文件夹名为$sys_name${RES}"
+	echo -e "${BLUE}正在解压系统包${RES}"
+	tar xf ${BAGNAME} --checkpoint=100 --checkpoint-action=dot --totals -C $sys_name 2>/dev/null
+        rm ${BAGNAME}
+	echo -e "${BLUE}$sys_name系统已下载，文件夹名为$sys_name${RES}"
         echo "127.0.0.1 localhost" > $sys_name/etc/hosts
         rm -rf $sys_name/etc/resolv.conf &&
         echo "nameserver 223.5.5.5
@@ -288,22 +301,22 @@ nameserver 223.6.6.6" >$sys_name/etc/resolv.conf
 		bullseye) echo "${US_URL} sid ${DEB}" >$sys_name/etc/apt/sources.list ;;
 		buster) echo "${US_URL} stable ${DEB}
 ${US_URL} stable-updates ${DEB}" >$sys_name/etc/apt/sources.list ;;
-esac
-	cat >/dev/null <<EOF
+	esac
+cat >/dev/null <<EOF
 echo "${BF_URL}/ bullseye ${DEB}
 ${BF_URL}/ bullseye-updates ${DEB}
 ${BF_URL}/ bullseye-backports ${DEB}
 ${BF_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
 EOF
-if [ ! -e ./utqemu.sh ]; then
-curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
-fi
-cp utqemu.sh $sys_name/root/utqemu.sh
-sed -i "s/qemu-system-x86-64-headless/qemu-system-x86 xserver-xorg x11-utils/" $sys_name/root/utqemu.sh
-sed -i 's/qemu-system-i386-headless/-y \&\& apt --reinstall install pulseaudio/' $sys_name/root/utqemu.sh
-echo "bash utqemu.sh" >>$sys_name/root/.bashrc
-echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
-sleep 2
+	if [ ! -e ./utqemu.sh ]; then
+	curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
+	fi
+	cp utqemu.sh $sys_name/root/utqemu.sh
+	sed -i "s/qemu-system-x86-64-headless/qemu-system-x86 xserver-xorg x11-utils/" $sys_name/root/utqemu.sh
+	sed -i 's/qemu-system-i386-headless/-y \&\& apt --reinstall install pulseaudio/' $sys_name/root/utqemu.sh
+	echo "bash utqemu.sh" >>$sys_name/root/.bashrc
+	echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
+	sleep 2
 }
 ##################
 
@@ -312,63 +325,63 @@ sleep 2
 SYSTEM_CHECK() {
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
-		if [ ! -e ${HOME}/storage ]; then
-			termux-setup-storage
-		fi
+	if [ ! -e ${HOME}/storage ]; then
+		termux-setup-storage
+	fi
 	grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep -E 'bfsu|tsinghua|ustc|tencent|utqemucheck'
-		if [ $? != 0 ]; then  
-			echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
-			1) 换国内源    
-			2) 不换"   
-			read -r -p "是否换国内源: " input   
-			case $input in    
-				1|"") echo "换国内源" 
-sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
-sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
-sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update -n ;;  
-*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list
-	MAIN ;;  
-esac                                                    
+	if [ $? != 0 ]; then  
+		echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
+		1) 换国内源    
+		2) 不换"   
+	read -r -p "是否换国内源: " input   
+	case $input in    
+		1|"") echo "换国内源" 
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
+	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update -n ;;  
+		*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list
+		MAIN ;;  
+	esac                                                    
 		fi
 	dpkg -l | grep pulseaudio -q 2>/dev/null
-if [ $? != 0 ]; then
+	if [ $? != 0 ]; then
 	echo -e "${YELLOW}检测到你未安装pulseaudio，为保证声音正常输出，将自动安装${RES}"
 	sleep 2
 	pkg update && pkg install pulseaudio -y
-fi
-if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
-then
-        echo ""
-else
+	fi
+	if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
+	then
+		echo ""
+	else
         echo "load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" >> ${PREFIX}/etc/pulse/default.pa
-                                fi
-if grep -q "exit-idle" ${PREFIX}/etc/pulse/daemon.conf ; then
-sed -i '/exit-idle/d' ${PREFIX}/etc/pulse/daemon.conf
-echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
-fi
-if [ ! $(command -v proot) ]; then
+	fi
+	if grep -q "exit-idle" ${PREFIX}/etc/pulse/daemon.conf ; then
+	sed -i '/exit-idle/d' ${PREFIX}/etc/pulse/daemon.conf
+	echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
+	fi
+	if [ ! $(command -v proot) ]; then
 	pkg update && pkg install proot -y
-fi
+	fi
 	fi
 }
 ##################
 WEB_SERVER() {
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
-		if [ ! $(command -v python) ]; then
-			echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
-			sudo_
-		       	$sudo apt install python -y
-		fi
-		else
-if [ ! $(command -v python3) ]; then
-                echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
-                sleep 2
-                sudo_
-	       	$sudo apt install python3 python3-pip -y && mkdir -p /root/.config/pip && echo "[global]
+	if [ ! $(command -v python) ]; then
+	echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
+	sudo_
+	$sudo apt install python -y
+	fi
+	else
+	if [ ! $(command -v python3) ]; then
+        echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
+	sleep 2
+        sudo_
+	$sudo apt install python3 python3-pip -y && mkdir -p /root/.config/pip && echo "[global]
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.conf
         fi
-		fi
+	fi
         echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
         ${YELLOW}http://$IP:8080${RES}\n
         如需关闭，请按ctrl+c，然后输pkill python3或直接exit退出shell\n"
@@ -677,7 +690,8 @@ printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}
 sleep 1
 $script_name >/dev/null 2>>${HOME}/.utqemu_log
 if [ $? == 1 ]; then
-	printf "%s\n\n${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+	FAIL
+	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
 fi
 				exit 1
 			else
@@ -748,7 +762,8 @@ printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
 printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 $START >/dev/null 2>>${HOME}/.utqemu_log
 if [ $? == 1 ]; then
-	printf "%s\n\n${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+	FAIL
+printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
 fi
 	exit 1 ;;
 esac
@@ -1568,7 +1583,8 @@ esac
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
-		printf "%s\n\n${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+		FAIL
+		printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
 	fi
 	exit 1
         ;;
@@ -1583,7 +1599,12 @@ esac ;;
 	echo -e "\n${GREEN}日志已忽略不重要的信息${RES}\n按空格下一页，退出请按q\n"
 	CONFIRM
 	more ${HOME}/.utqemu_log | egrep "qemu-system-x86_64|qemu-system-i386" | egrep -v "stronger memory|Connection reset by peer|requested feature"
-	echo -e "\n\e[33m到底了\e[0m"
+echo -e "\n${YELLOW}常见错误提示：${RES}
+${BLUE}开机蓝屏; 通常为机算机类型(pc q35)，磁盘接口(IDE SATA VIRTIO)，运行内存配置过大等原因造成，请尝试修改配置${RES}
+No such file or directory; ${YELLOW}(没有匹配的目录或文件名)${RES}
+Directory does not fit in FAT16 (capacity 516.06 MB); ${YELLOW}(共享文件超过515.06 MB)${RES}
+Failed to find an available port: Address already in use; ${YELLOW}(视频输出端口占用)${RES}"
+	echo -e "\n${GREEN}到底了${RES}"
 	read -r -p "是否删除日志 1)是 0)否 " input
 	case $input in
 		1) rm ${HOME}/.utqemu_log 2>/dev/null ;;
