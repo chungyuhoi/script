@@ -3,7 +3,7 @@
 ####################
 
 INFO() {
-	clear
+	#clear
 	UPDATE="2021/06/08"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增启动失败，给出常见错误提示
@@ -17,7 +17,7 @@ INFO() {
 }
 ###################
 NOTE() {
-	clear
+	#clear
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -78,16 +78,16 @@ WHITE="\e[37m"
 RES="\e[0m"
 ####################
 	`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
-	if [ $? != 0 ]; then
+if [ $? != 0 ]; then
 	IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1)
-	else
+else
 	`ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6` 2>/dev/null
 	if [ $? -ne 0 ]; then
 		IP=$(ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6)
 	else
 		IP=$(ip a | grep inet | grep wlan | cut -d "/" -f 1 | cut -d " " -f 6)
 	fi
-	fi
+fi
 ####################
 sudo_() {
 	date_t=`date +"%D"`
@@ -233,10 +233,7 @@ LOGIN() {
 	if [ ! -e $DEBIAN-qemu/dev/hugepages ]; then
 		mkdir -p $DEBIAN-qemu/dev/hugepages
 	fi
-	if [ ! -e "$DEBIAN-qemu/root/utqemu.sh" ]; then
-		curl http://shell.eacgh.cn/utqemu.sh -o $DEBIAN-qemu/root/utqemu.sh
-	fi
-	if [ ! -e "$DEBIAN-qemu/root/.utqemu_" ]; then
+	if [[ ! -e "$DEBIAN-qemu/root/.utqemu_" ]]; then
 	echo $UPDATE >>$DEBIAN-qemu/root/.utqemu_
 	elif ! grep -q $UPDATE "$DEBIAN-qemu/root/.utqemu_" ; then
 	echo -e "\n${GREEN}检测到脚本有更新，更新日期$UPDATE${RES}"
@@ -694,15 +691,15 @@ fi
 #cat $(which $script_name)
 
 if grep 'vnc' $(which $script_name); then
-	printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
 	elif grep -q 'DISPLAY' $(which $script_name); then
 		grep '\-cpu' $(which $script_name)
-		printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开xsdl"
+		printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl"
 		elif grep '\-spice' $(which $script_name); then
-			printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
+			printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
 		else
 			grep '\-cpu' $(which $script_name)
-			printf "%s\n${GREEN}模拟器已启动"
+			printf "%s\n${GREEN}启动模拟器"
 fi
 printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 sleep 1
@@ -776,7 +773,7 @@ START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-co
 cat <<-EOF
 $START
 EOF
-printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0"
+printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
 printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 $START >/dev/null 2>>${HOME}/.utqemu_log
 if [ $? == 1 ]; then
@@ -1591,11 +1588,11 @@ esac
 	${@}
 	EOF
 	case $display in
-		vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer 127.0.0.1:0" ;;
-		wlan_vnc) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开vncviewer $IP:0" ;;
-		xsdl) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开xsdl" ;;
-		spice|spice_) printf "%s\n${BLUE}模拟器已启动\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
-		*) printf "%s\n${GREEN}模拟器已启动" ;;
+		vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0" ;;
+		wlan_vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer $IP:0" ;;
+		xsdl) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl" ;;
+		spice|spice_) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
+		*) printf "%s\n${GREEN}启动模拟器" ;;
 	esac
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
