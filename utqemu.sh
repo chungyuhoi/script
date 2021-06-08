@@ -3,21 +3,18 @@
 ####################
 
 INFO() {
-	#clear
-	UPDATE="2021/06/08"
+	clear
+	UPDATE="2021/06/09"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	新增本脚本容器下脚本自动检测更新选项
 	新增启动失败，给出常见错误提示
 	新增镜像目录自定义，该功能暂不支持共享目录
-	屏蔽termux(utermux)环境qemu不适用的参数选项
-	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
-	应用维护项加入最新aspice安卓版下载地址
-	qemu5.0版本的声卡选项增加ac97与hda修改参数项，该选项参数做了调整，如果声音不流畅可尝试该选项
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
 ###################
 NOTE() {
-	#clear
+	clear
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -142,7 +139,7 @@ ARCH_CHECK() {
 			ARCH=tablet ;;
 		i*86|x86*|amd64)
 	if grep -E -q 'tablet|computer' ${HOME}/.utqemu_ 2>/dev/null; then
-		case $(egrep 'tablet|computer' ${HOME}/.utqemu_) in
+	case $(egrep 'tablet|computer' ${HOME}/.utqemu_) in
 		tablet) DIRECT="/sdcard"
 			ARCH=tablet ;;
 		computer) DIRECT="${HOME}"
@@ -407,7 +404,7 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
 ##################
 QEMU_ETC() {
 
-	echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
+echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 2) 转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
 3) 修改设备标识(手机、平板、电脑)
 4) 修改源(只适用本脚本下载的系统)
@@ -423,35 +420,35 @@ QEMU_ETC() {
 			sudo_
 		       	$sudo apt install qemu-img
 		fi
-			echo -e "\n对于普通玩家这两个格式没什么区别，不用纠结"
-			read -r -p "请选择格式 1)qcow2 2)vmdk : " input
-			case $input in
-				1|"") echo -e "${YELLOW}qcow2${RES}"
-					FORMAT=qcow2	;;
-				2) echo -e "${YELLOW}vmdk${RES}"
-					FORMAT=vmdk ;;
-				*) INVALID_INPUT
-					QEMU_ETC ;;
-			esac
-			sleep 1
-			while [ ! -n "$disk_name" ]
-			do
-				echo -e -n "\n请为磁盘起个名字(不能为空): "
+	echo -e "\n对于普通玩家这两个格式没什么区别，不用纠结"
+	read -r -p "请选择格式 1)qcow2 2)vmdk : " input
+	case $input in
+		1|"") echo -e "${YELLOW}qcow2${RES}"
+			FORMAT=qcow2	;;
+		2) echo -e "${YELLOW}vmdk${RES}"
+			FORMAT=vmdk ;;
+		*) INVALID_INPUT
+			QEMU_ETC ;;
+	esac
+	sleep 1
+	while [ ! -n "$disk_name" ]
+	do
+	echo -e -n "\n请为磁盘起个名字(不能为空): "
 	read disk_name
-done
-echo -n "请输入你拟创建的磁盘容量，以G为单位(例如4g则输4): "
+	done
+	echo -n "请输入你拟创建的磁盘容量，以G为单位(例如4g则输4): "
 	read capacity
 	qemu-img create -f $FORMAT ${DIRECT}${STORAGE}${disk_name}.$FORMAT ${capacity}G
 	if [ -f ${DIRECT}${STORAGE}${disk_name}.$FORMAT ]; then
 	echo -e "${GREEN}已为你创建$FORMAT格式磁盘${disk_name}.$FORMAT 容量${capacity}G，仍需你登录系统，在控制面板通过磁盘管理进行格式化并分区方可正常使用${RES}"
-else
+	else
 	echo -e "${RED}创建失败，请重试${RES}"
 	fi
 	CONFIRM ;;
-2) if [ ! $(command -v qemu-img) ]; then
+	2) if [ ! $(command -v qemu-img) ]; then
 	sudo_
        	$sudo apt install qemu-img
-fi
+	fi
 	echo ""
 	read -r -p "请选择转换后格式 1)qcow2 2)vmdk : " input
 	case $input in
@@ -461,32 +458,32 @@ fi
 		FORMAT=vmdk ;;
 	*) INVALID_INPUT
 		QEMU_ETC ;;
-esac
-echo -e "\n已为你列出镜像文件夹中的文件（仅供参考）\n"
-ls ${DIRECT}${STORAGE}
-sleep 1
+	esac
+	echo -e "\n已为你列出镜像文件夹中的文件（仅供参考）\n"
+	ls ${DIRECT}${STORAGE}
+	sleep 1
 	while ( [ "$FORMAT_" != '0' ] && [ ! -f "${DIRECT}${STORAGE}$FORMAT_" ] ) 
-do
+	do
 	if [ -n "$FORMAT_" ]; then
-		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
-		sleep 1
-		fi
-		echo -en "\n请输入原镜像格式全名(例如andows.img) ,退出请输${YELLOW}0${RES} "
+	echo -e "\n${RED}未匹配到镜像，请重试${RES}"
+	sleep 1
+	fi
+	echo -en "\n请输入原镜像格式全名(例如andows.img) ,退出请输${YELLOW}0${RES} "
 		read  FORMAT_
 	done
 	if [ $FORMAT_ == '0' ]; then
 		exit 0
 	fi
 	if [ -f ${DIRECT}${STORAGE}${FORMAT_%%.*}.$FORMAT ]; then
-		echo -e "\n${RED}检测到目录下已有转换后同名文件名，请确认，以免造成误操作${RES}"
-		read -r -p "1)继续 9)返回 0)退出 " input
-		case $input in
-			1) ;;
-			0) exit 0 ;;
-			*) unset FORMAT_ FORMAT
-				QEMU_ETC ;;
-		esac
-		fi
+	echo -e "\n${RED}检测到目录下已有转换后同名文件名，请确认，以免造成误操作${RES}"
+	read -r -p "1)继续 9)返回 0)退出 " input
+	case $input in
+		1) ;;
+		0) exit 0 ;;
+		*) unset FORMAT_ FORMAT
+			QEMU_ETC ;;
+	esac
+	fi
 	echo -e "\e[33m转换过程需要点时间，请耐心等待...${RES}"
 	case "${FORMAT_##*.}" in
 		img) qemu-img convert -f raw -O $FORMAT ${DIRECT}${STORAGE}$FORMAT_ ${DIRECT}${STORAGE}${FORMAT_%%.*}.$FORMAT ;;
@@ -498,56 +495,56 @@ do
 		echo -e "\n${RED}转换失败${RES}\n"
 	fi
 		sleep 1 ;;
-3) read -r -p "1)手机平板 2)电脑 " input
+	3) read -r -p "1)手机平板 2)电脑 " input
 	case $input in
 		1) sed -i '/computer/d' ${HOME}/.utqemu_
-			echo "tablet" >>${HOME}/.utqemu_
-		       echo -e "${GREEN}已修改，请重新登录脚本${RES}" ;;
+		echo "tablet" >>${HOME}/.utqemu_
+	      	echo -e "${GREEN}已修改，请重新登录脚本${RES}" ;;
 		2) sed -i '/tablet/d' ${HOME}/.utqemu_
-			echo "computer" >>${HOME}/.utqemu_
-		       echo -e "${GREEN}已修改，请重新登录脚本${RES}" ;;
+		echo "computer" >>${HOME}/.utqemu_
+	       	echo -e "${GREEN}已修改，请重新登录脚本${RES}" ;;
 		*) INVALID_INPUT
-			sleep 2
-			QEMU_ETC ;;
+		sleep 2
+		QEMU_ETC ;;
 	esac
 	sleep 2
 	exit 1 ;;
-4) if ! grep -E -q 'buster|bullseye/sid' "/etc/os-release"; then
+	4) if ! grep -E -q 'buster|bullseye/sid' "/etc/os-release"; then
 	echo -e "\n${RED}只支持bullseye与buster${RES}\n"
-sleep 2
-QEMU_ETC
-else
+	sleep 2
+	QEMU_ETC
+	else
 	read -r -p "1)中科源 2)北外源 9)返回主目录 0)退出 " input
 	case $input in
 		1) 
-			if grep -q 'bullseye' /etc/os-release ;then
-			echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list
+		if grep -q 'bullseye' /etc/os-release ;then
+		echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list
 		elif grep -q 'buster' /etc/os-release ;then
-			echo "${US_URL} stable ${DEB}
+echo "${US_URL} stable ${DEB}
 ${US_URL} stable-updates ${DEB}" >/etc/apt/sources.list
 		fi
 		sudo_
 	       	$sudo apt update ;;
 		2) 
-			if grep -q 'bullseye/sid' /etc/os-release ;then
-			echo "${BF_URL}/ bullseye ${DEB}
+		if grep -q 'bullseye/sid' /etc/os-release ;then
+echo "${BF_URL}/ bullseye ${DEB}
 ${BF_URL}/ bullseye-updates ${DEB}
 ${BF_URL}/ bullseye-backports ${DEB}
 ${BF_URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
-elif grep -q 'buster' /etc/os-release ;then
-	echo "$BF_URL buster ${DEB}
+	elif grep -q 'buster' /etc/os-release ;then
+echo "$BF_URL buster ${DEB}
 ${BF_URL} buster-updates ${DEB}
 ${BF_URL} buster-backports ${DEB}
 ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
-fi
+	fi
 	sudo_
        	$sudo apt update ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
 		*) INVALID_INPUT && QEMU_ETC ;;
-esac
-fi ;;
-5) echo -e "${GREEN}aqemu是qemu的前端，适用于图形界面下简易配置操作qemu，安装完aqemu，首次启动时请搜索并绑定qemu-system-x86_64${RES}"
+	esac
+	fi ;;
+	5) echo -e "${GREEN}aqemu是qemu的前端，适用于图形界面下简易配置操作qemu，安装完aqemu，首次启动时请搜索并绑定qemu-system-x86_64${RES}"
 	CONFIRM
 	sudo_
        	$sudo apt install aqemu -y
@@ -560,41 +557,41 @@ fi ;;
 			unset FORMAT
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
-6) if [ ! $(command -v curl) ]; then
+	6) if [ ! $(command -v curl) ]; then
 	echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
 	sleep 2
 	sudo_ 
 	$sudo apt install curl -y
-fi
+	fi
 	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
 	CONFIRM
 	while ( [ "$SPI_URL" != '0' ] && [[ ! $SPI_URL_ =~ apk ]] )
 do
 	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2 `
 SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
-if [[ ! $SPI_URL_ =~ apk ]]; then
-read -r -p "获取失败，重试请回车，退出请输0 " input
-case $input in
+	if [[ ! $SPI_URL_ =~ apk ]]; then
+	read -r -p "获取失败，重试请回车，退出请输0 " input
+	case $input in
 	0) QEMU_ETC ;;
 	*) ;;
-esac
-fi
-done
-echo -e "\n下载地址\n${GREEN}https://github.com/$SPI_URL_/$SPI_URL_${RES}\n"
-CONFIRM
-QEMU_ETC ;;
-7) echo -e "\n通常情况下，参数rtc可以解决，但可能由于容器时区问题导致，可通过修改时区来解决\n"
+	esac
+	fi
+	done
+	echo -e "\n下载地址\n${GREEN}https://github.com/$SPI_URL_/$SPI_URL_${RES}\n"
+	CONFIRM
+	QEMU_ETC ;;
+	7) echo -e "\n通常情况下，参数rtc可以解决，但可能由于容器时区问题导致，可通过修改时区来解决\n"
 	read -r -p "1)修改时区 0)返回 " input
 	case $input in
 		1)
-sed -i "/^export TZ=/d" /etc/profile
-sed -i "1i\export TZ='Asia/Shanghai'" /etc/profile
-	echo -e "\n${GREEN}请退出容器返回termux主界面，再重新进入${RES}\n"
-	sleep 2 ;;
+		sed -i "/^export TZ=/d" /etc/profile
+		sed -i "1i\export TZ='Asia/Shanghai'" /etc/profile
+		echo -e "\n${GREEN}请退出容器返回termux主界面，再重新进入${RES}\n"
+		sleep 2 ;;
 		*) ;;
 	esac
 	QEMU_ETC ;;
-8) echo -e "\n目前仅支持镜像目录，共享目录暂不支持，此操作并不能修改本脚本参数，会创建一个名为${YELLOW}.utqemu_${RES}的文件，如删除文件则指定目录将失效\n"
+	8) echo -e "\n目前仅支持镜像目录，共享目录暂不支持，此操作并不能修改本脚本参数，会创建一个名为${YELLOW}.utqemu_${RES}的文件，如删除文件则指定目录将失效\n"
 	CONFIRM
 	echo -n -e "请输入目录路径(例如/xinhao注意'/') " 
 	read path_
@@ -612,7 +609,7 @@ sed -i "1i\export TZ='Asia/Shanghai'" /etc/profile
 	exit 1
 	QEMU_ETC ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
-esac
+	esac
 	unset FORMAT_ FORMAT
 	QEMU_ETC
 }
@@ -627,16 +624,16 @@ echo -e "
 3) 启动qemu-system-x86_64模拟器
 4) 让termux成为网页服务器\n(使模拟系统可以通过浏览器访问本机内容)
 5) virtio驱动相关"
-case $SYS in
+	case $SYS in
 	ANDROID) ;;
 	*) echo -e "6) 应用维护" ;;
-esac
+	esac
 echo -e "7) 查看日志
 8) 更新内容
 9) 关于utqemu
 0) 退出\n"
-read -r -p "请选择: " input
-case $input in
+	read -r -p "请选择: " input
+	case $input in
 	1)  echo -e "${YELLOW}安装过程中，如遇到询问选择，请输(y)，安装过程容易出错，请重试安装${RES}"
 	sleep 2
 	uname -a | grep 'Android' -q
@@ -650,9 +647,9 @@ else
 	fi
         QEMU_SYSTEM
         ;;
-2) if [ -e "/root/sd" ]; then
+	2) if [ -e "/root/sd" ]; then
 	ln  -s /root/sd /sdcard
-fi
+	fi
 	echo -e "创建windows镜像目录及共享目录\n"
         if [ ! -e "${DIRECT}${STORAGE}" ]; then
                 mkdir -p ${DIRECT}${STORAGE}
@@ -663,20 +660,20 @@ fi
         if [ ! -e "${DIRECT}${STORAGE}" ]; then        
 	echo -e "${RED}创建目录失败${RES}"
         else
-                echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
+	echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
         fi
         CONFIRM
         QEMU_SYSTEM
         ;;
-3) if [ ! $(command -v qemu-system-x86_64) ]; then
+	3) if [ ! $(command -v qemu-system-x86_64) ]; then
 	echo -e "\n${RED}检测到你未安装qemu，请先执行安装选项${RES}"
 	sleep 2
 	QEMU_SYSTEM
-fi
+	fi
 	if [ ! -d ${DIRECT}/xinhao ]; then
 		echo -e "\n${RED}未检测到你的镜像目录，请确认已赋予手机存储权限并创建镜像目录${RES}"
 		CONFIRM
-fi
+	fi
 	uname -a | grep 'Android' -q 
 	if [ $? == 0 ]; then
 		echo -e "\n${YELLOW}vncviewer地址为127.0.0.1:0${RES}"     
@@ -684,42 +681,42 @@ fi
 		display=vnc
 	else
 		echo -n -e "\n${GREEN}是否已有快捷脚本，如有请输快捷脚本名字，如无请回车:${RES} "
-		read script_name
-		if [ -n "$script_name" ]; then
-			if [ $(command -v $script_name) ]; then
-				printf "%s\n"
+	read script_name
+	if [ -n "$script_name" ]; then
+	if [ $(command -v $script_name) ]; then
+		printf "%s\n"
 #cat $(which $script_name)
 
-if grep 'vnc' $(which $script_name); then
+	if grep 'vnc' $(which $script_name); then
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
 	elif grep -q 'DISPLAY' $(which $script_name); then
-		grep '\-cpu' $(which $script_name)
-		printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl"
-		elif grep '\-spice' $(which $script_name); then
-			printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
-		else
-			grep '\-cpu' $(which $script_name)
-			printf "%s\n${GREEN}启动模拟器"
-fi
-printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
-sleep 1
-$script_name >/dev/null 2>>${HOME}/.utqemu_log
-if [ $? == 1 ]; then
+	grep '\-cpu' $(which $script_name)
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl"
+	elif grep '\-spice' $(which $script_name); then
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
+	else
+	grep '\-cpu' $(which $script_name)
+	printf "%s\n${GREEN}启动模拟器"
+	fi
+	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	sleep 1
+	$script_name >/dev/null 2>>${HOME}/.utqemu_log
+	if [ $? == 1 ]; then
 	FAIL
 	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
-fi
-				exit 1
-			else
-				echo -e "\n${RED}未获取到你的快捷脚本${RES}\n"
-				sleep 1
-				fi
-		fi
-case $ARCH in
+	fi
+	exit 1
+	else
+	echo -e "\n${RED}未获取到你的快捷脚本${RES}\n"
+	sleep 1
+	fi
+	fi
+	case $ARCH in
 	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
-		case $SYS in
-			QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 9)返回 0)退出 " input ;;
-			*) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(测试阶段) 9)返回 0)退出 " input
-		esac
+	case $SYS in
+	QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 9)返回 0)退出 " input ;;
+	*) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(测试阶段) 9)返回 0)退出 " input
+	esac
 	case $input in
 		1|"") echo -e "\n${BLUE}vnc输出${RES}"
 			display=vnc
@@ -728,42 +725,42 @@ case $ARCH in
 			display=xsdl
 			;;
 		3) echo -e "${BLUE}spice输出${RES}"
-read -r -p "1)常规使用 2)spice传输协议使用(需virtio驱动) " input
-case $input in
-	2) display=spice_ ;;
+	read -r -p "1)常规使用 2)spice传输协议使用(需virtio驱动) " input
+	case $input in
+		2) display=spice_ ;;
 		*) display=spice ;;
 	esac
 	;;
 		4) echo -e "\n${BLUE}窗口输出${RES}"
 			display=gtk_ ;;
 		5) display=wlan_vnc
-			echo -e "\n${GREEN}为减少效率的影响，暂不支持声音输出${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
-			sleep 1 ;;
+	echo -e "\n${GREEN}为减少效率的影响，暂不支持声音输出${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
+	sleep 1 ;;
 		6) case $SYS in
 			QEMU_PRE) INVALID_INPUT
 			QEMU_SYSTEM ;; 
 		*) echo -e "\n${GREEN}本选项使用常用配置参数${RES}\n声卡 winxp为ac97 win7为hda\n网卡 e1000\n显卡 winxp为cirrus win7为VGA\n视频输出 vnc${RES}\n"
-			mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
-echo -e "请选择拟模拟的系统"
-read -r -p "1)winxp 2)win7 9)返回 " input
-case $input in
-1) echo -e "\nqemu5.0以上版本模拟winxp开机比较慢\n"
+	mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
+	echo -e "请选择拟模拟的系统"
+	read -r -p "1)winxp 2)win7 9)返回 " input
+	case $input in
+	1) echo -e "\nqemu5.0以上版本模拟winxp开机比较慢\n"
 	LIST
 	HDA_READ
 	if (( $mem >= 512 )); then
 	mem_=1024
-else
+	else
 	mem_=512
-fi
+	fi
 	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
 2) 	LIST
 	HDA_READ
 	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
-9) QEMU_SYSTEM ;;
-*) INVALID_INPUT
+	9) QEMU_SYSTEM ;;
+	*) INVALID_INPUT
 	QEMU_SYSTEM ;;
-esac
+	esac
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
@@ -773,15 +770,15 @@ START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-co
 cat <<-EOF
 $START
 EOF
-printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
-printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
-$START >/dev/null 2>>${HOME}/.utqemu_log
-if [ $? == 1 ]; then
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
+	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
+	$START >/dev/null 2>>${HOME}/.utqemu_log
+	if [ $? == 1 ]; then
 	FAIL
-printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
-fi
+	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+	fi
 	exit 1 ;;
-esac
+	esac
 			;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
@@ -1094,19 +1091,19 @@ esac
 #TERMUX
 	uname -a | grep 'Android' -q 
 	if [ $? == 0 ]; then
-echo -e "请选择${YELLOW}显卡${RES}"
-read -r -p "1)cirrus 2)vmware 3)vga 4)virtio " input
+	echo -e "请选择${YELLOW}显卡${RES}"
+	read -r -p "1)cirrus 2)vmware 3)vga 4)virtio " input
 	case $input in 
 		1) VGA_MODEL=cirrus-vga ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
-			case $input in
-				1|"") VGA_MODEL=vmware-svga ;;
-				*) VGA_MODEL=vmware-svga,vgamem_mb=512 ;;
-			esac ;;
+		case $input in
+		1|"") VGA_MODEL=vmware-svga ;;
+		*) VGA_MODEL=vmware-svga,vgamem_mb=512 ;;
+	esac ;;
 		4) VGA_MODEL=virtio-vga ;;
 		*) VGA_MODEL=VGA ;;
         esac
-set -- "${@}" "-device" "${VGA_MODEL}"
+	set -- "${@}" "-device" "${VGA_MODEL}"
 
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
@@ -1115,21 +1112,21 @@ set -- "${@}" "-device" "${VGA_MODEL}"
 		3) NET_MODEL="virtio-net-pci,netdev=user0" ;;
 		0) ;;
 		*) NET_MODEL="e1000,netdev=user0" ;;
-esac
-if [ -n "${NET_MODEL}" ]; then
-	set -- "${@}" "-device" "${NET_MODEL}"
-	set -- "${@}" "-netdev" "user,id=user0"
-else
-	set -- "${@}" "-net" "none"
-fi
-else
+	esac
+	if [ -n "${NET_MODEL}" ]; then
+		set -- "${@}" "-device" "${NET_MODEL}"
+		set -- "${@}" "-netdev" "user,id=user0"
+	else
+		set -- "${@}" "-net" "none"
+	fi
+	else
 ##################
 #PROOT
 #####################
 #<5.0
 	qemu-system-x86_64 --version | grep ':[5-9]' -q || uname -a | grep 'Android' -q
 	if [ $? != 0 ]; then
-echo -e "请选择${YELLOW}显卡${RES}"
+	echo -e "请选择${YELLOW}显卡${RES}"
 	read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
         case $input in
                 1) VGA_MODEL=cirrus ;;
@@ -1137,13 +1134,13 @@ echo -e "请选择${YELLOW}显卡${RES}"
 		4) VGA_MODEL=virtio ;;
 		5) VGA_MODEL=qxl ;;
 		*) VGA_MODEL=std ;;
-esac
-set -- "${@}" "-vga" "${VGA_MODEL}"
+	esac
+	set -- "${@}" "-vga" "${VGA_MODEL}"
 #内存锁，默认打开
-		set -- "${@}" "-realtime" "mlock=off"
+	set -- "${@}" "-realtime" "mlock=off"
 
-echo -e "请选择${YELLOW}网卡${RES}"
-read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
+	echo -e "请选择${YELLOW}网卡${RES}"
+	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 	case $input in
 		2) NET_MODEL="nic,model=rtl8139" ;;
 		3) NET_MODEL="nic,model=virtio" ;;
@@ -1151,37 +1148,36 @@ read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 		*) NET_MODEL="nic,model=e1000" ;;
 #set -- "${@}" "-net" "nic"
 #set -- "${@}" "-net" "user,smb=${DIRECT}/xinhao"
-esac
-if [ -n "${NET_MODEL}" ]; then
+	esac
+	if [ -n "${NET_MODEL}" ]; then
 	set -- "${@}" "-net" "${NET_MODEL}"
 	set -- "${@}" "-net" "user"
-else
+	else
 	set -- "${@}" "-net" "none"
-fi
-case $display in
-	wlan_vnc) ;;
-	*)
-			echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-			read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
-                        case $input in
+	fi
+	case $display in
+		wlan_vnc) ;;
+		*)
+		echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
+	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
+	case $input in
                 1|"") SOUND_MODEL=ac97 ;;
                 2) SOUND_MODEL=sb16 ;;
                 0) ;;
                 3) SOUND_MODEL=es1370 ;;
 		4) SOUND_MODEL=hda ;;
 		*) SOUND_MODEL=all ;;
-esac
-if [ -n "${SOUND_MODEL}" ]; then
-set -- "${@}" "-soundhw" "${SOUND_MODEL}"
-fi
-;;
-esac
+	esac
+	if [ -n "${SOUND_MODEL}" ]; then
+	set -- "${@}" "-soundhw" "${SOUND_MODEL}"
+	fi ;;
+	esac
         else
 ####################
 #5.0
 ####################
-echo -e "请选择${YELLOW}显卡${RES}"
-read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
+	echo -e "请选择${YELLOW}显卡${RES}"
+	read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 	case $input in
 		1) set -- "${@}" "-device" "cirrus-vga" ;;
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
@@ -1214,8 +1210,8 @@ read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 	if [ $? != 0 ]; then
 		export PULSE_SERVER=tcp:127.0.0.1:4713
 		fi ;;
-esac ;;
-esac ;;
+	esac ;;
+	esac ;;
 		5) set -- "${@}" "-device" "qxl-vga"
 : <<\EOF
 set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
@@ -1276,32 +1272,32 @@ esac
 ####################
 #进阶选项
 
-echo -e "\n是否进阶选项，包括${YELLOW}共享文件夹、鼠标、启动顺序、时间${RES}等"
-read -r -p "1)是 2)否 " input
-case $input in
+	echo -e "\n是否进阶选项，包括${YELLOW}共享文件夹、鼠标、启动顺序、时间${RES}等"
+	read -r -p "1)是 2)否 " input
+	case $input in
         1)
-echo -e "是否加载${YELLOW}共享文件夹${RES}"
-read -r -p "1)加载 2)不加载 " input
-case $input in
+	echo -e "是否加载${YELLOW}共享文件夹${RES}"
+	read -r -p "1)加载 2)不加载 " input
+	case $input in
 	1|"") SHARE=true ;;
 	*) ;;
-esac
+	esac
 #开全内存balloon功能，俗称内存气球
-echo -e "是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
-read -r -p "1)开启 2)不开启 " input
-case $input in
+	echo -e "是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
+	read -r -p "1)开启 2)不开启 " input
+	case $input in
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	*) ;;
-esac
+	esac
 #-L是DOS
 #-bios，启动现系统
 #-plash，启动UEFI 的BIOS
-case $SYS in
+	case $SYS in
 	ANDROID) ;;
 	*)
-echo -e "是否加载${YELLOW}UEFI${RES}"
-read -r -p "1)加载 2)不加载 " input
-case $input in
+	echo -e "是否加载${YELLOW}UEFI${RES}"
+	read -r -p "1)加载 2)不加载 " input
+	case $input in
 	1) echo -n -e "请确认UEFI已放进${STORAGE}文件夹内，输入UEFI全名(例如OVMF_CODE.fd)，使用qemu的默认UEFI请直接回车 "
 	read UEFI
 	if [ -n "$UEFI" ]; then
@@ -1310,28 +1306,28 @@ case $input in
 		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_CODE.fd"
 		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_VARS.fd"
 	fi ;;
-*) ;;
-esac ;;
-esac
+	*) ;;
+	esac ;;
+	esac
 #amd
 ####################
-case $(dpkg --print-architecture) in
+	case $(dpkg --print-architecture) in
 	i*86|x86*|amd64)
 #在KVM中内存允许过载使用，分配给客户机的内存总数可以大于实际可用的物理内存总数。客户机过载使用内存的上限是：宿主机可用物理内存空间和交换空间的大小之和。超过这个上限会使客户机因内存不足被强制关闭。		
-		echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
-		read -r -p "1)开启 2)关闭 " input
-		case $input in
-			1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
-			*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
-		esac
+	echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
+	read -r -p "1)开启 2)关闭 " input
+	case $input in
+		1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
+		*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
+	esac
 #KVM允许客户机过载使用（over-commit）CPU资源，即让一个或多个客户机使用vCPU的总数量超过宿主机实际拥有的物理CPU数量。但不建议单个客户机的CPU数量多于物理宿主机的CPU数量。
-		echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
-		read -r -p "1) 开启 2)关闭 " input
-		case $input in
-			1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
-			*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
-		esac ;;
-	*) 
+	echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
+	read -r -p "1) 开启 2)关闭 " input
+	case $input in
+		1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
+		*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
+	esac ;;
+		*) 
 #让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
 		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试失败，提高响应速度，如出现闪退请关闭)"
    	read -r -p "1)加载 2)不加载 " input
@@ -1345,40 +1341,40 @@ case $(dpkg --print-architecture) in
 	if [ -d "/dev/hugepages" ]; then
 		set -- "${@}" "-mem-path" "/dev/hugepages"
 	fi
-			set -- "${@}" "-mem-prealloc" ;;
-			*)	esac ;;
-esac
-echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
-read -r -p "1)加载 2)不加载 " input
-case $input in
+		set -- "${@}" "-mem-prealloc" ;;
+		*)	esac ;;
+	esac
+	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
+	read -r -p "1)加载 2)不加载 " input
+	case $input in
 	2) ;;
 	*) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
 esac
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #driftfix=slew i386存在时间漂移
-echo -e "请选择${YELLOW}系统时间${RES}标准"
-read -r -p "1)utc 2)localtime " input
-case $input in
+	echo -e "请选择${YELLOW}系统时间${RES}标准"
+	read -r -p "1)utc 2)localtime " input
+	case $input in
 	1) case $QEMU_SYS in
 		qemu-system-i386) set -- "${@}" "-rtc" "base=utc,clock=host,driftfix=slew" ;;
 		*) set -- "${@}" "-rtc" "base=utc,clock=host" ;;
-esac ;;
+	esac ;;
 	*) set -- "${@}" "-rtc" "base=localtime" ;;
 #       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
-esac
+	esac
 #strict=on|off 是否受宿主机网络控制
-echo -e "请选择${YELLOW}启动顺序${RES}"
-read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
-case $input in
+	echo -e "请选择${YELLOW}启动顺序${RES}"
+	read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
+	case $input in
 	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
 	*) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
-esac ;;
-*)
+	esac ;;
+	*)
         set -- "${@}" "-rtc" "base=localtime"
         set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
         set -- "${@}" "-usb" "-device" "usb-tablet"
         ;;
-esac
+	esac
 
 
 #################
@@ -1405,57 +1401,55 @@ EOF
 		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso_name" ;;
 		*)
 		echo -e "\n请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
-		read -r -p "1)ide 2)sata 3)virtio 4)测试用(勿选) " input
-		case $input in
+	read -r -p "1)ide 2)sata 3)virtio 4)测试用(勿选) " input
+	case $input in
 ##################
 #IDE			
-			1)
+		1)
 		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=none"
-		if [ -n "$hdb_name" ]; then
+	if [ -n "$hdb_name" ]; then
 		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
-		fi
-		if [ -n "$iso1_name" ]; then
-			set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
-		if [ -n "$iso_name" ]; then 
-		       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom"
-		fi
+	fi
+	if [ -n "$iso1_name" ]; then
+		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
+	if [ -n "$iso_name" ]; then 
+	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom"
+	fi
 	else
-		if [ -n "$iso_name" ]; then
-			set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,index=2,media=cdrom"
-		fi
-		fi
-		case $SHARE in
-			true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
-			*) ;;
-		esac ;;
-
-
-		2)
+	if [ -n "$iso_name" ]; then
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,index=2,media=cdrom"
+	fi
+	fi
+	case $SHARE in
+		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
+		*) ;;
+	esac ;;
+	2)
 
 ##################
 #SATA        
-		set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none"
-		set -- "${@}" "-device" "ahci,id=ahci"
-		set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
+	set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none"
+	set -- "${@}" "-device" "ahci,id=ahci"
+	set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
 
-		if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none"
-		set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
-		fi
-		if [ -n "$iso1_name" ]; then
-			set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
-		fi
-		if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}${STORAGE}$iso_name,if=none"     
-		set -- "${@}" "-device" "ide-cd,drive=cdrom,bus=ahci.2"
-		fi
-		case $SHARE in
-			true)
+	if [ -n "$hdb_name" ]; then
+	set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none"
+	set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
+	fi
+	if [ -n "$iso1_name" ]; then
+		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
+	fi
+	if [ -n "$iso_name" ]; then
+	set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}${STORAGE}$iso_name,if=none"     
+	set -- "${@}" "-device" "ide-cd,drive=cdrom,bus=ahci.2"
+	fi
+	case $SHARE in
+		true)
 		set -- "${@}" "-usb" "-drive" "if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/"
 		set -- "${@}" "-device" "usb-storage,drive=disk1"
 		;;
 	*) ;;
-esac ;;
+	esac ;;
 ##################
 #VIRTIO
 
