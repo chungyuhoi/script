@@ -4,7 +4,8 @@
 
 INFO() {
 	clear
-	printf "${YELLOW}更新日期2021.6.5 更新内容${RES}
+	printf "${YELLOW}更新日期2021.6.8 更新内容${RES}
+	新增启动失败，给出常见错误提示
 	新增镜像目录自定义，该功能暂不支持共享目录
 	屏蔽termux(utermux)环境qemu不适用的参数选项
 	为简化操作，增加快速启动选项体验，使用常用配置参数，声卡winxp为ac97，win7为hda，网卡e1000，显卡winxp为cirrus，win7为VGA，vnc输出
