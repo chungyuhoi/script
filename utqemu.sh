@@ -3,7 +3,7 @@
 ####################
 
 INFO() {
-	#clear
+	clear
 	UPDATE="2021/06/08"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增启动失败，给出常见错误提示
@@ -17,7 +17,7 @@ INFO() {
 }
 ###################
 NOTE() {
-	#clear
+	clear
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -78,16 +78,16 @@ WHITE="\e[37m"
 RES="\e[0m"
 ####################
 	`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
-if [ $? != 0 ]; then
+	if [ $? != 0 ]; then
 	IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1)
-else
+	else
 	`ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6` 2>/dev/null
 	if [ $? -ne 0 ]; then
 		IP=$(ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6)
 	else
 		IP=$(ip a | grep inet | grep wlan | cut -d "/" -f 1 | cut -d " " -f 6)
 	fi
-fi
+	fi
 ####################
 sudo_() {
 	date_t=`date +"%D"`
@@ -233,7 +233,10 @@ LOGIN() {
 	if [ ! -e $DEBIAN-qemu/dev/hugepages ]; then
 		mkdir -p $DEBIAN-qemu/dev/hugepages
 	fi
-	if [[ ! -e "$DEBIAN-qemu/root/.utqemu_" ]]; then
+	if [ ! -e "$DEBIAN-qemu/root/utqemu.sh" ]; then
+		curl http://shell.eacgh.cn/utqemu.sh -o $DEBIAN-qemu/root/utqemu.sh
+	fi
+	if [ ! -e "$DEBIAN-qemu/root/.utqemu_" ]; then
 	echo $UPDATE >>$DEBIAN-qemu/root/.utqemu_
 	elif ! grep -q $UPDATE "$DEBIAN-qemu/root/.utqemu_" ; then
 	echo -e "\n${GREEN}检测到脚本有更新，更新日期$UPDATE${RES}"
