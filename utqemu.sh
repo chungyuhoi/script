@@ -6,6 +6,7 @@ INFO() {
 	clear
 	UPDATE="2021/06/10"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	容器内新增aspice与xsdl下载地址
 	修复termux环境无法安装qemu的bug
 	qemu5.0以下版本增加virtio磁盘接口安装选项
 	启动qemu-system-x86_64模拟器中的virtio磁盘安装选项移至virtio驱动相关选项中	
@@ -422,7 +423,7 @@ echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 3) 修改设备标识(手机、平板、电脑)
 4) 修改源(只适用本脚本下载的系统)
 5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
-6) 获取aspice安卓版下载地址(非永久有效)
+6) 获取aspice与xsdl安卓版下载地址(非永久有效)
 7) 模拟系统的时间不准
 8) 修改镜像目录
 9) 返回
@@ -570,12 +571,15 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 			unset FORMAT
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
-	6) if [ ! $(command -v curl) ]; then
+		6) read -r -p "1)aspice 2)xsdl " input
+	if [ ! $(command -v curl) ]; then
 	echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
 	sleep 2
 	sudo_ 
 	$sudo apt install curl -y
 	fi
+	case $input in
+	1)
 	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
 	CONFIRM
 	while ( [ "$SPI_URL" != '0' ] && [[ ! $SPI_URL_ =~ apk ]] )
@@ -591,7 +595,29 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	fi
 	done
 	echo -e "\n下载地址\n${GREEN}https://github.com/$SPI_URL_/$SPI_URL_${RES}\n"
-	CONFIRM
+	CONFIRM ;;
+	2) VERSION=`curl https://sourceforge.net/projects/libsdl-android/files/apk/XServer-XSDL/ | grep android | grep 'XSDL/XServer' | grep '\.apk/download' | head -n 1 | cut -d '/' -f 9`
+	echo -e "\n下载地址\n${GREEN}https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION${RES}\n"
+	read -r -p "1)下载 2)返回 " input
+	case $input in
+	1) 
+	curl -O https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION
+	if [ -f $VERSION ]; then
+	echo -e "移到${DIRECT}${STORAGE}目录中..."
+	mv -v $VERSION ${DIRECT}${STORAGE}
+	if [ -f ${DIRECT}${STORAGE}$VERSION ]; then
+	echo -e "\n已下载至${DIRECT}${STORAGE}目录"
+	sleep 2
+	fi
+	else
+	echo -e "\n${RED}错误，请重试${RES}"
+	sleep 2
+	fi ;;
+	*) ;;
+	esac
+	unset VERSION ;;
+	*) INVALID_INPUT ;;
+	esac
 	QEMU_ETC ;;
 	7) echo -e "\n通常情况下，参数rtc可以解决，但可能由于容器时区问题导致，可通过修改时区来解决\n"
 	read -r -p "1)修改时区 0)返回 " input
