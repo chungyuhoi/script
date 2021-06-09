@@ -4,8 +4,10 @@
 
 INFO() {
 	clear
-	UPDATE="2021/06/09"
+	UPDATE="2021/06/10"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	修复termux环境无法安装qemu的bug
+	qemu5.0以下版本增加virtio磁盘接口安装选项
 	启动qemu-system-x86_64模拟器中的virtio磁盘安装选项移至virtio驱动相关选项中	
 	新增本脚本容器下脚本自动检测更新选项
 	新增启动失败，给出常见错误提示
@@ -336,10 +338,6 @@ EOF
 	curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
 	fi
 	cp utqemu.sh $sys_name/root/utqemu.sh
-: <<\eof
-sed -i "s/qemu-system-x86-64-headless/qemu-system-x86 xserver-xorg x11-utils/" $sys_name/root/utqemu.sh
-	sed -i 's/qemu-system-i386-headless/-y \&\& apt --reinstall install pulseaudio/' $sys_name/root/utqemu.sh
-eof
 	echo "bash utqemu.sh" >>$sys_name/root/.bashrc
 	echo "$UPDATE" >>$sys_name/root/.utqemu_
 	echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
@@ -1606,10 +1604,10 @@ VIRTIO() {
 	echo -e "
 1) 下载virtio驱动光盘"
 	case $SYS in
-		QEMU_ADV)
+		ANDROID) ;;
+		*)
 echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外下载virtio驱动光盘）
 3) 为磁盘接口添加virtio驱动（自定义模式，载virtio驱动光盘)" ;;
-	*) ;;
 	esac
 	echo -e "8) 关于virtio
 9) 返回主目录
@@ -1662,7 +1660,8 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
                 ;;
 
 	2) case $SYS in
-		QEMU_ADV)
+		ANDROID) INVALID_INPUT && VIRTIO ;;
+		*)
 		echo -e "\n${GREEN}本次操作默认vnc输出，地址127.0.0.1:0\n请确认系统镜像与virtio驱动盘已放入手机目录${STORAGE}里${RES}"
 	CONFIRM
 	if [ ! -e "${DIRECT}${STORAGE}" ]; then
@@ -1694,15 +1693,13 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	CONFIRM
 	qemu-system-x86_64 -m 1g -drive file=${DIRECT}${STORAGE}$hda_name,if=ide -drive file=${DIRECT}${STORAGE}fake.qcow2,if=virtio -cdrom ${DIRECT}${STORAGE}$iso_name -vnc :0 2>>${HOME}/.utqemu_log
 	exit 1 ;;
-	*)      INVALID_INPUT && VIRTIO ;;
 	esac ;;
 	3) case $SYS in
-		QEMU_ADV) echo -e "\n${GREEN}你选择了磁盘接口virtio驱动安装模式，此模式下的系统磁盘接口为ide，共享文件接口为virtio，请务必准备好virtio驱动光盘\n如启动安装失败，也请在(VIRTIO驱动相关)选项中进行兼容启动安装${RES}"
+		ANDROID) INVALID_INPUT && VIRTIO ;;
+		*) echo -e "\n${GREEN}你选择了磁盘接口virtio驱动安装模式，此模式下的系统磁盘接口为ide，共享文件接口为virtio，请务必准备好virtio驱动光盘\n如启动安装失败，也请在(VIRTIO驱动相关)选项中进行兼容启动安装${RES}"
 	CONFIRM
 	QEMU_MODE=VIRTIO_MODE
 	START_QEMU ;;
-		*)	INVALID_INPUT && VIRTIO
-	;;
 	esac ;;
 	8) ABOUT_VIRTIO ;;
 	9) QEMU_SYSTEM ;;
