@@ -228,12 +228,12 @@ LIST() {
 #################
 FAIL() {
 FILE="No such file"
-SHARE_="515.06"
+SHARE_="516.06"
 PORT="Address already"
 echo -e "\n\n"
 case $(cat ${HOME}/.utqemu_log | tail -n 1) in
 	*$FILE*) echo -e "${YELLOW}错误：没有匹配的目录或文件名${RES}" ;;
-	*$SHARE_*) echo -e "${YELLOW}错误：共享文件超过515.06 MB${RES}" ;;
+	*$SHARE_*) echo -e "${YELLOW}错误：共享文件超过516.06 MB${RES}" ;;
 	*$PORT*) echo -e "${YELLOW}\n错误：视频输出端口占用${RES}" ;;
 	*)  ;;
 esac
@@ -336,8 +336,10 @@ EOF
 	curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
 	fi
 	cp utqemu.sh $sys_name/root/utqemu.sh
-	sed -i "s/qemu-system-x86-64-headless/qemu-system-x86 xserver-xorg x11-utils/" $sys_name/root/utqemu.sh
+: <<\eof
+sed -i "s/qemu-system-x86-64-headless/qemu-system-x86 xserver-xorg x11-utils/" $sys_name/root/utqemu.sh
 	sed -i 's/qemu-system-i386-headless/-y \&\& apt --reinstall install pulseaudio/' $sys_name/root/utqemu.sh
+eof
 	echo "bash utqemu.sh" >>$sys_name/root/.bashrc
 	echo "$UPDATE" >>$sys_name/root/.utqemu_
 	echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
@@ -693,7 +695,7 @@ else
 echo -e "\n${YELLOW}常见错误提示：${RES}
 ${BLUE}开机蓝屏; 通常为机算机类型(pc q35)，磁盘接口(IDE SATA VIRTIO)，运行内存配置过大等原因造成，请尝试修改配置${RES}
 No such file or directory; ${YELLOW}(没有匹配的目录或文件名)${RES}
-Directory does not fit in FAT16 (capacity 516.06 MB); ${YELLOW}(共享文件超过515.06 MB)${RES}
+Directory does not fit in FAT16 (capacity 516.06 MB); ${YELLOW}(共享文件超过516.06 MB)${RES}
 Failed to find an available port: Address already in use; ${YELLOW}(视频输出端口占用)${RES}"
 	echo -e "\n${GREEN}到底了${RES}"
         read -r -p "是否删除日志 1)是 0)否 " input
