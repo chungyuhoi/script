@@ -652,7 +652,7 @@ echo -e "7) 查看日志
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
 	sudo_ 
-	$sudo apt --fix-broken install -y && $sudo apt install qemu-system-x86-64-headless qemu-system-i386-headless -y
+	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless -y
 else
 	sudo_
        	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio -y
@@ -1427,12 +1427,12 @@ EOF
 
 ##################
 #SATA        
-	set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none"
+	set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none,cache=none"
 	set -- "${@}" "-device" "ahci,id=ahci"
 	set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
 
 	if [ -n "$hdb_name" ]; then
-	set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none"
+	set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none,cache=none"
 	set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
 	fi
 	if [ -n "$iso1_name" ]; then
@@ -1452,9 +1452,9 @@ EOF
 ##################
 #VIRTIO
 
-	3) set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio"
+	3) set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio,cache=none"
 	if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk,if=virtio"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk,if=virtio,cache=none"
 	fi
 	if [ -n "$iso1_name" ]; then
 		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
