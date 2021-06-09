@@ -353,7 +353,7 @@ SYSTEM_CHECK() {
 	if [ ! -e ${HOME}/storage ]; then
 		termux-setup-storage
 	fi
-	grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep -E 'bfsu|tsinghua|ustc|tencent|utqemucheck'
+	grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep -E -q 'bfsu|tsinghua|ustc|tencent|utqemucheck'
 	if [ $? != 0 ]; then  
 		echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
 		1) 换国内源    
@@ -1602,7 +1602,7 @@ VIRTIO() {
 1) 下载virtio驱动光盘"
 	case $SYS in
 		QEMU_ADV)
-echo -e "2) 为磁盘接口添加virtio驱动（需另外下载virtio驱动光盘）
+echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外下载virtio驱动光盘）
 3) 为磁盘接口添加virtio驱动（自定义模式，载virtio驱动光盘)" ;;
 	*) ;;
 	esac
