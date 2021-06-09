@@ -233,7 +233,7 @@ PORT="Address already"
 echo -e "\n\n"
 case $(cat ${HOME}/.utqemu_log | tail -n 1) in
 	*$FILE*) echo -e "${YELLOW}错误：没有匹配的目录或文件名${RES}" ;;
-	*$SHARE*) echo -e "${YELLOW}错误：共享文件超过515.06 MB${RES}" ;;
+	*$SHARE_*) echo -e "${YELLOW}错误：共享文件超过515.06 MB${RES}" ;;
 	*$PORT*) echo -e "${YELLOW}\n错误：视频输出端口占用${RES}" ;;
 	*)  ;;
 esac
@@ -628,7 +628,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 }
 ##################
 QEMU_SYSTEM() {
-	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL
+	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE
 	QEMU_VERSION
 	NOTE
 echo -e "
@@ -732,7 +732,9 @@ START_QEMU() {
 		sleep 1
 		display=vnc
 	else
-		echo -n -e "\n${GREEN}是否已有快捷脚本，如有请输快捷脚本名字，如无请回车:${RES} "
+	case $QEMU_MODE in
+		VIRTIO_MODE) ;;
+		*) echo -n -e "\n${GREEN}是否已有快捷脚本，如有请输快捷脚本名字，如无请回车:${RES} "
 	read script_name
 	if [ -n "$script_name" ]; then
 	if [ $(command -v $script_name) ]; then
@@ -762,7 +764,8 @@ START_QEMU() {
 	echo -e "\n${RED}未获取到你的快捷脚本${RES}\n"
 	sleep 1
 	fi
-	fi
+	fi ;;
+esac
 	case $ARCH in
 	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
 	case $SYS in
