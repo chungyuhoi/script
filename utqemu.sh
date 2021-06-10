@@ -1743,6 +1743,7 @@ LOGIN_() {
 	2) 支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3）支持qemu5.0以上版本容器(选项内容丰富)
 
+	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
 	read -r -p "请选择: " input
 	case $input in
@@ -1769,6 +1770,13 @@ LOGIN_() {
 		fi
 		LOGIN
 		fi ;;
+	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
+	case $input in
+	1) curl http://shell.eacgh.cn/utqemu.sh -o ${HOME}/utqemu.sh
+	echo "bash utqemu.sh" >>${PREFIX}/etc/bash.bashrc ;;
+	*) sed -i "/utqemu/d" ${PREFIX}/etc/bash.bashrc ;;
+	esac
+	MAIN ;;
 	0) exit 1 ;;
 	*) INVALID_INPUT
 		MAIN ;;
