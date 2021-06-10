@@ -598,7 +598,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	CONFIRM ;;
 	2) VERSION=`curl https://sourceforge.net/projects/libsdl-android/files/apk/XServer-XSDL/ | grep android | grep 'XSDL/XServer' | grep '\.apk/download' | head -n 1 | cut -d '/' -f 9`
 	echo -e "\n下载地址\n${GREEN}https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION${RES}\n"
-	read -r -p "1)下载 2)返回 " input
+	read -r -p "1)下载 9)返回 " input
 	case $input in
 	1) 
 	curl -O https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION
@@ -620,7 +620,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	esac
 	QEMU_ETC ;;
 	7) echo -e "\n通常情况下，参数rtc可以解决，但可能由于容器时区问题导致，可通过修改时区来解决\n"
-	read -r -p "1)修改时区 0)返回 " input
+	read -r -p "1)修改时区 9)返回 " input
 	case $input in
 		1)
 		sed -i "/^export TZ=/d" /etc/profile
@@ -1665,7 +1665,7 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
                 QEMU_SYSTEM
         else
         echo -e "${YELLOW}下载地址链接为\n\n${GREEN}${FED_CURL}$VERSION$VERSION_${RES}\n"
-	read -r -p "1)下载 0)返回 " input
+	read -r -p "1)下载 9)返回 " input
 	case $input in
 		1)
 		curl -O ${FED_CURL}$VERSION$VERSION_
