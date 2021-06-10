@@ -1006,6 +1006,7 @@ esac
 		set -- "${@}" "-m" "$mem"
 	else
 		set -- "${@}" "-m" "$mem_"
+#		set -- "${@}" "-m" "$mem_,slots=3,maxmem=$(( $mem_ * 2 ))m"
 	fi
 
 
@@ -1270,7 +1271,7 @@ EOF
 		wlan_vnc) ;;
 		*)
 	echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-	read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数) 6)hda(修改参数) 0)不加载 " input
+	read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数，不适合spice) 6)hda(修改参数，不适合spice) 0)不加载 " input
 	case $input in
 		1) set -- "${@}" "-device" "ES1370" ;;
 		2) set -- "${@}" "-device" "sb16" ;;
