@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-#cd $(dirname $0)
+cd $(dirname $0)
 ####################
 
 INFO() {
@@ -335,10 +335,9 @@ ${BF_URL}/ bullseye-updates ${DEB}
 ${BF_URL}/ bullseye-backports ${DEB}
 ${BF_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
 EOF
-	if [ ! -e ./utqemu.sh ]; then
-	curl -O http://shell.eacgh.cn/utqemu.sh 2>/dev/null
+	if [ ! -f $(pwd)/utqemu.sh ]; then
+	curl http://shell.eacgh.cn/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
 	fi
-	cp utqemu.sh $sys_name/root/utqemu.sh
 	echo "bash utqemu.sh" >>$sys_name/root/.bashrc
 	echo "$UPDATE" >>$sys_name/root/.utqemu_
 	echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
