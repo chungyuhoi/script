@@ -365,19 +365,18 @@ SYSTEM_CHECK() {
 		1|"") echo "换国内源" 
 	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
 	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;  
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update ;;
 		*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;  
 	esac                                                    
 		fi
-	pkg update
 	if [ ! $(command -v curl) ]; then
-	pkg install curl -y
+	pkg update && pkg install curl -y
 	fi
 	dpkg -l | grep pulseaudio -q 2>/dev/null
 	if [ $? != 0 ]; then
 	echo -e "${YELLOW}检测到你未安装pulseaudio，为保证声音正常输出，将自动安装${RES}"
 	sleep 2
-	pkg install pulseaudio -y
+	pkg update && pkg install pulseaudio -y
 	fi
 	if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
 	then
@@ -390,7 +389,7 @@ SYSTEM_CHECK() {
 	echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
 	fi
 	if [ ! $(command -v proot) ]; then
-	pkg install proot -y
+	pkg update && pkg install proot -y
 	fi
 	fi
 }
