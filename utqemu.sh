@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 
 INFO() {
-	clear
+#	clear
 	UPDATE="2021/06/10"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	容器内新增aspice与xsdl下载地址
@@ -18,7 +18,7 @@ INFO() {
 }
 ###################
 NOTE() {
-	clear
+#	clear
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -38,14 +38,14 @@ echo -e "\e[32m$(qemu-system-x86_64 --version | head -n 1)\e[0m"
 }
 ###################
 ABOUT_UTQEMU(){
-	clear
+#	clear
 	printf "${YELLOW}关于utqemu脚本${RES}
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n"
 	CONFIRM
 	QEMU_SYSTEM	
 }
 ABOUT_VIRTIO(){
-	clear
+#	clear
 	printf "${YELLOW}关于virtio驱动${RES}
 	引用官方说法：QEMU为用户提供并行虚拟化块设备和网络设备的能力，其是借助virtio驱动实现的，拥有更好的性能表现以及更低的开销。
 
@@ -253,7 +253,7 @@ LOGIN() {
 	read -r -p "1)更新 0)忽略并不再提示此版本 " input
 	case $input in
 		1|"") rm $DEBIAN-qemu/root/utqemu.sh 2>/dev/null
-			curl http://shell.eacgh.cn/utqemu.sh -o $DEBIAN-qemu/root/utqemu.sh ;;
+			curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o $DEBIAN-qemu/root/utqemu.sh ;;
 		*) ;;
 	esac
 	sed -i "/$(date +"%Y")/d" $DEBIAN-qemu/root/.utqemu_ && echo "$UPDATE" >>$DEBIAN-qemu/root/.utqemu_
@@ -336,7 +336,7 @@ ${BF_URL}/ bullseye-backports ${DEB}
 ${BF_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
 EOF
 	if [ ! -f $(pwd)/utqemu.sh ]; then
-	curl http://shell.eacgh.cn/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
+	curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
 	fi
 	echo "bash utqemu.sh" >>$sys_name/root/.bashrc
 	echo "$UPDATE" >>$sys_name/root/.utqemu_
@@ -819,9 +819,11 @@ esac
 		6) case $SYS in
 			QEMU_PRE) INVALID_INPUT
 			QEMU_SYSTEM ;; 
-		*) echo -e "\n${GREEN}本选项使用常用配置参数${RES}\n声卡 winxp为ac97 win7为hda\n网卡 e1000\n显卡 winxp为cirrus win7为VGA\n视频输出 vnc${RES}\n"
+		*) printf "\n%b\n" "${GREEN}本选项使用常用配置参数${RES}"
+		printf "%-1s %-7s %s\n" 系统 winxp win7 声卡 ac97 hda 显卡 cirrus VGA 网卡 e1000
+		printf "%10s\n\n" "视频 vnc"
 	mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
-	echo -e "请选择拟模拟的系统"
+	echo -e "${YELLOW}请选择拟模拟的系统${RES}"
 	read -r -p "1)winxp 2)win7 9)返回 " input
 	case $input in
 	1) echo -e "\nqemu5.0以上版本模拟winxp开机比较慢\n"
@@ -1771,7 +1773,7 @@ LOGIN_() {
 		fi ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
-	1) curl http://shell.eacgh.cn/utqemu.sh -o ${HOME}/utqemu.sh
+	1) curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o ${HOME}/utqemu.sh
 	echo "bash utqemu.sh" >>${PREFIX}/etc/bash.bashrc ;;
 	*) sed -i "/utqemu/d" ${PREFIX}/etc/bash.bashrc ;;
 	esac
