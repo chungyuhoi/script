@@ -822,7 +822,7 @@ esac
 			QEMU_PRE) INVALID_INPUT
 			QEMU_SYSTEM ;; 
 		*) printf "\n%b\n" "${GREEN}本选项使用常用配置参数${RES}"
-		printf "%-1s %-7s %s\n" 系统 winxp win7 声卡 ac97 hda 显卡 cirrus VGA 网卡 e1000
+		printf "%-1s %-7s %s\n" 系统 winxp win7 声卡 ac97 hda 显卡 cirrus VGA 网卡 e1000 e1000
 		printf "%10s\n\n" "视频 vnc"
 	mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
 	echo -e "${YELLOW}请选择拟模拟的系统${RES}"
