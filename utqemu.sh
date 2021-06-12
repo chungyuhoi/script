@@ -4,8 +4,9 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/06/10"
+	UPDATE="2021/06/12"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	针对部分用户出现脚本下载错误，换了个服务器
 	容器内新增aspice与xsdl下载地址
 	修复termux环境无法安装qemu的bug
 	qemu5.0以下版本增加virtio磁盘接口安装选项
@@ -824,8 +825,8 @@ esac
 			QEMU_PRE) INVALID_INPUT
 			QEMU_SYSTEM ;; 
 		*) printf "\n%b\n" "${GREEN}本选项使用常用配置参数${RES}"
-		printf "%-1s %-7s %s\n" 系统 winxp win7 声卡 ac97 hda 显卡 cirrus VGA 网卡 e1000 e1000
-		printf "%10s\n\n" "视频 vnc"
+		printf "%-7s %-7s %s\n" 系统 winxp win7 声卡 ac97 hda 显卡 cirrus VGA 网卡 e1000 e1000
+		printf "%-7s %s %s\n\n" 视频 vnc 127.0.0.1:0
 	mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
 	echo -e "${YELLOW}请选择拟模拟的系统${RES}"
 	read -r -p "1)winxp 2)win7 9)返回 " input
