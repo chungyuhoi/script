@@ -839,11 +839,15 @@ esac
 	else
 	mem_=512
 	fi
-	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
-2) 	LIST
+	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
+	2) 	LIST
 	HDA_READ
-	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
+	3) 	LIST
+		HDA_READ
+	MA=q35 VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio,cache=none" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
+	;;
 	9) QEMU_SYSTEM ;;
 	*) INVALID_INPUT
 	QEMU_SYSTEM ;;
@@ -851,7 +855,7 @@ esac
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
-START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off,mem-merge=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO -device e1000,netdev=user0 -netdev user,id=user0 -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off,mem-merge=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 #-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
 
 cat <<-EOF
@@ -1443,9 +1447,10 @@ EOF
 		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
 	fi
 	if [ -n "$iso1_name" ]; then
-		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
+#		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
+	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=2"
 	if [ -n "$iso_name" ]; then 
-	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom"
+	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=1"
 	fi
 	else
 	if [ -n "$iso_name" ]; then
@@ -1469,12 +1474,18 @@ EOF
 	set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
 	fi
 	if [ -n "$iso1_name" ]; then
-		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
+#               set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
+	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=2"
 	fi
+	if [ -n "$iso_name" ]; then
+	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=1"
+	fi
+: <<\eof
 	if [ -n "$iso_name" ]; then
 	set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}${STORAGE}$iso_name,if=none"     
 	set -- "${@}" "-device" "ide-cd,drive=cdrom,bus=ahci.2"
 	fi
+eof
 	case $SHARE in
 		true)
 		set -- "${@}" "-usb" "-drive" "if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/"
@@ -1490,15 +1501,11 @@ EOF
 		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk,if=virtio,cache=none"
 	fi
 	if [ -n "$iso1_name" ]; then
-		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
-	if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,media=cdrom"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=2"
 	fi
-	else
-	if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,index=2,media=cdrom"
-	fi
-	fi
+		if [ -n "$iso_name" ]; then
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=1"
+		fi
 	case $SHARE in
 		true)
 		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
