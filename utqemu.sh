@@ -584,12 +584,6 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
 		6) read -r -p "1)termux 2)aspice 3)xsdl " input
-	if [ ! $(command -v curl) ]; then
-	echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
-	sleep 2
-	sudo_ 
-	$sudo apt install curl -y
-	fi
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
 	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -603,6 +597,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	sleep 2 ;;
 	*) ;;
 	esac
+	unset VERSION
 	QEMU_ETC
 		;;
 	2)
@@ -680,6 +675,10 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 }
 ##################
 QEMU_SYSTEM() {
+	if [ ! $(command -v curl) ]; then
+		sudo_
+		$sudo apt install curl -y
+	fi
 	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE
 	QEMU_VERSION
 	NOTE
@@ -704,10 +703,10 @@ echo -e "7) 查看日志
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
 	sudo_ 
-	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless -y
+	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
 else
 	sudo_
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio -y
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 #apt install samba
 	fi
         QEMU_SYSTEM
@@ -1676,13 +1675,7 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 
 	read -r -p "请选择: " input
 	case $input in
-		1) if [ ! $(command -v curl) ]; then
-	echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
-	sleep 2
-	sudo_
-       	$sudo apt install curl -y
-	fi
-	echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
+		1) echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
 	DATE=`date +"%Y"`
 	FED_CURL="https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/"
 	VERSION=`curl -s ${FED_CURL} | grep virtio-win | grep $DATE |tail -n 1 | cut -d ">" -f 3 | cut -d "<" -f 1`
@@ -1716,6 +1709,7 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	fi ;;
 	*) ;;
 	esac
+	unset VERSION
 	QEMU_SYSTEM
 	fi
                 ;;
