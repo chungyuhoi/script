@@ -596,7 +596,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
 	read -r -p "1)下载 9)返回 " input
 	case $input in
-		1)
+		1) rm termux.apk 2>/dev/null
 	curl https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION -o termux.apk
 	mv -v termux.apk ${DIRECT}${STORAGE}
 	echo -e "\n已下载至${DIRECT}${STORAGE}目录"
