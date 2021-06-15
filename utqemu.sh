@@ -4,8 +4,9 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/06/12"
+	UPDATE="2021/06/15"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	新增termux最新版本下载选项
 	针对部分用户出现脚本下载错误，换了个服务器
 	容器内新增aspice与xsdl下载地址
 	修复termux环境无法安装qemu的bug
@@ -138,6 +139,13 @@ CONFIRM() {
 		*) ;; esac
 }
 ####################
+CHECK() {
+	if [ $? == 1 ]; then
+		echo -e "${RED}处理失败，请重试${RES}"
+		sleep 2
+	fi
+}
+
 ARCH_CHECK() {
 	case $(dpkg --print-architecture) in
 		arm*|aarch64) DIRECT="/sdcard"
@@ -427,7 +435,7 @@ echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 3) 修改设备标识(手机、平板、电脑)
 4) 修改源(只适用本脚本下载的系统)
 5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
-6) 获取aspice与xsdl安卓版下载地址(非永久有效)
+6) 获取最新版termux、aspice与xsdl的安卓版下载地址(非永久有效)
 7) 模拟系统的时间不准
 8) 修改镜像目录
 9) 返回
@@ -575,7 +583,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 			unset FORMAT
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
-		6) read -r -p "1)aspice 2)xsdl " input
+		6) read -r -p "1)termux 2)aspice 3)xsdl " input
 	if [ ! $(command -v curl) ]; then
 	echo -e "${YELLOW}检测到你未安装需要的应用curl，将为你先安装curl${RES}"
 	sleep 2
@@ -583,7 +591,21 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	$sudo apt install curl -y
 	fi
 	case $input in
-	1)
+	1) echo -e "\n${YELLOW}检测最新版本${RES}"
+	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
+	echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
+	read -r -p "1)下载 9)返回 " input
+	case $input in
+		1)
+	curl https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION -o termux.apk
+	mv -v termux.apk ${DIRECT}${STORAGE}
+	echo -e "\n已下载至${DIRECT}${STORAGE}目录"
+	sleep 2 ;;
+	*) ;;
+	esac
+	QEMU_ETC
+		;;
+	2)
 	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
 	CONFIRM
 	while ( [ "$SPI_URL" != '0' ] && [[ ! $SPI_URL_ =~ apk ]] )
@@ -600,7 +622,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	done
 	echo -e "\n下载地址\n${GREEN}https://github.com/$SPI_URL_/$SPI_URL_${RES}\n"
 	CONFIRM ;;
-	2) VERSION=`curl https://sourceforge.net/projects/libsdl-android/files/apk/XServer-XSDL/ | grep android | grep 'XSDL/XServer' | grep '\.apk/download' | head -n 1 | cut -d '/' -f 9`
+	3) VERSION=`curl https://sourceforge.net/projects/libsdl-android/files/apk/XServer-XSDL/ | grep android | grep 'XSDL/XServer' | grep '\.apk/download' | head -n 1 | cut -d '/' -f 9`
 	echo -e "\n下载地址\n${GREEN}https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION${RES}\n"
 	read -r -p "1)下载 9)返回 " input
 	case $input in
@@ -893,7 +915,7 @@ EOF
 				QEMU_SYSTEM ;;
 		esac
 		sleep 1 ;;
-esac
+	esac
 	fi
 ##################
 ###################
@@ -1225,7 +1247,6 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 	read -r -p "1)不设置3D参数 2)设置3D参数 " input
 	case $input in
 		1|"")
-#		set -- "${@}" "-vga" "virtio"
 		set -- "${@}" "-device" "virtio-vga"
 #		set -- "${@}" "-device" "virtio-vga,virgl=on"
 ;;
