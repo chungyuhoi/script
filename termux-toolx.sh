@@ -1262,6 +1262,7 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
 14) VERSION=`curl -L https://aur.tuna.tsinghua.edu.cn/packages/linuxqq | grep x86 | cut -d "_" -f 2 | cut -d "_" -f 1`
 	echo -e "${YELLOW}检测到新版本为${VERSION}${RES}"
 	sleep 2
+	rm linuxqq_${VERSION}_arm64.deb
 	wget  https://down.qq.com/qqweb/LinuxQQ/linuxqq_${VERSION}_arm64.deb
 	dpkg -i linuxqq_${VERSION}_arm64.deb
 	dpkg -l | grep linuxqq -q 2>/dev/null
