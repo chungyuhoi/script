@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #####################
 cd $(dirname $0)
-date_t=`date | cut -c 1-3`
+date_t=`date +"%D"`
 if ! grep -q $date_t ".date_tmp.log" 2>/dev/null; then
 	echo -e "\n\e[33m为保证环境系统源正常使用，每日首次运行本脚本会先自检更新一遍哦(≧∇≦)/\e[0m"
 	sleep 3
-	rm .date_tmp.log 2>/dev/null
-	apt update
-date >>.date_tmp.log 2>&1
+	$sudo apt update
+	echo $date_t >>.date_tmp.log 2>&1
 fi
+
 clear
 #######################
 #COLOR
@@ -27,7 +27,7 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210224${RES}\n"
+${YELLOW}更新日期20210616${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -1561,7 +1561,8 @@ TERMUX() {
 9) 下载x86架构的Debian(buster)系统(qemu模拟)
 10) 备份恢复系统
 11) 修改termux键盘
-12) 设置打开termux等待七秒(别问为什么)\n"
+12) 设置打开termux等待七秒(别问为什么)
+13) 下载最新版本termux与xsdl\n"
 read -r -p "E(exit) M(main)请选择:" input
 case $input in
 	1) echo -e "\n是否一键配置termux
@@ -2072,6 +2073,45 @@ EOF
 sed -i '/seconds/,+8d' ${PREFIX}/etc/bash.bashrc ;;
 esac
 TERMUX ;;
+	13) 
+	read -r -p "1)termux 2)xsdl " input
+	case $input in
+		1) echo -e "\n${YELLOW}检测最新版本${RES}"
+		VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
+		echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
+		read -r -p "1)下载 9)返回 " input
+		case $input in
+			1) rm termux.apk 2>/dev/null
+		curl https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION -o termux.apk
+        mv -v termux.apk ${DIRECT}
+	echo -e "\n已下载至${DIRECT}目录"
+	sleep 2 ;;
+	*) ;;
+	esac
+	unset VERSION
+	TERMUX ;;
+	2) VERSION=`curl https://sourceforge.net/projects/libsdl-android/files/apk/XServer-XSDL/ | grep android | grep 'XSDL/XServer' | grep '\.apk/download' | head -n 1 | cut -d '/' -f 9`
+	echo -e "\n下载地址\n${GREEN}https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION${RES}\n"
+	read -r -p "1)下载 9)返回 " input
+	case $input in
+	1) curl -O https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION
+		if [ -f $VERSION ]; then
+		echo -e "移到${DIRECT}${STORAGE}目录中..."
+		mv -v $VERSION ${DIRECT}
+		if [ -f ${DIRECT}$VERSION ]; then
+		echo -e "\n已下载至${DIRECT}目录"
+		sleep 2
+		fi
+	else
+		echo -e "\n${RED}错误，请重试${RES}"
+		sleep 2
+		fi ;;
+	*) ;;
+	esac
+	unset VERSION ;;
+	*) INVALID_INPUT ;;
+	esac
+        TERMUX ;;
 	[nN])
 		echo "no"
 		MAIN
