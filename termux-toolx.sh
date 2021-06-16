@@ -1102,7 +1102,8 @@ INSTALL_SOFTWARE() {
 10) qemu-system-x86_64模拟器
 11) 游戏相关
 12) 让本终端成为局域网浏览器页面
-13) 安装新立得(类软件商店)\n"
+13) 安装新立得(类软件商店)
+14) linux版qq\n"
 read -r -p "E(exit) M(main)请选择:" input
 
 case $input in
@@ -1258,7 +1259,21 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
 	echo -e "done"
 	sleep 1
 	INSTALL_SOFTWARE ;;
-	*) INVALID_INPUT
+14) VERSION=`curl -L https://aur.tuna.tsinghua.edu.cn/packages/linuxqq | grep x86 | cut -d "_" -f 2 | cut -d "_" -f 1`
+	echo -e "${YELLOW}检测到新版本为${VERSION}${RES}"
+	sleep 2
+	wget  https://down.qq.com/qqweb/LinuxQQ/linuxqq_${VERSION}_arm64.deb
+	dpkg -i linuxqq_${VERSION}_arm64.deb
+	dpkg -l | grep linuxqq -q 2>/dev/null
+	if [ $? == 0 ]; then
+		echo -e "已安装"
+	else
+		echo -e "安装失败"
+	fi
+	sleep 2
+	INSTALL_SOFTWARE
+	;;
+*) INVALID_INPUT
 		INSTALL_SOFTWARE ;;
 esac
 }
