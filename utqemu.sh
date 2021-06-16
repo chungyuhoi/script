@@ -1770,6 +1770,7 @@ LOGIN_() {
 	1) 直接运行，termux(utermux)目前版本为5.0以上，由于termux源的qemu编译的功能不全，强烈建议在容器上使用qemu，\e[33m其他系统的版本各不一样，一些功能参数可能没被编译进去${RES}
 	2) 支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3）支持qemu5.0以上版本容器(选项内容丰富)
+	4) 换源
 
 	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
@@ -1798,6 +1799,27 @@ LOGIN_() {
 		fi
 		LOGIN
 		fi ;;
+	4) echo -e "1) 换源
+9) 返回"
+	read -r -p "请选择: " input
+	case $input in
+		1) read -r -p "1)北外源 2)腾讯源 3)清华源 9)返回 " input
+		case $input in
+	1) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
+	2) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+        sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
+        sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
+	3) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
+	*) ;;
+		esac
+	pkg update ;;
+	*) ;;
+	esac
+	MAIN ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
 	1) curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o ${HOME}/utqemu.sh
