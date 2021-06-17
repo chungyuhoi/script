@@ -585,6 +585,7 @@ case $input in
 	$sudo_t apt install gnupg2 -y
 	URL=`curl https://dl.cloudsmith.io/public/debianopt/debianopt/setup.deb.sh | grep \.key | grep \.gpg | sed -n 2p | cut -d '"' -f 2 | cut -d '"' -f 1`
 	curl -1sLf $URL | apt-key add -
+	mkdir /etc/apt/sources.list.d
 	echo "deb https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye main
 deb-src https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye main" >/etc/apt/sources.list.d/debianopt-debianopt.list
 : <<\eof
