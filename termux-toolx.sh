@@ -240,7 +240,7 @@ SETTLE() {
 7) 安装网络信息查询(命令ifconfig)
 8) 修改国内源地址sources.list(only for debian and ubuntu)
 9) 修改dns
-10) GitHub资源库(只支持debian和ubuntu)
+10) GitHub资源库(仅支持debian-bullseye)
 11) python3和pip应用
 12) 中文汉化
 13) 安装系统信息显示(neofetch,screenfetch)\n${RES}"
@@ -566,7 +566,7 @@ esac
 }
 ########################
 ADD_GITHUB() {
-	echo -e "\n${YELLOW}注意，目前仅支持debian(buster)与ubuntu(bionic),建议先安装常用应用\n请在root用户下操作${RES}"
+	echo -e "\n${YELLOW}注意，目前仅支持debian(bullseye),建议先安装常用应用\n请在root用户下操作${RES}"
 	CONFIRM
 	CHECK
 	echo -e "${YELLOW}是否添加Github仓库${RES}"
@@ -575,7 +575,18 @@ read -r -p "Y(yes) N(no) E(exit) M(main)" input
 case $input in
 	[yY]|"")
 		echo "Yes"
-		curl -1sLf "https://dl.cloudsmith.io/public/debianopt/debianopt/gpg.D215CE5D26AF10D5.key" | apt-key add -
+#		curl -1sLf "https://dl.cloudsmith.io/public/debianopt/debianopt/gpg.D215CE5D26AF10D5.key" | apt-key add -
+	$sudo_t apt install gnupg2 -y
+	URL=`curl https://dl.cloudsmith.io/public/debianopt/debianopt/setup.deb.sh | grep \.key | grep \.gpg | sed -n 2p | cut -d '"' -f 2 | cut -d '"' -f 1`
+	curl -1sLf $URL | apt-key add -
+	echo "deb https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye main
+deb-src https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye main" >/etc/apt/sources.list.d/debianopt-debianopt.list
+: <<\eof
+ID=`grep -w ID=* /etc/os-release | cut -d "=" -f 2`
+CODENAME=`grep -w VERSION_CODENAME=* /etc/os-release | cut -d "=" -f 2`
+echo "deb https://dl.cloudsmith.io/public/debianopt/debianopt/deb/${ID} ${CODENAME} main
+deb-src https://dl.cloudsmith.io/public/debianopt/debianopt/deb/${ID} ${CODENAME} main" >/etc/apt/sources.list.d/debianopt-debianopt.list
+eof
 cat >/dev/null<<-eof
 		dpkg -l | grep gnupg -q
 		if [ "$?" != "0" ]; then
@@ -1091,7 +1102,7 @@ esac
 INSTALL_SOFTWARE() {
 	echo -e "\n\n${RED}注意，建议先安装常用应用\n${RES}"
 	echo -e "1) ${GREEN}*安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)${RES}
-2) 安装Electron(将先安装GitHub仓库)
+2) 安装Electron(需先安装GitHub仓库)
 3) ${YELLOW}*安装桌面图形界面及VNCSERVER远程服务${RES}
 4) 浏览器
 5) 安装非官方版electron-netease-cloud-music(需先安装GitHub仓库与Electron)
@@ -1262,14 +1273,14 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
 14) VERSION=`curl -L https://aur.tuna.tsinghua.edu.cn/packages/linuxqq | grep x86 | cut -d "_" -f 2 | cut -d "_" -f 1`
 	echo -e "${YELLOW}检测到新版本为${VERSION}${RES}"
 	sleep 2
-	rm linuxqq_${VERSION}_arm64.deb
+	rm linuxqq_${VERSION}_arm64.deb 2>/dev/null
 	wget  https://down.qq.com/qqweb/LinuxQQ/linuxqq_${VERSION}_arm64.deb
 	dpkg -i linuxqq_${VERSION}_arm64.deb
 	dpkg -l | grep linuxqq -q 2>/dev/null
 	if [ $? == 0 ]; then
-		echo -e "已安装"
+		echo -e "\n${YELLOW}已安装${RES}"
 	else
-		echo -e "安装失败"
+		echo -e "\n${RED}安装失败${RES}"
 	fi
 	sleep 2
 	INSTALL_SOFTWARE
@@ -1578,7 +1589,8 @@ TERMUX() {
 10) 备份恢复系统
 11) 修改termux键盘
 12) 设置打开termux等待七秒(别问为什么)
-13) 下载最新版本termux与xsdl\n"
+13) 下载最新版本termux与xsdl
+14) 下载Debian(bullseye)系统\n"
 read -r -p "E(exit) M(main)请选择:" input
 case $input in
 	1) echo -e "\n是否一键配置termux
@@ -2128,23 +2140,55 @@ TERMUX ;;
 	*) INVALID_INPUT ;;
 	esac
         TERMUX ;;
-	[nN])
-		echo "no"
-		MAIN
-		;;
 
-	[Ee])
-		echo "exit"
-		exit 1
-		;;
-	[Mm])
-		echo "back to Main"
-		MAIN
-		;;
-	*)
-		INVALID_INPUT
-		TERMUX
-		;;
+	14) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
+	CONFIRM
+	echo "检查下载安装所需应用..."
+	sleep 2
+	if [ ! $(command -v curl) ]; then
+	apt install curl
+	fi
+	if [ ! $(command -v tar) ]; then
+	apt install tar
+	fi
+	if [ -e rootfs.tar.xz ]; then
+	rm -rf rootfs.tar.xz
+	fi
+	case $(dpkg --print-architecture) in
+	aarch64|arm64) ;;
+	*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
+	sleep 2  ;;
+	esac
+	echo -e "请选择下载地址
+	1) 清华大学
+	2) 北外大学(推荐)\n"
+	read -r -p "E(exit) M(main)请选择:" input
+	case $input in
+		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
+		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
+	[Ee]) exit 0 ;;
+	[Mm]) MAIN ;;
+	esac
+	echo "下载Debian(buster)系统..."
+	sleep 1
+	curl -o rootfs.tar.xz ${CURL_T}
+	SYSTEM_DOWN
+echo "修改为北外源"
+echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
+${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
+${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
+${SOURCES_ADD}debian-security bullseye/updates ${DEB_DEBIAN}" >$bagname/
+	etc/apt/sources.list
+	sleep 2
+	TERMUX ;;
+
+
+	[Ee]) echo "exit"
+	exit 1 ;;
+	[Mm]) echo "back to Main"
+	MAIN ;;
+	*) INVALID_INPUT
+	TERMUX ;;
 esac
 }
 #######################
