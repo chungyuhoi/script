@@ -5,7 +5,13 @@ date_t=`date +"%D"`
 if ! grep -q $date_t ".date_tmp.log" 2>/dev/null; then
 	echo -e "\n\e[33m为保证环境系统源正常使用，每日首次运行本脚本会先自检更新一遍哦(≧∇≦)/\e[0m"
 	sleep 3
-	$sudo apt update
+	apt update
+	if [ ! $(command -v curl) ]; then
+		apt install curl -y
+	fi
+	if [ ! $(command -v tar) ]; then
+		apt install tar -y
+	fi
 	echo $date_t >>.date_tmp.log 2>&1
 fi
 
@@ -1807,14 +1813,6 @@ TERMUX
 ;;
 6) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
 	CONFIRM
-	echo "检查下载安装所需应用..."
-	sleep 2
-	if [ ! $(command -v curl) ]; then
-		apt install curl
-	fi
-	if [ ! $(command -v tar) ]; then
-		apt install tar
-	fi
 	if [ -e rootfs.tar.xz ]; then
 		rm -rf rootfs.tar.xz
 	fi
@@ -1848,14 +1846,6 @@ sleep 2
 
 	7) echo -e "由于系统包很干净，所以建议进入系统后，再用本脚本安装常用应用"
 		CONFIRM
-		echo "检查下载安装所需应用..."    
-		sleep 2
-		if [ ! $(command -v curl) ]; then
-			apt install curl -y
-		fi
-		if [ ! $(command -v tar) ]; then
-			apt install tar -y
-		fi
 		if [ -e rootfs.tar.xz ]; then
 			rm -rf rootfs.tar.xz
 		fi
@@ -1890,14 +1880,6 @@ TERMUX ;;
 	9) echo -e "\n你正在下载的是x86架构的debian(buster),将会通过qemu的模拟方式运行;
 由于系统包很干净，所以建议进入系统后，再用本脚本安装常用应用"
                 CONFIRM
-                echo "检查下载安装所需应用..."
-                sleep 2
-		if [ ! $(command -v curl) ]; then
-			apt install curl -y
-		fi
-		if [ ! $(command -v tar) ]; then
-			apt install tar -y
-		fi
 		if [ -e rootfs.tar.xz ]; then
 			rm -rf rootfs.tar.xz
 		fi
@@ -1972,14 +1954,6 @@ cat <<'EOF'
                                              .
 EOF
 echo -e "${RES}"
-echo "检查下载安装所需应用..."                          
-sleep 2
-if [ ! $(command -v curl) ]; then
-	apt install curl -y
-	fi
-	if [ ! $(command -v tar) ]; then
-	apt install tar -y
-fi
 if [ -e rootfs.tar.xz ]; then
 	rm -rf rootfs.tar.xz
 fi
@@ -2008,11 +1982,7 @@ deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >$bagname/et
 sleep 2
                 TERMUX
 		;;
-	10) if [ ! $(command -v tar) ]; then
-		echo -e "检测到你未安装tar,将先安装tar"
-		sleep 2
-		pkg install tar -y
-	fi
+	10)
 		echo -e "\n请选择备份或恢复
 		1) 备份
 		2) 恢复\n"
@@ -2143,14 +2113,6 @@ TERMUX ;;
 
 	14) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
 	CONFIRM
-	echo "检查下载安装所需应用..."
-	sleep 2
-	if [ ! $(command -v curl) ]; then
-	apt install curl
-	fi
-	if [ ! $(command -v tar) ]; then
-	apt install tar
-	fi
 	if [ -e rootfs.tar.xz ]; then
 	rm -rf rootfs.tar.xz
 	fi
@@ -2177,8 +2139,7 @@ echo "修改为北外源"
 echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
 ${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
 ${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security bullseye/updates ${DEB_DEBIAN}" >$bagname/
-	etc/apt/sources.list
+${SOURCES_ADD}debian-security bullseye/updates ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
 	sleep 2
 	TERMUX ;;
 
