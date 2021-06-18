@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/06/15"
+	UPDATE="2021/06/17"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增termux最新版本下载选项
 	针对部分用户出现脚本下载错误，换了个服务器
@@ -80,6 +80,7 @@ PINK="\e[35m"
 WHITE="\e[37m"
 RES="\e[0m"
 ####################
+: <<\eof
 	`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
 if [ $? != 0 ]; then
 	IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1)
@@ -91,6 +92,8 @@ else
 		IP=$(ip a | grep inet | grep wlan | cut -d "/" -f 1 | cut -d " " -f 6)
 	fi
 fi
+eof
+IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 ####################
 sudo_() {
 	date_t=`date +"%D"`

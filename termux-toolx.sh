@@ -237,20 +237,21 @@ fi
 }
 #####################
 SETTLE() {
-	echo -e "\n1) 遇到关于Sub-process /usr/bin/dpkg returned an error code (1)错误提示
-2) 安装个小火车(命令sl)
-3) 增加普通用户并赋予sudo功能
-4) 处理Ubuntu出现的groups: cannot find name for group *提示
-5) 设置时区
-6) 安装进程树(可查看进程,kali不可用,命令pstree)
-7) 安装网络信息查询(命令ifconfig)
-8) 修改国内源地址sources.list(only for debian and ubuntu)
-9) 修改dns
+	echo -e "
+1)  遇到关于Sub-process /usr/bin/dpkg returned an error code (1)错误提示
+2)  安装个小火车(命令sl)
+3)  增加普通用户并赋予sudo功能
+4)  处理Ubuntu出现的groups: cannot find name for group *提示
+5)  设置时区
+6)  安装进程树(可查看进程,kali不可用,命令pstree)
+7)  安装网络信息查询(命令ifconfig)
+8)  修改国内源地址sources.list(only for debian and ubuntu)
+9)  修改dns
 10) GitHub资源库(仅支持debian-bullseye)
 11) python3和pip应用
 12) 中文汉化
-13) 安装系统信息显示(neofetch,screenfetch)\n${RES}"
-read -r -p "E(exit) M(main)请选择:" input
+13) 安装系统信息显示(neofetch,screenfetch)\n"
+read -r -p "E(exit) M(main)请选择: " input
 
 case $input in
 	1)
@@ -267,7 +268,7 @@ case $input in
 		SETTLE
 		;;
 	3)
-		echo -n "请输入普通用户名name:"
+		echo -n "请输入普通用户名name: "
 		read name
 		if grep -qw "$name" "/etc/passwd"; then
 			echo -e "${RED}你的普通用户名貌似已经有了，起个其他名字吧${RES}"
@@ -279,7 +280,7 @@ sleep 2
 else
 	read -r -p "sudo是否能用，如不能用请选择重新安装
 
-1)重新安装 2)不需要重新安装" input
+1)重新安装 2)不需要重新安装 " input
 	case $input in
 		1) apt --reinstall install sudo ;;
 		2|"") echo "" ;;
@@ -303,9 +304,9 @@ else
 		echo "done"
 fi
 echo "是否修改sudo临时生效时间，默认5分钟"
-read -r -p "1)自定义时间 2)免密 3)不修改" input
+read -r -p "1)自定义时间 2)免密 3)不修改 " input
 case $input in
-	1) echo -n "请输入时间数字，以分钟为单位(例如20)sudo_time:"
+	1) echo -n "请输入时间数字，以分钟为单位(例如20)sudo_time: "
 		read sudo_time
 		if grep -q 'timestamp' "/etc/sudoers"; then
 			timestamp=`cat /etc/sudoers | grep timestamp | cut -d "=" -f 2`
@@ -324,14 +325,14 @@ esac
 4) echo -e "请选择哪种方式处理
 	1) 忽略信息
 	2) 编辑gid信息\n"
-	read -r -p "E(exit) M(main)请选择:" input
+	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) echo "fix…"
 			sleep 1
 			touch ${HOME}/.hushlogin
 			echo "done"
 			sleep 1 ;;
-		2) echo -n "如有多个gid，需重复多次，添加完请输'0'退出，请输gid数字(例如 3003)，GID:"
+		2) echo -n "如有多个gid，需重复多次，添加完请输'0'退出，请输gid数字(例如 3003)，GID: "
 			while echo "请输入"
 				read GID
 				[ $GID != "0" ]
@@ -383,7 +384,7 @@ SETTLE ;;
 	12) LANGUAGE_CHANGE ;;
 	13) echo -e "\n1)neofetch
 2)screenfetch\n"
-		read -r -p "E(exit) M(main)请选择:" input
+		read -r -p "E(exit) M(main)请选择: " input
 		case $input in
 			1) echo "安装neofetch"
 			$sudo_t	apt install neofetch
@@ -408,7 +409,7 @@ esac
 ################
 LANGUAGE_CHANGE(){
                         echo "1)修改为中文; 2)修改为英文"
-			read -r -p "1) 2)" input
+			read -r -p "1) 2) " input
 			case $input in
 			1) export LANGUAGE=zh_CN.UTF-8 && sed -i '/^export LANGUAGE/d' /etc/profile && sed -i '1i\export LANGUAGE=zh_CN.UTF-8' /etc/profile && source /etc/profile && echo '修改完毕,请重新登录' && sleep 2 && SETTLE ;;
 2) export LANGUAGE=C.UTF-8 && sed -i '/^export LANGUAGE/d' /etc/profile && echo '修改完毕，请重新登录' && sleep 2 && SETTLE ;;
@@ -491,7 +492,7 @@ echo -e "${YELLOW} 仅支持debian和ubuntu
 1) 修改debian或ubuntu国内源
 2) 更新源列表
 3) 为http修改为https(使用 HTTPS 可以有效避免国内运营商的缓存劫持)${RES}"
-read -r -p "E(exit) M(main)请选择:" input
+read -r -p "E(exit) M(main)请选择: " input
 
 case $input in
        	1)
@@ -527,10 +528,10 @@ esac
 #######################
 MODIFY_DNS() {
 echo -e "${YELLOW}是否修改DNS${RES}"
-read -r -p "Y(yes) N(no) E(exit) M(main)" input
+read -r -p "1)是 2)否 E(exit) M(main) " input
 
 case $input in
-	[yY]|"")
+	1|"")
 		echo "Yes"
 if [ ! -L "/etc/resolv.conf" ]; then
 	echo "nameserver 223.5.5.5
@@ -551,7 +552,7 @@ else
 fi
 	;;
 
-	[nN])
+	2)
 		echo "No"
 		SETTLE
 		;;
@@ -576,10 +577,10 @@ ADD_GITHUB() {
 	CONFIRM
 	CHECK
 	echo -e "${YELLOW}是否添加Github仓库${RES}"
-read -r -p "Y(yes) N(no) E(exit) M(main)" input
+	read -r -p "1)是 2)否 E(exit) M(main) " input
 
 case $input in
-	[yY]|"")
+	1|"")
 		echo "Yes"
 #		curl -1sLf "https://dl.cloudsmith.io/public/debianopt/debianopt/gpg.D215CE5D26AF10D5.key" | apt-key add -
 	$sudo_t apt install gnupg2 -y
@@ -604,7 +605,7 @@ eof
 		apt update && SETTLE
 		sleep 1
 		;;
-	[nN])
+	2)
 		echo "No"
 		SETTLE
 		;;
@@ -640,7 +641,7 @@ export XKL_XMODMAP_DISABLE=1
 #vncconfig -iconic &
 startxfce4 &" >${HOME}/.vnc/xstartup && chmod +x ${HOME}/.vnc -R
 echo -e "${GREEN}请选择使用哪个图形界面${RES}"
-read -r -p "1)xfce4 2)lxde 3)mate" input
+read -r -p "1)xfce4 2)lxde 3)mate " input
 case $input in
         1) echo -e "done" && sleep 2 ;;
         2) sed -i "s/startxfce4/startlxde/g" ${HOME}/.vnc/xstartup 
@@ -675,7 +676,7 @@ VNCSERVER(){
 6) 创建另一个VNC启动脚本（推荐 命令easyvnc）
 7) 创建xsdl启动脚本(命令easyxsdl)
 8) 创建局域网vnc连接(命令easyvnc-wifi)\n${RES}"
-read -r -p "E(exit) M(main)请选择:" input
+read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1)
 		echo -e "${YELLOW}安装tightvncserver"
@@ -714,7 +715,7 @@ XSTARTUP
 	INSTALL_SOFTWARE
 	;;
 4) XSTARTUP ;;
-5) echo -n "输入你手机分辨率,例如 2340x1080  resolution:"
+5) echo -n "输入你手机分辨率,例如 2340x1080  resolution: "
 	read resolution
 	#sed -i "/^alias/d" /etc/profile && echo "alias vncserver='vncserver -geometry $resolution'" >>/etc/profile
 	ex_resolution=`cat /etc/vnc.conf | grep '^$geometry' | cut -d '=' -f 2`
@@ -734,7 +735,7 @@ XSTARTUP
 		echo "请设置vnc密码,6到8位"
 		vncpasswd
 	fi
-	echo -n "输入你手机分辨率,例如 2340x1080  resolution:"
+	echo -n "输入你手机分辨率,例如 2340x1080  resolution: "
         read resolution
 	echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
@@ -798,7 +799,7 @@ GROUP_ID=`id | cut -d '(' -f 4 | cut -d ')' -f 1`
 touch .ICEauthority .Xauthority 2>/dev/null
 sudo -E chown -Rv $U_ID:$GROUP_ID ".ICEauthority" ".Xauthority"
 echo -e "${GREEN}请选择你已安装的图形界面${RES}"
-read -r -p "1)xfce4 2)lxde 3)mate" input
+read -r -p "1)xfce4 2)lxde 3)mate " input
 	case $input in
 	1) echo -e "done" && sleep 2 && VNCSERVER ;;
 	2) sed -i "s/startxfce4/startlxde/g" /etc/X11/xinit/Xsession
@@ -824,7 +825,7 @@ VNCSERVER
 esac ;;
 7)
 echo -e "\n\e[33m使用的时候需先打开手机xsdl！\e[0m"
-read -r -p "按回车继续" input
+read -r -p "按回车继续 " input
 case $input in
         *) echo "" ;;
 esac
@@ -833,7 +834,7 @@ echo -e "${YELLOW}请选择你的桌面
 1) startxfce4
 2) startlxde
 3) mate${RES}"
-read -r -p "请选择:" input
+read -r -p "请选择: " input
 case $input in
 1) XWIN="x-window-manager & dbus-launch startxfce4" ;;
 2) XWIN="x-window-manager & dbus-launch startlxde" ;;
@@ -886,17 +887,7 @@ pkill -9 Xvnc 2>/dev/null
 pkill -9 vncsession 2>/dev/null
 vncserver -kill $DISPLAY 2>/dev/null
 tigervncserver :0 -localhost no
-`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
-if [ $? != 0 ]; then
-IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1) 
-else
-`ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6` 2>/dev/null
-if [ $? -ne 0 ]; then
-IP=$(ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6)
-else
-IP=$(ip a | grep inet | grep wlan | cut -d "/" -f 1 | cut -d " " -f 6) 
-	fi
-	fi
+IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 echo -e "\e[33mVNCVIEWER打开地址为$IP:0\e[0m\n"
 sleep 2' >/usr/local/bin/easyvnc-wifi && chmod +x /usr/local/bin/easyvnc-wifi
 VNCSERVER
@@ -921,7 +912,7 @@ WEB_BROWSER() {
 2) 安装火狐浏览器firefox
 3) 安装epiphany-browser浏览器
 4) 安装360浏览器(有一个月使用限制，需向360获取授权码)\n${RES}"
-read -r -p "E(exit) M(main)请选择:" input
+read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 	1)
 		echo -e "安装谷歌浏览器chromium"
@@ -1038,7 +1029,7 @@ DM() {
 	1) 安装xfce4
 	2) 安装lxde
 	3) 安装mate(有bug，请勿选)\n"
-	read -r -p "E(exit) M(main)请选择:" input
+	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) $sudo_t apt install xfce4 xfce4-terminal ristretto -y ;;
 		2) $sudo_t apt install lxde-core lxterminal dbus-x11 -y ;;
@@ -1062,7 +1053,7 @@ DM_VNC() {
 	echo -e "${YELLOW}
 	1) 安装桌面图形界面
 	2) 安装VNCSERVER远程服务${RES}\n"
-	read -r -p "E(exit) M(main)请选择:" input
+	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) DM ;;
 		2) VNCSERVER ;;
@@ -1078,7 +1069,7 @@ DM_VNC() {
 ENTERTAINMENT() {
 	echo -e "\n1) minetest(画面跟我的世界相似，方向是个问题，需键盘操作)
 2) mame街机模拟器(需键盘操作)\n"
-read -r -p "E(exit) M(main)请选择:" input
+read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "正在安装minetest"
 		$sudo_t apt install minetest -y
@@ -1107,22 +1098,22 @@ esac
 }
 #######################
 INSTALL_SOFTWARE() {
-	echo -e "\n\n${RED}注意，建议先安装常用应用\n${RES}"
-	echo -e "1) ${GREEN}*安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)${RES}
-2) 安装Electron(需先安装GitHub仓库)
-3) ${YELLOW}*安装桌面图形界面及VNCSERVER远程服务${RES}
-4) 浏览器
-5) 安装非官方版electron-netease-cloud-music(需先安装GitHub仓库与Electron)
-6) 中文输入法
-7) mpv播放器
-8) 办公office软件
-9) 安装dosbox 并配置dosbox文件目录(运行文件目录需先运行一次dosbox以生成配置文件)
+echo -e "\n\n${RED}注意，建议先安装常用应用\n${RES}"
+echo -e "1)  ${GREEN}*安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)${RES}
+2)  安装Electron(需先安装GitHub仓库)
+3)  ${YELLOW}*安装桌面图形界面及VNCSERVER远程服务${RES}
+4)  浏览器
+5)  安装非官方版electron-netease-cloud-music(需先安装GitHub仓库与Electron)
+6)  中文输入法
+7)  mpv播放器
+8)  办公office软件
+9)  安装dosbox 并配置dosbox文件目录(运行文件目录需先运行一次dosbox以生成配置文件)
 10) qemu-system-x86_64模拟器
 11) 游戏相关
 12) 让本终端成为局域网浏览器页面
 13) 安装新立得(类软件商店)
 14) linux版qq\n"
-read -r -p "E(exit) M(main)请选择:" input
+read -r -p "E(exit) M(main)请选择: " input
 
 case $input in
 	1)
@@ -1168,7 +1159,7 @@ INSTALL_SOFTWARE
 ;;
 6) echo -e "\n1) fcitx输入法
 2) ibus输入法\n"
-read -r -p "E(exit) M(main)请选择:" input
+read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "${YELLOW}安装fcitx输入法${RES}"
 	$sudo_t apt install fcitx*googlepinyin* fcitx-table-wubi
@@ -1205,7 +1196,7 @@ esac
 	8)
 		echo -e "\n1) 安装libreoffice
 2) 安装wps(注意，目前wps在vnc比较多的bug,建议用xsdl来传输)\n"
-		read -r -p "E(exit) M(main)请选择:" input
+		read -r -p "E(exit) M(main)请选择: " input
 		case $input in
 			1|"") echo "安装libreoffice"
 		$sudo_t apt install libreoffice 
@@ -1260,6 +1251,7 @@ esac
 		$sudo_t apt install python3 python3-pip -y && mkdir -p /root/.config/pip && echo "[global] 
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.conf
 	fi
+: <<\eof
 	`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null 
 	if [ $? != 0 ]; then  
 		IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1)   
@@ -1271,6 +1263,8 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
 			IP=$(ip a | grep inet | grep wlan | cut -d "/" -f 1 | cut -d " " -f 6)   
 			fi         
 	fi
+eof
+IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
 	${YELLOW}本机	http://127.0.0.1:8080
 	局域网	http://$IP:8080${RES}\n
@@ -1307,7 +1301,7 @@ esac
 DOSBOX() {
 	echo -e "\n1）安装dosbox
 2）创建dos运行文件目录\n"
-		read -r -p "E(exit) M(main)请选择:" input
+		read -r -p "E(exit) M(main)请选择: " input
 		case $input in
 			1) echo "安装dosbox"
 				$sudo_t apt install dosbox -y
@@ -1337,9 +1331,9 @@ esac
 #####################
 INSTALL_PYTHON3() {
 echo -e "${YELLOW}安装python3和pip并配置国内源${RES}"
-read -r -p "Y(yes) N(no) E(exit) M(main)" input
+read -r -p "1)是 2)否 E(exit) M(main) " input
 case $input in
-	[Yy]|"")
+	1|"")
 		echo "yes"
 		$sudo_t apt install python3 python3-pip && mkdir -p /root/.config/pip && echo "[global]
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple" > /root/.config/pip/pip.conf
@@ -1347,7 +1341,7 @@ echo -e "${BLUE}done${RES}"
 sleep 1
 SETTLE
 		;;
-	[Nn])
+	2)
 		echo "no"
 		SETTLE
 		;;
@@ -1375,11 +1369,8 @@ esac
 QEMU_SYSTEM() {
 echo -e "
 1) 安装qemu-system-x86_64，并联动更新模拟器所需应用
-2) 创建windows镜像目录
-3) 启动qemu-system-x86_64模拟器
-4) 安装5.0版本(注意!该操作需临时换源,仅适用debian与ubuntu)
-5) 退出\n"
-read -r -p "请选择:" input
+2) 创建windows镜像目录\n"
+read -r -p "E(exit) M(main)请选择: " input
 case $input in
 1) uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
@@ -1406,186 +1397,14 @@ else
         CONFIRM
 	QEMU_SYSTEM
         ;;
-3) export PULSE_SERVER=tcp:127.0.0.1:4713
-	read -r -p "请选择显示输出方式 1)vnc 2)xsdl(不推荐)" input
-	case $input in
-		1|"") echo "vncviewer地址为127.0.0.1:0"
-			sleep 1
-			set -- "${@}" "-vnc" ":0" ;;
-		2) echo "需先打开xsdl再继续此操作"
-			sleep 1
-			export DISPLAY=127.0.0.1:0 ;;
+	[Ee])
+	echo "exit"
+	exit 1 ;;
+	[Mm])
+	echo "back to Main"
+	MAIN ;;
+	*) INVALID_INPUT && QEMU_SYSTEM ;;
 	esac
-	echo -e "\n请选择启动哪个模拟器\n
-	1) qemu-system-x86_64
-	2) qemu-system-i386\n"
-	read -r -p "E(exit) M(main)请选择:" input
-	case $input in
-		1) QEMU_SYS=qemu-system-x86_64 ;;
-		2) QEMU_SYS=qemu-system-i386 ;;
-		[Ee]) exit 1 ;;
-		[Mm]) MAIN ;;
-		*) INVALID_INPUT 
-			QEMU_SYSTEM ;;
-	esac
-
-	qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
-	if [ $? == 0 ]; then
-		echo -e "${RED}5.0以上版本未经过完全测试，如运行不成功，请自行配置${RES}"
-		sleep 2
-	fi
-	echo -e "${GREEN}请确认系统镜像已放入手机目录windows里${RES}"
-	CONFIRM
-	pkill -9 qemu-system-x86
-	pkill -9 qemu-system-i38
-	
-	qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
-                                if [ $? != 0 ]; then
-                set -- "${@}" "--accel" "tcg,thread=multi"
-        else
-                echo -e "请选择计算机类型"
-                read -r -p "1)pc默认 2)q35" input
-                case $input in
-                        1|"") case $(dpkg --print-architecture) in
-                        arm*|aarch64) set -- "${@}" "--accel" "tcg" ;;
-                *) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg" ;;
-        esac ;;
-                        2) echo -e ${RED}"如果无法进入系统，请选择pc${RES}"
-                                set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg" ;;
-                esac
-#               set -- "${@}" "-machine" "q35"
-                fi
-
-        echo -n -e "请输入${YELLOW}系统镜像${RES}全名（例如andows.img）hda_name:"
-	read hda_name
-#	qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
-#	if [ $? != 0 ]; then
-	echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）hdb_name:"
-	read hdb_name
-#	fi
-	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）iso_name:"
-	read iso_name
-	echo -n "请输入模拟的内存大小,以m为单位（1g=1024m，例如512）mem:"
-	read mem
-	set -- "${@}" "-m" "$mem"
-       	set -- "${@}" "-rtc" "base=localtime"
-	set -- "${@}" "-no-user-config"
-	set -- "${@}" "-nodefaults"
-	read -r -p "请选择cpu 1)core2duo 2)athlon 3)pentium2 4)n270 5)Skylake-Server-IBRS" input
-	case $input in
-	1) set -- "${@}" "-cpu" "core2duo"
-		set -- "${@}" "-smp" "2,cores=2,threads=1,sockets=1" ;;	
-	2) set -- "${@}" "-cpu" "athlon"
-		set -- "${@}" "-smp" "2,cores=2,threads=1,sockets=1" ;;
-	3) set -- "${@}" "-cpu" "pentium2"
-		set -- "${@}" "-smp" "1,cores=1,threads=1,sockets=1" ;;
-	4) set -- "${@}" "-cpu" "n270"
-		set -- "${@}" "-smp" "2,cores=1,threads=2,sockets=1" ;;
-#	*) set -- "${@}" "-cpu" "Nehalem"
-#		set -- "${@}" "-smp" "4,cores=2,threads=2,sockets=1" ;;
-	5) set -- "${@}" "-cpu" "Skylake-Server-IBRS"
-		set -- "${@}" "-smp" "4,cores=2,threads=1,sockets=2" ;;
-	*) set -- "${@}" "-cpu" "max"
-		set -- "${@}" "-smp" "4" ;;
-esac
-read -r -p "请选择显卡 1)cirrus 2)std 3)vmware" input
-	case $input in
-		1|"") set -- "${@}" "-vga" "cirrus" ;;
-		2) set -- "${@}" "-vga" "std" ;;
-		3) set -- "${@}" "-vga" "vmware" ;;
-	esac
-	read -r -p "请选择网卡 1)e1000 2)rtl8139 0)不加载" input
-	case $input in
-                        1) set -- "${@}" "-net" "user"
-                                set -- "${@}" "-net" "nic,model=e1000" ;;
-                        0) ;;
-                        *) set -- "${@}" "-net" "user"
-                                set -- "${@}" "-net" "nic,model=rtl8139" ;;
-                esac
-		read -r -p "是否加载usb鼠标 1)加载 0)不加载" input
-		case $input in
-			1|"") set -- "${@}" "-usb" "-device" "usb-tablet" ;;
-			2) ;;
-		esac
-	qemu-system-x86_64 --version | grep ':5' -q || uname -a | grep 'Android' -q
-		if [ $? != 0 ]; then
-			read -r -p "请选择声卡 1)ac97 2)sb16 3)es1370 4)hda 0)不加载" input
-                        case $input in
-                1|"") set -- "${@}" "-soundhw" "ac97" ;;
-                2) set -- "${@}" "-soundhw" "sb16" ;;
-                0) ;;
-                3) set -- "${@}" "-soundhw" "es1370" ;;
-		4) set -- "${@}" "-soundhw" "hda" ;;
-esac
-                set -- "${@}" "-hda" "$DIRECT/windows/$hda_name"
-		if [ -n "$hdb_name" ]; then
-			set -- "${@}" "-hdb" "$DIRECT/windows/$hdb_name"
-		fi
-		if [ -n "$iso_name" ]; then
-			set -- "${@}" "-cdrom" "$DIRECT/windows/$iso_name"
-		fi
-                set -- "${@}" "-hdd" "fat:rw:$DIRECT/share/"
-		set -- "${@}" "-boot" "order=dc"
-
-	else
-		read -r -p "请选择声卡 1)es1370 2)sb16 3)hda 4)ac97(推荐) 0)不加载" input
-                        case $input in
-                        1) set -- "${@}" "-device" "ES1370" ;;
-                        2) set -- "${@}" "-device" "sb16" ;;
-			3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
-                        0) ;;
-                        4|"") set -- "${@}" "-device" "AC97" ;;
-                esac
-		set -- "${@}" "-boot" "order=dc,menu=on,strict=off"
-		set -- "${@}" "-hda" "$DIRECT/windows/$hda_name"
-		if [ -n "$hdb_name" ] ; then
-			set -- "${@}" "-hdb" "$DIRECT/windows/$hdb_name"
-		fi   
-			if [ -n "$iso_name" ] ; then
-				set -- "${@}" "-cdrom" "$DIRECT/windows/$iso_name"
-			fi
-		set -- "${@}" "-hdd" "fat:rw:$DIRECT/share/"
-		fi
-	set -- "$QEMU_SYS" "${@}"
-	"${@}" &
-
-	;;
-4) echo -e "\n${YELLOW}安装5.0版本(不建议!注意!该操作需临时换源,仅适用debian与ubuntu)${RES}"
-	sleep 1
-	CHECK
-	echo -e "${GREEN}请再次确认，不一定能成功安装，且可能改变你的系统版本${RES}
-	Y(yes) 继续
-	任意键 退出\n"
-	read -r -p "请选择:" input
-	case $input in
-		[Yy]) echo "Yes" ;;
-		"") QEMU_SYSTEM ;;
-	esac
-	cp /etc/apt/sources.list /etc/apt/sources.list.bak
-	if grep -q 'ID=debian' "/etc/os-release" 2>/dev/null; then
-echo "${SOURCES_ADD}debian/ bullseye ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ bullseye-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ bullseye-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN} " >/etc/apt/sources.list
-	elif grep -q 'ID=ubuntu' "/etc/os-release" 2>/dev/null; then
-		echo "${SOURCES_ADD}ubuntu-ports/ groovy ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ groovy-updates ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ groovy-backports ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ groovy-security ${DEB_UBUNTU}" >/etc/apt/sources.list
-		else
-		echo -e "${RED}暂不支持你的系统${RES}"
-		sleep 2
-		QEMU_SYSTEM
-	fi
-	apt update
-	$sudo_t apt install qemu-system-x86* -y
-	cp /etc/apt/sources.list.bak /etc/apt/sources.list && apt update
-	echo "done..."
-	sleep 1
-        QEMU_SYSTEM ;;
-5) MAIN ;;
-*) INVALID_INPUT && QEMU_SYSTEM ;;
-esac
 }
 #################
 #################
@@ -1605,12 +1424,12 @@ TERMUX() {
 12) 设置打开termux等待七秒(别问为什么)
 13) 下载最新版本termux与xsdl
 14) 下载Debian(bullseye)系统\n"
-read -r -p "E(exit) M(main)请选择:" input
+read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "\n是否一键配置termux
                1) Yes
                2) No"
-               read -r -p "请选择:" input
+               read -r -p "请选择: " input
                case $input in
                        1) echo -e "${GREEN}修改键盘${RES}"
                                sleep 1
@@ -1652,7 +1471,7 @@ esac ;;
 2) 北外源 (推荐)
 3) 中科源
 4) 腾讯源"
-		read -r -p "请选择:" input
+		read -r -p "请选择: " input
 		case $input in
 			1) echo -e "正在更换清华源"
 		sleep 1
@@ -1689,7 +1508,7 @@ TERMUX
 	;;
 4)
 	echo -e "安装并配置pulseaudio\n如果安装失效，请选择另一种安装方式\n1)直接安装\n2)通过setup-audio脚本安装\n3)修复出现([pulseaudio] main.c: ${RED}Daemon startup failed.${RES})提示"
-	read -r -p ":" input
+	read -r -p "请选择: " input
 	case $input in
 		1|"") pkg in pulseaudio -y
 			if [ $? -ne 0 ]; then
@@ -1728,8 +1547,8 @@ esac
 	sleep 1
 	TERMUX
 	;;
-5) echo -e "\n${GREEN}如需加挂外部sdcard，请先ls /mnt确认外部sdcard名字${RES}\n\n1)创建root用户 2)普通用户 9)返回 0)退出"
-	read -r -p ":" input
+5) echo -e "\n${GREEN}如需加挂外部sdcard，请先ls /mnt确认外部sdcard名字${RES}\n"
+	read -r -p "1)创建root用户 2)普通用户 9)返回 0)退出 请选择: " input
 	case $input in
 		2) echo -e "\n${GREEN}请确认已安装sudo，否则无法系统内进行安装维护，切换root用户命令sudo su${RES}"
 			echo -n "请把系统文件夹放根目录并输入系统文件夹名字rootfs: "
@@ -1739,7 +1558,7 @@ esac
 				echo -e "${RED}无此文件夹\n${RES}请重输: ${RES}"
 			read rootfs
 		done
-		echo -n "请输入普通用户名name:"
+		echo -n "请输入普通用户名name: "
 		read name
 			if grep -wq "$name" "$rootfs/etc/passwd"; then
 			echo -e "${GREEN}你的普通用户名貌似已经有了，将为此普通用户创建登录脚本${RES}"
@@ -1772,10 +1591,10 @@ echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -r $rootfs -i $i:$i --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
-echo -e "\n是否加载外部sdcard\n1)是\n2)跳过"
-read -r -p ":" input
+echo -e "\n是否加载外部sdcard"
+read -r -p "1)是 2)跳过 请选择:" input
 case $input in
-	1) echo -n "请输入外部sdcard名字ext_sdcard:"
+	1) echo -n "请输入外部sdcard名字ext_sdcard: "
                 read ext_sdcard
                 sed -i "s/shm/shm -b \/mnt\/$ext_sdcard:\/home\/$name\/ext_sdcard/g" $name.sh ;;
 	*) echo "" ;;
@@ -1786,7 +1605,7 @@ fi ;;
 		9|"") TERMUX ;;
 		0) exit 0 ;;
 		1) 
-	echo -n "请把系统文件夹放根目录并输入系统文件夹名字rootfs:"
+	echo -n "请把系统文件夹放根目录并输入系统文件夹名字rootfs: "
 	read rootfs
 	while [ ! -d $rootfs ]
                         do
@@ -1801,10 +1620,10 @@ fi ;;
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $rootfs --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $rootfs/proc/version:/proc/version -b $rootfs/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" > start-$rootfs.sh && chmod +x start-$rootfs.sh
-echo -e "\n是否加载外部sdcard\n1)是\n2)跳过"
-read -r -p ":" input
+echo -e "\n是否加载外部sdcard"
+read -r -p "1)是 2)跳过 请选择: " input
 case $input in
-	1) echo -n "请输入外部sdcard名字ext_sdcard:"
+	1) echo -n "请输入外部sdcard名字ext_sdcard: "
 		read ext_sdcard
 		sed -i "s/shm/shm -b \/mnt\/$ext_sdcard:\/root\/ext_sdcard/g" start-$rootfs.sh ;;
 		*) echo "" ;;
@@ -1832,7 +1651,7 @@ TERMUX
 	echo -e "请选择下载地址
 	1) 清华大学
 	2) 北外大学(推荐)\n"
-	read -r -p "E(exit) M(main)请选择:" input
+	read -r -p "E(exit) M(main) 请选择: " input
 	case $input in                                 
 		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/buster/arm64/default/" ;;
 		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/buster/arm64/default/" ;;
@@ -1865,7 +1684,7 @@ sleep 2
 	echo -e "请选择下载地址
 	1) 清华大学
 	2) 北外大学(推荐)\n"
-	read -r -p "E(exit) M(main)请选择:" input
+	read -r -p "E(exit) M(main) 请选择: " input
 	case $input in
 		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
 		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
@@ -1899,7 +1718,7 @@ TERMUX ;;
         echo -e "请选择下载地址
         1) 清华大学
         2) 北外大学(推荐)\n"
-        read -r -p "E(exit) M(main)请选择:" input
+        read -r -p "E(exit) M(main) 请选择: " input
         case $input in
                 1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/buster/amd64/default/" ;;
                 2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/buster/amd64/default/" ;;
@@ -1973,7 +1792,7 @@ esac
 echo -e "请选择下载地址
 1) 清华大学
 2) 北外大学(推荐)\n"
-read -r -p "E(exit) M(main)请选择:" input
+read -r -p "E(exit) M(main) 请选择: " input
 case $input in
 	1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/kali/current/arm64/default/" ;;
 	2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/kali/current/arm64/default/" ;;
@@ -1994,9 +1813,9 @@ sleep 2
 		echo -e "\n请选择备份或恢复
 		1) 备份
 		2) 恢复\n"
-	read -r -p "E(exit) M(main)请选择:" input
+	read -r -p "E(exit) M(main) 请选择: " input
 	case $input in
-		1) echo -n "请输入拟备份的系统文件夹名(可含路径)backup:"
+		1) echo -n "请输入拟备份的系统文件夹名(可含路径)backup: "
 			read backup
 			tar zcvf $backup.tar.gz $backup
 			if [ $? -eq 0 ]; then
@@ -2007,35 +1826,35 @@ sleep 2
 			     fi
 			     sleep 2
 				     TERMUX ;;
-			     2) echo -n "请把恢复包放到本脚本目录，并输入拟恢复包的完整名字(可含路径，支持*.tar.gz或*.tar.xz后缀名) backup:"
+			     2) echo -n "请把恢复包放到本脚本目录，并输入拟恢复包的完整名字(可含路径，支持*.tar.gz或*.tar.xz后缀名) backup: "
 				     read backup
 if [ "${backup##*.}" = "xz" ]; then                     
 	tar -xvJf $backup                                     
 elif [ "${backup##*.}" = "gz" ]; then                   
 	tar -zxvf $backup                                  
 			     else
-				     echo -e "${RED}不支持的格式${RES}"
-				     sleep 2
-				     unset backup
-				     TERMUX
-				     fi
-				     if [ $? -eq 0 ]; then
-					     echo -e "恢复完成"
-				     else
-					     echo -e "${RED}恢复失败，请检查...${RES}"
-					     fi
-					     sleep 2
-					     unset backup
-					     TERMUX ;;
-				     [Ee]) echo "exit"
-					     exit 1 ;;
-				     [Mm]) echo "back to Main"
-					     unset backup
-					     MAIN ;;
-				     *) INVALID_INPUT
-					     unset backup
-					     TERMUX
-			     esac ;;
+	echo -e "${RED}不支持的格式${RES}"
+	sleep 2
+	unset backup
+	TERMUX
+	fi
+	if [ $? -eq 0 ]; then
+		echo -e "恢复完成"
+	else
+		echo -e "${RED}恢复失败，请检查...${RES}"
+	fi
+	sleep 2
+	unset backup
+	TERMUX ;;
+	[Ee]) echo "exit"
+		exit 1 ;;
+	[Mm]) echo "back to Main"
+		unset backup
+		MAIN ;;
+	*) INVALID_INPUT
+		unset backup
+		TERMUX
+	esac ;;
 11)  echo "修改键盘"
                 if [ -d ${HOME}/.termux ]; then
                         rm -rf ${HOME}/.termux
@@ -2060,7 +1879,7 @@ TERMUX
 	12) echo -e "
 		1) 增加等待7秒\n
 		任意键) 取消等待"
-		read -r -p "请选择:" input
+		read -r -p "请选择: " input
 		case $input in
 			1) echo -e "\nwait for 7 seconds"
 cat >>${PREFIX}/etc/bash.bashrc<<-'EOF'
@@ -2132,7 +1951,7 @@ TERMUX ;;
 	echo -e "请选择下载地址
 	1) 清华大学
 	2) 北外大学(推荐)\n"
-	read -r -p "E(exit) M(main)请选择:" input
+	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
 		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
@@ -2169,7 +1988,7 @@ SYSTEM_DOWN() {
                         TERMUX
                         sleep 2
                 fi
-                echo -n "请给系统文件夹起个名bagname:"
+                echo -n "请给系统文件夹起个名bagname: "
                 read bagname
                 if [ -e $bagname ]; then
                 rm -rf $bagname
@@ -2215,7 +2034,7 @@ MAIN() {
 	echo -e "${YELLOW}1) 软件安装
 2) 系统相关
 E) exit\n${RES}"
-read -r -p "CHOOSE: 1) 2) E(exit)" input
+read -r -p "CHOOSE: 1) 2) E(exit) " input
 case $input in
         1) clear 
 		INSTALL_SOFTWARE ;;
@@ -2229,7 +2048,7 @@ else
 	echo "当前环境为termux,已自动屏蔽rootfs系统相关选项"
 	echo -e "${YELLOW}3) termux相关(包括系统包下载)
 E) exit\n${RES}"
-read -r -p "CHOOSE: 3) E(exit)" input
+read -r -p "CHOOSE: 3) E(exit) " input
 	case $input in
 		3) TERMUX ;;
 		[Ee]) exit 1 ;;
