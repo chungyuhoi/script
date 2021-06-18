@@ -842,23 +842,6 @@ case $input in
 *) echo -e "\e[1;31m输入无效，已退出\e[0m" ;;
 esac
 # ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1' | sed "s@\$@:5901@"
-cat >/dev/null<<EOF
-echo '#!/usr/bin/env bash
-`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
-        if [ $? != 0 ]; then
-                IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1)
-        else
-`ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6` 2>/dev/null
-if [ $? -ne 0 ]; then
-        IP=$(ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6)
-else
-        IP=$(ip a | grep inet | grep wlan | cut -d "/" -f 1 | cut -d " " -f 6)
-	fi
-	fi
-export DISPLAY=$IP:0
-export PULSE_SERVER=tcp:$IP:4713
-' >/usr/local/bin/easyxsdl
-EOF
 echo '#!/usr/bin/env bash
 pkill -9 Xtightvnc 2>/dev/null
 pkill -9 Xtigertvnc 2>/dev/null
@@ -1251,19 +1234,6 @@ esac
 		$sudo_t apt install python3 python3-pip -y && mkdir -p /root/.config/pip && echo "[global] 
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.conf
 	fi
-: <<\eof
-	`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null 
-	if [ $? != 0 ]; then  
-		IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1)   
-	else      
-		`ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6` 2>/dev/null 
-		if [ $? -ne 0 ]; then   
-			IP=$(ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6)    
-		else             
-			IP=$(ip a | grep inet | grep wlan | cut -d "/" -f 1 | cut -d " " -f 6)   
-			fi         
-	fi
-eof
 IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
 	${YELLOW}本机	http://127.0.0.1:8080
