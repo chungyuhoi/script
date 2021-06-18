@@ -988,7 +988,7 @@ fi
 		printf "%s\n" "MOZ_FAKE_NO_SANDBOX=1" /etc/environment
 	else
 		echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
-export MOZ_FAKE_NO_SANDBOX=1' >/etc/environment
+export MOZ_FAKE_NO_SANDBOX=1' >>/etc/environment
 	fi
 	echo -e "\n\e[0;32m因firefox限制，已帮你修正设置。如仍然无法上网，请打开firefox，在地址栏输about:config，搜索并修改如下信息:
 	media.cubeb.sandbox的值改成false
@@ -1172,6 +1172,13 @@ read -r -p "E(exit) M(main)请选择:" input
 case $input in
 	1) echo -e "${YELLOW}安装fcitx输入法${RES}"
 	$sudo_t apt install fcitx*googlepinyin* fcitx-table-wubi
+#fcitx fcitx-tools fcitx-config-gtk fcitx-googlepinyin
+if ! grep -q 'fcitx' /etc/environment; then
+echo 'export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS="@im=fcitx"
+export SDL_IM_MODULE=fcitx' >>/etc/environment
+fi
 	echo -e "${YELLOW}done${RES}"
 	sleep 1
 	INSTALL_SOFTWARE
@@ -1211,8 +1218,8 @@ esac
 		CURL="$(curl -L https://www.wps.cn/product/wpslinux\# | grep .deb | grep arm | cut -d '"' -f 2)"
 		curl -o wps.deb $CURL && $sudo_t dpkg -i wps.deb && rm wps.deb
 		PROCESS_CHECK
-		sed -i '2i\export XMODIFIERS="@im=fcitx"' /usr/bin/wps /usr/bin/et /usr/bin/wpp 2>/dev/null
-		sed -i '2i\export QT_IM_MODULE="fcitx"' /usr/bin/wps /usr/bin/et /usr/bin/wpp 2>/dev/null
+#		sed -i '2i\export XMODIFIERS="@im=fcitx"' /usr/bin/wps /usr/bin/et /usr/bin/wpp 2>/dev/null
+#		sed -i '2i\export QT_IM_MODULE="fcitx"' /usr/bin/wps /usr/bin/et /usr/bin/wpp 2>/dev/null
 	else echo "已安装wps"
 		sleep 2
 		fi
