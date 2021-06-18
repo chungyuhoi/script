@@ -961,8 +961,10 @@ fi
 	if grep -q '^ex.*MOZ_FAKE_NO_SANDBOX=1' /etc/environment; then
 		printf "%s\n" "MOZ_FAKE_NO_SANDBOX=1" /etc/environment
 	else
-		echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"
-export MOZ_FAKE_NO_SANDBOX=1' >>/etc/environment
+		echo 'export MOZ_FAKE_NO_SANDBOX=1' >>/etc/environment
+	fi
+	if ! grep -q 'PATH' /etc/environment; then
+		sed -i '1i\PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"' /etc/environment
 	fi
 	echo -e "\n\e[0;32m因firefox限制，已帮你修正设置。如仍然无法上网，请打开firefox，在地址栏输about:config，搜索并修改如下信息:
 	media.cubeb.sandbox的值改成false
@@ -1152,6 +1154,9 @@ echo 'export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
 export XMODIFIERS="@im=fcitx"
 export SDL_IM_MODULE=fcitx' >>/etc/environment
+fi
+if ! grep -q 'PATH' /etc/environment; then
+	sed -i '1i\PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"' /etc/environment
 fi
 	echo -e "${YELLOW}done${RES}"
 	sleep 1
