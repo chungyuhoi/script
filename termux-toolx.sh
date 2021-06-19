@@ -717,7 +717,6 @@ XSTARTUP
 4) XSTARTUP ;;
 5) echo -n "输入你手机分辨率,例如 2340x1080  resolution: "
 	read resolution
-	#sed -i "/^alias/d" /etc/profile && echo "alias vncserver='vncserver -geometry $resolution'" >>/etc/profile
 	ex_resolution=`cat /etc/vnc.conf | grep '^$geometry' | cut -d '=' -f 2`
 	sed -i "s/$ex_resolution/\"${resolution}\"\;/g" /etc/vnc.conf
 	echo "已修改，请重新打开vnc"
@@ -1348,7 +1347,14 @@ esac
 
 #################
 QEMU_SYSTEM() {
-echo -e "
+	echo -e "
+1) 使用在线脚本(功能完善)
+2) 本地安装(仅提供安装与目录创建)"
+read -r -p "E(exit) M(main) 请选择: " input
+case $input in
+	1)
+	bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh)" ;;
+2) echo -e "
 1) 安装qemu-system-x86_64，并联动更新模拟器所需应用
 2) 创建windows镜像目录\n"
 read -r -p "E(exit) M(main)请选择: " input
@@ -1362,8 +1368,6 @@ else
         QEMU_SYSTEM
         ;;
 2) echo -e "创建windows镜像目录及共享目录\n"
-# 	sed -i "1i\export PULSE_SERVER=tcp:127.0.0.1:4713" /etc/profile 2>/dev/null
-#	sed -i "1i\export QEMU_AUDIO_DRV=alsa" /etc/profile 2>/dev/null	
         if [ ! -e "$DIRECT/windows" ]; then
                 mkdir $DIRECT/windows
         fi
@@ -1380,6 +1384,12 @@ else
         ;;
 	[Ee])
 	echo "exit"
+	exit 1 ;;
+	[Mm])
+	echo "back to Main"
+	MAIN ;;
+	*) INVALID_INPUT && QEMU_SYSTEM ;;
+	esac ;;                                              [Ee]) echo "exit"
 	exit 1 ;;
 	[Mm])
 	echo "back to Main"
@@ -2012,9 +2022,9 @@ MAIN() {
 	if [ $? -ne 0 ]; then
 	echo "当前环境为rootfs系统,已自动屏蔽termux相关选项"
 	SUDO_CHECK
-	echo -e "${YELLOW}1) 软件安装
+	echo -e "1) 软件安装
 2) 系统相关
-E) exit\n${RES}"
+E) exit\n"
 read -r -p "CHOOSE: 1) 2) E(exit) " input
 case $input in
         1) clear 
@@ -2027,8 +2037,8 @@ case $input in
 esac
 else
 	echo "当前环境为termux,已自动屏蔽rootfs系统相关选项"
-	echo -e "${YELLOW}3) termux相关(包括系统包下载)
-E) exit\n${RES}"
+	echo -e "3) termux相关(包括系统包下载)
+E) exit\n"
 read -r -p "CHOOSE: 3) E(exit) " input
 	case $input in
 		3) TERMUX ;;
