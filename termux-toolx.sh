@@ -966,6 +966,9 @@ fi
 	if ! grep -q 'PATH' /etc/environment; then
 		sed -i '1i\PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"' /etc/environment
 	fi
+	if ! grep -q 'environment' /etc/profile; then
+		echo 'source /etc/environment' >>/etc/profile
+	fi
 	echo -e "\n\e[0;32m因firefox限制，已帮你修正设置。如仍然无法上网，请打开firefox，在地址栏输about:config，搜索并修改如下信息:
 	media.cubeb.sandbox的值改成false
 	security.sandbox.content.level的值改成0
@@ -1158,6 +1161,9 @@ fi
 if ! grep -q 'PATH' /etc/environment; then
 	sed -i '1i\PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"' /etc/environment
 fi
+if ! grep -q 'environment' /etc/profile; then
+	echo 'source /etc/environment' >>/etc/profile
+fi
 	echo -e "${YELLOW}done${RES}"
 	sleep 1
 	INSTALL_SOFTWARE
@@ -1187,7 +1193,7 @@ esac
 		read -r -p "E(exit) M(main)请选择: " input
 		case $input in
 			1|"") echo "安装libreoffice"
-		$sudo_t apt install libreoffice 
+		$sudo_t apt install libreoffice libreoffice-l10n-zh-cn 
 		echo -e "${BLUE}done${RES}"
 		sleep 1 ;;
 	2) 
