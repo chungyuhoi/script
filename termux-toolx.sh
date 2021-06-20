@@ -1348,8 +1348,8 @@ esac
 #################
 QEMU_SYSTEM() {
 	echo -e "
-1) 使用在线脚本(功能完善)
-2) 本地安装(仅提供安装与目录创建)"
+1) 使用在线utqemu脚本(功能完善)
+2) 本脚本安装(仅提供安装与目录创建)"
 read -r -p "E(exit) M(main) 请选择: " input
 case $input in
 	1)
@@ -1368,16 +1368,16 @@ else
         QEMU_SYSTEM
         ;;
 2) echo -e "创建windows镜像目录及共享目录\n"
-        if [ ! -e "$DIRECT/windows" ]; then
-                mkdir $DIRECT/windows
+        if [ ! -e "$DIRECT/xinhao/windows" ]; then
+                mkdir -p $DIRECT/xinhao/windows
         fi
-	if [ ! -e "$DIRECT/share/" ]; then
-		mkdir $DIRECT/share
+	if [ ! -e "$DIRECT/xinhao/share/" ]; then
+		mkdir -p $DIRECT/xinhao/share
 	fi
-	if [ ! -e "$DIRECT/windows" ]; then
+	if [ ! -e "$DIRECT/xinhao/windows" ]; then
 		echo -e "${RED}创建目录失败${RES}"
 	else
-		echo -e "${GREEN}手机主目录下已创建windows文件夹，请把'系统镜像，分区镜像，光盘镜像'放进这个目录里\n共享目录是share(目录内总文件大小不能超过500m)${RES}"
+		echo -e "${GREEN}手机主目录下已创建/xinhao/windows文件夹，请把'系统镜像，分区镜像，光盘镜像'放进这个目录里\n共享目录是share(目录内总文件大小不能超过500m)${RES}"
 	fi
         CONFIRM
 	QEMU_SYSTEM

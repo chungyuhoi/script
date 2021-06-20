@@ -4,17 +4,13 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/06/17"
+	UPDATE="2021/06/20"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增termux最新版本下载选项
+	加入我另一个脚本termux-toolx，可安装体验linux(debian)系统
 	针对部分用户出现脚本下载错误，换了个服务器
 	容器内新增aspice与xsdl下载地址
 	修复termux环境无法安装qemu的bug
-	qemu5.0以下版本增加virtio磁盘接口安装选项
-	启动qemu-system-x86_64模拟器中的virtio磁盘安装选项移至virtio驱动相关选项中	
-	新增本脚本容器下脚本自动检测更新选项
-	新增启动失败，给出常见错误提示
-	新增镜像目录自定义，该功能暂不支持共享目录
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -686,19 +682,20 @@ QEMU_SYSTEM() {
 	QEMU_VERSION
 	NOTE
 echo -e "
-1) 安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}
-2) 创建windows镜像目录
-3) 启动qemu-system-x86_64模拟器
-4) 让termux成为网页服务器\n(使模拟系统可以通过浏览器访问本机内容)
-5) virtio驱动相关"
+1)  安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}
+2)  创建windows镜像目录
+3)  启动qemu-system-x86_64模拟器
+4)  让termux成为网页服务器\n(使模拟系统可以通过浏览器访问本机内容)
+5)  virtio驱动相关"
 	case $SYS in
 	ANDROID) ;;
-	*) echo -e "6) 应用维护" ;;
+	*) echo -e "6)  应用维护" ;;
 	esac
-echo -e "7) 查看日志
-8) 更新内容
-9) 关于utqemu
-0) 退出\n"
+echo -e "7)  查看日志
+8)  更新内容
+9)  关于utqemu
+10) 在线termux-toolx脚本安装体验linux系统(debian)
+0)  退出\n"
 	read -r -p "请选择: " input
 	case $input in
 	1)  echo -e "${YELLOW}安装过程中，如遇到询问选择，请输(y)，安装过程容易出错，请重试安装${RES}"
@@ -764,6 +761,7 @@ Failed to find an available port: Address already in use; ${YELLOW}(视频输出
 	CONFIRM
 	QEMU_SYSTEM     ;;
 	9) ABOUT_UTQEMU ;;
+	10) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/termux-toolx.sh)" ;;
 	0) exit 1 ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
 	esac                                            }
@@ -1766,6 +1764,30 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	esac
 }
 ###################
+SOURCE() {
+echo -e "1) 换源
+9) 返回"
+	read -r -p "请选择: " input
+	case $input in
+		1) read -r -p "1)北外源 2)腾讯源 3)清华源 9)返回 " input
+	case $input in
+	1) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
+sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
+	2) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
+	3) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
+	*) MAIN ;;
+	esac
+	pkg update ;;
+	*) ;;
+        esac
+	MAIN
+}
+###################
 LOGIN_() {
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
@@ -1774,6 +1796,7 @@ LOGIN_() {
 	2) 支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3）支持qemu5.0以上版本容器(选项内容丰富)
 	4) 换源(如果无法安装或登录请尝试此操作)
+	5) 在线termux-toolx脚本安装体验linux系统(debian)
 
 	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
@@ -1802,27 +1825,8 @@ LOGIN_() {
 		fi
 		LOGIN
 		fi ;;
-	4) echo -e "1) 换源
-9) 返回"
-	read -r -p "请选择: " input
-	case $input in
-		1) read -r -p "1)北外源 2)腾讯源 3)清华源 9)返回 " input
-		case $input in
-	1) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
-	2) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-        sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-        sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
-	3) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
-	*) MAIN ;;
-		esac
-	pkg update ;;
-	*) ;;
-	esac
-	MAIN ;;
+	4) SOURCE ;;
+	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/termux-toolx.sh)" ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
 	1) curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o ${HOME}/utqemu.sh
