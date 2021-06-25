@@ -1193,8 +1193,8 @@ esac
 		case $input in
 			1|"") echo "安装libreoffice"
 		$sudo_t apt install libreoffice libreoffice-l10n-zh-cn 
-		echo -e "${BLUE}done${RES}"
-		sleep 1 ;;
+		echo -e "${GREEN}中文界面，请打开LibreOffice，左上角Tools-Options-Language settings-languages，User interface选择Chinese${RES}"
+		CONFIRM ;;
 	2) 
 		ls /usr/share/applications/ | grep wps -q 2>/dev/null
 		if [ $? != 0 ]; then
