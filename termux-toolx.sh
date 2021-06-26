@@ -2012,7 +2012,6 @@ if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
 sed -i "1i\pkill -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
 fi
 fi
-ln -s ${HOME}/termux-toolx.sh $bagname/root/
 sleep 2
 }
 #########################
