@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/06/20"
+	UPDATE="2021/06/25"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增termux最新版本下载选项
 	加入我另一个脚本termux-toolx，可安装体验linux(debian)系统
@@ -740,7 +740,7 @@ else
 	7) if [ -e ${HOME}/.utqemu_log ]; then
 	echo -e "\n${GREEN}日志已忽略不重要的信息${RES}\n按空格下一页，退出请按q\n"
 	CONFIRM
-	more ${HOME}/.utqemu_log | egrep "qemu-system-x86_64|qemu-system-i386" | egrep -v "stronger memory|Connection reset by peer|requested feature"
+	more ${HOME}/.utqemu_log | egrep "qemu-system-x86_64|qemu-system-i386|initialization" | egrep -v "stronger memory|Connection reset by peer|requested feature"
 echo -e "\n${YELLOW}常见错误提示：${RES}
 ${BLUE}开机蓝屏; 通常为机算机类型(pc q35)，磁盘接口(IDE SATA VIRTIO)，运行内存配置过大等原因造成，请尝试修改配置${RES}
 No such file or directory; ${YELLOW}(没有匹配的目录或文件名)${RES}
