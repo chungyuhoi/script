@@ -1193,8 +1193,8 @@ esac
 		case $input in
 			1|"") echo "安装libreoffice"
 		$sudo_t apt install libreoffice libreoffice-l10n-zh-cn 
-		echo -e "${BLUE}done${RES}"
-		sleep 1 ;;
+		echo -e "${GREEN}中文界面，请打开LibreOffice，左上角Tools-Options-Language settings-languages，User interface选择Chinese${RES}"
+		CONFIRM ;;
 	2) 
 		ls /usr/share/applications/ | grep wps -q 2>/dev/null
 		if [ $? != 0 ]; then
@@ -1957,7 +1957,7 @@ echo "修改为北外源"
 echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
 ${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
 ${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security bullseye/updates ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
+${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
 	sleep 2
 	TERMUX ;;
 
@@ -1990,6 +1990,7 @@ SYSTEM_DOWN() {
                 sleep 2
                 echo "修改时区"
                 sed -i "1i\export TZ='Asia/Shanghai'" $bagname/etc/profile
+		echo 'apt update && apt install curl -y && sed -i "/update/d" /etc/profile' >>$bagname/etc/profile
                 echo "配置dns"
 		rm $bagname/etc/resolv.conf 2>/dev/null
 		echo "nameserver 223.5.5.5
