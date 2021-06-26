@@ -1957,7 +1957,7 @@ echo "修改为北外源"
 echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
 ${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
 ${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security bullseye/updates ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
+${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
 	sleep 2
 	TERMUX ;;
 
