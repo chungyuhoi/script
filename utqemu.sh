@@ -408,7 +408,7 @@ WEB_SERVER() {
 	if [ ! $(command -v python) ]; then
 	echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
 	sudo_
-	$sudo apt install python -y
+	apt install python -y
 	fi
 	else
 	if [ ! $(command -v python3) ]; then
