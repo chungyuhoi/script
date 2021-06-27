@@ -4,8 +4,9 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/06/25"
+	UPDATE="2021/06/27"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	修改IDE磁盘接口参数，使其速度更快，但缺点是容易丢失数据
 	新增termux最新版本下载选项
 	加入我另一个脚本termux-toolx，可安装体验linux(debian)系统
 	针对部分用户出现脚本下载错误，换了个服务器
@@ -1463,9 +1464,9 @@ EOF
 ##################
 #IDE			
 		1)
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback"
 	if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=writeback"
 	fi
 	if [ -n "$iso1_name" ]; then
 #		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
@@ -1473,13 +1474,9 @@ EOF
 	if [ -n "$iso_name" ]; then 
 	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=1"
 	fi
-	else
-	if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,index=2,media=cdrom"
-	fi
 	fi
 	case $SHARE in
-		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
+		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback" ;;
 		*) ;;
 	esac ;;
 	2)
@@ -1501,12 +1498,6 @@ EOF
 	if [ -n "$iso_name" ]; then
 	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=1"
 	fi
-: <<\eof
-	if [ -n "$iso_name" ]; then
-	set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}${STORAGE}$iso_name,if=none"     
-	set -- "${@}" "-device" "ide-cd,drive=cdrom,bus=ahci.2"
-	fi
-eof
 	case $SHARE in
 		true)
 		set -- "${@}" "-usb" "-drive" "if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/"
@@ -1573,7 +1564,7 @@ eof
 ########################
 	if [ -n "$display" ]; then
 	case $display in
-		wlan_vnc) set -- "${@}" "-display" "vnc=$IP:0,lossy=on,non-adaptive=off" ;;
+		wlan_vnc) set -- "${@}" "-display" "vnc=$IP:0" ;;
 		vnc) 
 		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
