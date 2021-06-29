@@ -445,7 +445,7 @@ ${SOURCES_ADD}ubuntu-ports/ groovy-backports ${DEB_UBUNTU}
 ${SOURCES_ADD}ubuntu-ports/ groovy-security ${DEB_UBUNTU}" >/etc/apt/sources.list ;;
 		*kali*)
 echo "${SOURCES_USTC}kali kali-rolling ${DEB_DEBIAN}
-deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >/etc/apt/sources.lis ;;
+deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
 		*strentch*)
 echo "${SOURCES_ADD}debian/ stretch ${DEB_DEBIAN}
 ${SOURCES_ADD}debian/ stretch-updates ${DEB_DEBIAN}
@@ -1401,15 +1401,15 @@ else
 #################
 TERMUX() {
 	echo -e "\n${PINK}注意！以下均在termux环境中操作\n${RES}"
-	echo -e "1) ${YELLOW}* 一键配置好termux环境 (*^ω^*)${RES}
-2) termux换国内源
-3) 安装常用应用(包括curl tar wget vim proot)
-4) 安装pulseaudio并配置(让termux支持声音输出)
-5) 创建用户系统登录脚本
-6) 下载Debian(buster)系统
-7) 下载Ubuntu(bionic)系统
-8) qemu-system-x86_64模拟器
-9) 下载x86架构的Debian(buster)系统(qemu模拟)
+	echo -e "1) ${YELLOW} * 一键配置好termux环境 (*^ω^*)${RES}
+2)  termux换国内源
+3)  安装常用应用(包括curl tar wget vim proot)
+4)  安装pulseaudio并配置(让termux支持声音输出)
+5)  创建用户系统登录脚本
+6)  下载Debian(buster)系统
+7)  下载Ubuntu(bionic)系统
+8)  qemu-system-x86_64模拟器
+9)  下载x86架构的Debian(buster)系统(qemu模拟)
 10) 备份恢复系统
 11) 修改termux键盘
 12) 设置打开termux等待七秒(别问为什么)
