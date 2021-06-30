@@ -70,7 +70,7 @@ startxfce4
 fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
 apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
 sed -i "/firstrun/d" /etc/profile
-echo -e "打开vnc请输easyvnc\nvnc viewer地址输127.0.0.1:0\nvnc的退出,在系统输exit即可
+echo -e "打开vnc请输\e[33measyvnc\e[0m\nvnc viewer地址输127.0.0.1:0\nvnc的退出,在系统输exit即可
 如果启动失败,请输\e[33mbash firstrun\e[0m重新安装"
 read -r -p "按回车键继续" input
 case $input in
