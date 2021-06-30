@@ -22,6 +22,11 @@ cat >bullseye/root/firstrun<<-'eof'
 echo -e "正在配置首次运行\n安装常用应用"
 apt update && apt install -y && apt install curl wget vim fonts-wqy-zenhei tar chromium mpv xfce4 xfce4-terminal ristretto dbus-x11 -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
+if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
+echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
+sleep 2
+apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar chromium mpv xfce4 xfce4-terminal ristretto dbus-x11 tigervnc-standalone-server tigervnc-viewer -y
+fi
 sed -i "s/Exec=\/usr\/bin\/chromium %U/Exec=\/usr\/bin\/chromium --no-sandbox \%U/g" /usr/share/applications/chromium.desktop
 echo "请设置vnc密码,6到8位,"
 vncpasswd
@@ -64,11 +69,6 @@ else
 startxfce4
 fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
 apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
-if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then 
-echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
-sleep 2
-apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar chromium mpv xfce4 xfce4-terminal ristretto dbus-x11 tigervnc-standalone-server tigervnc-viewer -y
-fi
 sed -i "/firstrun/d" /etc/profile
 echo -e "打开vnc请输easyvnc\nvnc viewer地址输127.0.0.1:0\nvnc的退出,在系统输exit即可
 如果启动失败,请输\e[33mbash firstrun\e[0m重新安装"
