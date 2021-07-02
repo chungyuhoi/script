@@ -4,8 +4,9 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/06/29"
+	UPDATE="2021/07/01"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	增加termux-api下载
 	修复IDE接口无法加载光驱
 	修改IDE磁盘接口参数，使其速度更快，但缺点是容易丢失数据
 	新增termux最新版本下载选项
@@ -584,7 +585,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 			unset FORMAT
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
-		6) read -r -p "1)termux 2)aspice 3)xsdl " input
+		6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api " input
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
 	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -638,6 +639,13 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	*) ;;
 	esac
 	unset VERSION ;;
+	4) curl https://f-droid.org/packages/com.termux.api/ | grep apk | sed -n 2p | cut -d '"' -f 2 | cut -d '"' -f 1 | xargs curl -o ${DIRECT}${STORAGE}/com.termux.api.apk
+	if [ -f ${DIRECT}${STORAGE}/com.termux.api.apk ]; then
+	echo -e "\n已下载至${DIRECT}${STORAGE}目录"
+	else
+	echo -e "\n${RED}错误，请重试${RES}"
+	fi
+	sleep 2 ;;
 	*) INVALID_INPUT ;;
 	esac
 	QEMU_ETC ;;
@@ -1788,7 +1796,7 @@ LOGIN_() {
 	2) 支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3）支持qemu5.0以上版本容器(选项内容丰富)
 	4) 换源(如果无法安装或登录请尝试此操作)
-	5) 在线termux-toolx脚本安装体验linux系统(debian)
+	5) 在线脚本安装体验linux系统(debian)
 
 	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
@@ -1818,7 +1826,7 @@ LOGIN_() {
 		LOGIN
 		fi ;;
 	4) SOURCE ;;
-	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/termux-toolx.sh)" ;;
+	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye.sh)" ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
 	1) curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o ${HOME}/utqemu.sh

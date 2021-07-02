@@ -33,7 +33,7 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210616${RES}\n"
+${YELLOW}更新日期20210702${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -1018,7 +1018,7 @@ DM() {
 	3) 安装mate(有bug，请勿选)\n"
 	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
-		1) $sudo_t apt install xfce4 xfce4-terminal ristretto -y ;;
+		1) $sudo_t apt install xfce4 xfce4-terminal ristretto dbus-x11 -y ;;
 		2) $sudo_t apt install lxde-core lxterminal dbus-x11 -y ;;
 		3) 
 #			$sudo_t apt install mate-desktop-environment mate-terminal -y
@@ -1890,7 +1890,7 @@ sed -i '/seconds/,+8d' ${PREFIX}/etc/bash.bashrc ;;
 esac
 TERMUX ;;
 	13) 
-	read -r -p "1)termux 2)xsdl " input
+		read -r -p "1)termux 2)xsdl 3)termux-api " input
 	case $input in
 		1) echo -e "\n${YELLOW}检测最新版本${RES}"
 		VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -1912,7 +1912,7 @@ TERMUX ;;
 	case $input in
 	1) curl -O https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION
 		if [ -f $VERSION ]; then
-		echo -e "移到${DIRECT}${STORAGE}目录中..."
+		echo -e "移到${DIRECT}目录中..."
 		mv -v $VERSION ${DIRECT}
 		if [ -f ${DIRECT}$VERSION ]; then
 		echo -e "\n已下载至${DIRECT}目录"
@@ -1925,6 +1925,13 @@ TERMUX ;;
 	*) ;;
 	esac
 	unset VERSION ;;
+	3) curl https://f-droid.org/packages/com.termux.api/ | grep apk | sed -n 2p | cut -d '"' -f 2 | cut -d '"' -f 1 | xargs curl -o ${DIRECT}/com.termux.api.apk
+	if [ -f ${DIRECT}/com.termux.api.apk ]; then
+	echo -e "\n已下载至${DIRECT}目录"
+	else
+	echo -e "\n${RED}错误，请重试${RES}"
+	fi
+	sleep 2 ;;
 	*) INVALID_INPUT ;;
 	esac
         TERMUX ;;
