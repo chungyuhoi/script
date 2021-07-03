@@ -1254,7 +1254,7 @@ IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	;;
 13) echo -e "正在安装新立得"
 	sleep 2
-	apt install synaptic -y
+	$sudo_t apt install synaptic -y
 	echo -e "done"
 	sleep 1
 	INSTALL_SOFTWARE ;;
@@ -1263,7 +1263,7 @@ IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	sleep 2
 	rm linuxqq_${VERSION}_arm64.deb 2>/dev/null
 	wget  https://down.qq.com/qqweb/LinuxQQ/linuxqq_${VERSION}_arm64.deb
-	dpkg -i linuxqq_${VERSION}_arm64.deb
+	$sudo_t dpkg -i linuxqq_${VERSION}_arm64.deb
 	dpkg -l | grep linuxqq -q 2>/dev/null
 	if [ $? == 0 ]; then
 		echo -e "\n${YELLOW}已安装${RES}"
