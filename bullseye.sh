@@ -11,7 +11,6 @@ echo -e "\e[33m系统已下载,文件夹名为bullseye\e[0m"
 sleep 2
 sed -i "1i\export TZ='Asia/Shanghai'" bullseye/etc/profile
 sed -i "3i\rm -rf \/tmp\/.X\*" bullseye/etc/profile
-sed -i "/zh_CN.GBK/s/#//" bullseye/etc/locale.gen
 sed -i "/zh_CN.UTF/s/#//" bullseye/etc/locale.gen
 rm bullseye/etc/resolv.conf 2>/dev/null
 echo "nameserver 223.5.5.5
