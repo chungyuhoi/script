@@ -81,4 +81,4 @@ echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S bullseye --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b bullseye/proc/version:/proc/version -b bullseye/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-bullseye.sh && chmod +x start-bullseye.sh
-echo -e "已创建root用户系统登录脚本,登录方式为$\e[33m./start-bullseye.sh\e[0m"
+echo -e "已创建root用户系统登录脚本,登录方式为\e[33m./start-bullseye.sh\e[0m"

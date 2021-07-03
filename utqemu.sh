@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/01"
+	UPDATE="2021/07/02"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加termux-api下载
 	修复IDE接口无法加载光驱
@@ -423,7 +423,8 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
         fi
 	fi
         echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
-        ${YELLOW}http://$IP:8080${RES}\n
+	${YELLOW}本机	http://127.0.0.1:8080
+        局域网	http://$IP:8080${RES}\n
         如需关闭，请按ctrl+c，然后输pkill python3或直接exit退出shell\n"
         python3 -m http.server 8080 &
         sleep 2
