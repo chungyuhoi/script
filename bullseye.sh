@@ -10,16 +10,18 @@ rm rootfs.tar.xz
 echo -e "\e[33m系统已下载,文件夹名为bullseye\e[0m"
 sleep 2
 sed -i "1i\export TZ='Asia/Shanghai'" bullseye/etc/profile
-sed -i "2i\export LANGUAGE=zh_CN.UTF-8" bullseye/etc/profile
 sed -i "3i\rm -rf \/tmp\/.X\*" bullseye/etc/profile
+sed -i "/zh_CN.GBK/s/#//" bullseye/etc/locale.gen
+sed -i "/zh_CN.UTF/s/#//" bullseye/etc/locale.gen
 rm bullseye/etc/resolv.conf 2>/dev/null
 echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >bullseye/etc/resolv.conf
 echo 'deb http://mirrors.ustc.edu.cn/debian sid main contrib non-free' >bullseye/etc/apt/sources.list
 echo "" >bullseye/proc/version
-echo "bash firstrun" >>bullseye/etc/profile
+echo ". firstrun" >>bullseye/etc/profile
 cat >bullseye/root/firstrun<<-'eof'
 echo -e "正在配置首次运行\n安装常用应用"
+sleep 1
 apt update && apt install -y && apt install curl wget vim fonts-wqy-zenhei tar chromium mpv xfce4 xfce4-terminal ristretto dbus-x11 -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
 if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
@@ -69,12 +71,15 @@ else
 startxfce4
 fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
 apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
+locale-gen
+sed -i "2i\export LANG=zh_CN.UTF-8" /etc/profile
 sed -i "/firstrun/d" /etc/profile
 echo -e "打开vnc请输\e[33measyvnc\e[0m\nvnc viewer地址输127.0.0.1:0\nvnc的退出,在系统输exit即可
 如果启动失败,请输\e[33mbash firstrun\e[0m重新安装"
 read -r -p "按回车键继续" input
 case $input in
 *) ;; esac
+export LANG=zh_CN.UTF-8
 eof
 
 echo "killall -9 pulseaudio 2>/dev/null
