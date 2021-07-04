@@ -33,7 +33,7 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210702${RES}\n"
+${YELLOW}更新日期20210703${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -1040,9 +1040,8 @@ DM() {
 }
 #######################
 DM_VNC() {
-	echo -e "${YELLOW}
-	1) 安装桌面图形界面
-	2) 安装VNCSERVER远程服务${RES}\n"
+	echo -e "\n1) 安装桌面图形界面
+2) 安装VNCSERVER远程服务${RES}\n"
 	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) DM ;;
