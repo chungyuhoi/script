@@ -411,8 +411,11 @@ LANGUAGE_CHANGE(){
                         echo "1)修改为中文; 2)修改为英文"
 			read -r -p "1) 2) " input
 			case $input in
-			1) export LANGUAGE=zh_CN.UTF-8 && sed -i '/^export LANGUAGE/d' /etc/profile && sed -i '1i\export LANGUAGE=zh_CN.UTF-8' /etc/profile && source /etc/profile && echo '修改完毕,请重新登录' && sleep 2 && SETTLE ;;
-2) export LANGUAGE=C.UTF-8 && sed -i '/^export LANGUAGE/d' /etc/profile && echo '修改完毕，请重新登录' && sleep 2 && SETTLE ;;
+			1) $sudo apt install fonts-wqy-zenhei -y
+			sed -i '/zh_CN.UTF/s/^/#//' /etc/locale.gen
+			locale-gen
+			sed -i '/^export LANG/d' /etc/profile && sed -i '1i\export LANG=zh_CN.UTF-8' /etc/profile && source /etc/profile && export LANG=zh_CN.UTF-8 && echo '修改完毕,请重新登录' && sleep 2 && SETTLE ;;
+2) export LANG=C.UTF-8 && sed -i '/^export LANG/d' /etc/profile && echo '修改完毕，请重新登录' && sleep 2 && SETTLE ;;
 *) INVALID_INPUT
 LANGUAGE_CHANGE ;;
 esac
