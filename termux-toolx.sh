@@ -741,10 +741,10 @@ XSTARTUP
         read resolution
 	echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
 export USER="$(whoami)"
 export PULSE_SERVER=127.0.0.1
 set -- "${@}" "-ZlibLevel=1"
@@ -845,10 +845,10 @@ case $input in
 esac
 # ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1' | sed "s@\$@:5901@"
 echo '#!/usr/bin/env bash
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
 export DISPLAY=127.0.0.1:0
 export PULSE_SERVER=tcp:127.0.0.1:4713' >/usr/local/bin/easyxsdl
 echo "$XWIN" >>/usr/local/bin/easyxsdl && chmod +x /usr/local/bin/easyxsdl
@@ -866,10 +866,10 @@ VNCSERVER
 	fi
 # ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1'
 	echo '#!/usr/bin/env bash
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
 vncserver -kill $DISPLAY 2>/dev/null
 tigervncserver :0 -localhost no
 IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
@@ -877,6 +877,68 @@ echo -e "\e[33mVNCVIEWER打开地址为$IP:0\e[0m\n"
 sleep 2' >/usr/local/bin/easyvnc-wifi && chmod +x /usr/local/bin/easyvnc-wifi
 VNCSERVER
 ;;
+9) $sudo_t apt install xvfb x11vnc -y
+	echo -n "输入你手机分辨率(例如:2340x1080) : "
+	read resolution
+cat >/usr/local/bin/easyx11vnc<<-'eof'
+#!/usr/bin/env bash
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
+vncserver -kill $DISPLAY 2>/dev/null
+export PULSE_SERVER=127.0.0.1
+export DISPLAY=:233
+#####################
+start_xvfb() {
+set -- "${@}" "${DISPLAY}"
+set -- "${@}" "-screen" "0" "1080x2320x24"
+set -- "${@}" "-ac"
+set -- "${@}" "+extension" "GLX"
+set -- "${@}" "+render"
+set -- "${@}" "-deferglyphs" "16"
+set -- "${@}" "-br"
+set -- "${@}" "-wm"
+set -- "${@}" "-retro"
+set -- "${@}" "-noreset"
+set -- "Xvfb" "${@}"
+"${@}" & >/dev/null 2>&1
+}
+start_x11vnc() {
+set -- "${@}" "-localhost"
+set -- "${@}" "-ncache_cr"
+set -- "${@}" "-xkb"
+set -- "${@}" "-noxrecord"
+#set -- "${@}" "-noxfixes"
+set -- "${@}" "-noxdamage"
+set -- "${@}" "-display" "${DISPLAY}"
+set -- "${@}" "-forever"
+set -- "${@}" "-bg"
+set -- "${@}" "-rfbauth" "${HOME}/.vnc/passwd"
+set -- "${@}" "-users" "$(whoami)"
+set -- "${@}" "-rfbport" "5900"
+set -- "${@}" "-noshm"
+set -- "${@}" "-desktop" "${desktop}"
+set -- "${@}" "-shared"
+set -- "${@}" "-verbose"
+set -- "${@}" "-cursor" "arrow"
+set -- "${@}" "-arrow" "2"
+set -- "${@}" "-nothreads"
+set -- "x11vnc" "${@}"
+"${@}" & >/dev/null 2>&1
+}
+echo -e "如无法启动，请ctrl+c退出"
+start_xvfb
+. /etc/X11/xinit/Xsession &
+start_x11vnc
+###########
+eof
+sed -i "s/1080x2340/${resolution}/" /usr/local/bin/easyx11vnc
+chmod +x /usr/local/bin/easyx11vnc
+echo -e "\n已配置，启动命令${YELLOW}easyx11vnc${RES}\n"
+sleep 1
+INSTALL_SOFTWARE
+	;;
 [Ee])
 	echo "exit"
 	exit 1
@@ -1248,7 +1310,7 @@ IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
 	${YELLOW}本机	http://127.0.0.1:8080
 	局域网	http://$IP:8080${RES}\n
-	如需关闭，请按ctrl+c，然后输pkill python3或直接exit退出shell\n"
+	如需关闭，请按ctrl+c，然后输killall python3或直接exit退出shell\n"
 	python3 -m http.server 8080 &
 	sleep 2
 	;;
@@ -1556,7 +1618,7 @@ esac
 			sleep 2
 			Uid=`sed -n p $rootfs/etc/passwd | grep $name | cut -d ':' -f 3`
 			Gid=`sed -n p $rootfs/etc/passwd | grep $name | cut -d ':' -f 4`
-echo "pkill -9 pulseaudio 2>/dev/null
+echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -r $rootfs -i $Uid:$Gid --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
@@ -1578,7 +1640,7 @@ sleep 2
 			echo "$name:x:$i:$i:,,,:/home/$name:/bin/bash" >>$rootfs/etc/passwd
 			echo "$name:x:$i:" >>$rootfs/etc/group
 			echo "$name:!:18682:0:99999:7:::" >>$rootfs/etc/shadow
-echo "pkill -9 pulseaudio 2>/dev/null
+echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -r $rootfs -i $i:$i --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
@@ -1607,7 +1669,7 @@ fi ;;
 		rm -rf start-$rootfs.sh
 	fi
 	echo "" >$rootfs/proc/version
-		echo "pkill -9 pulseaudio 2>/dev/null
+		echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $rootfs --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $rootfs/proc/version:/proc/version -b $rootfs/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" > start-$rootfs.sh && chmod +x start-$rootfs.sh
@@ -1622,7 +1684,7 @@ case $input in
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./start-$rootfs.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 	if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-		sed -i "1i\pkill -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
+		sed -i "1i\killall -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
 	fi
 fi
 sleep 2 ;;
@@ -1769,7 +1831,7 @@ cd && cp termux_tmp/usr/bin/qemu-x86_64-static $bagname/
 echo "删除临时文件"
 sleep 1
 rm -rf termux_tmp
-echo "pkill -9 pulseaudio 2>/dev/null
+echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $bagname --link2symlink -b $bagname/root:/dev/shm -b $DIRECT -q $bagname/qemu-x86_64-static -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 /bin/bash" >$bagname.sh
@@ -2013,14 +2075,14 @@ if grep -q 'ubuntu' "$bagname/etc/os-release" ; then
         touch "$bagname/root/.hushlogin"
 fi
 echo "" >$bagname/proc/version
-echo "pkill -9 pulseaudio 2>/dev/null
+echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $bagname --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $bagname/proc/version:/proc/version -b $bagname/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$bagname.sh && chmod +x $bagname.sh
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./$bagname.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-sed -i "1i\pkill -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
+sed -i "1i\killall -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
 fi
 fi
 sleep 2
