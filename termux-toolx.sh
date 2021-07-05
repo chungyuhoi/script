@@ -1087,11 +1087,11 @@ esac
 }
 #######################
 INSTALL_SOFTWARE() {
-echo -e "\n\n${RED}注意，建议先安装常用应用\n${RES}"
-echo -e "1)  ${GREEN}*安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)${RES}
-2)  安装Electron(需先安装GitHub仓库)
-3)  ${YELLOW}*安装桌面图形界面及VNCSERVER远程服务${RES}
-4)  浏览器
+echo -e "\n\n${RED}建议先安装常用应用\n${RES}"
+echo -e "1)  *安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)${RES}
+2)  *桌面图形界面及VNCSERVER远程服务${RES}
+3)  浏览器
+4)  安装Electron(需先安装GitHub仓库)
 5)  安装非官方版electron-netease-cloud-music(需先安装GitHub仓库与Electron)
 6)  中文输入法
 7)  mpv播放器
@@ -1100,7 +1100,7 @@ echo -e "1)  ${GREEN}*安装常用应用(目前包括curl,wget,vim,fonts-wqy-zen
 10) qemu-system-x86_64模拟器
 11) 游戏相关
 12) 让本终端成为局域网浏览器页面
-13) 安装新立得(类软件商店)
+13) 新立得(类软件商店)
 14) linux版qq\n"
 read -r -p "E(exit) M(main)请选择: " input
 
@@ -1113,24 +1113,22 @@ case $input in
 		INSTALL_SOFTWARE
 		
 		;;
-
-	2)
-		echo -e "安装Electron\n如果安装不成功，请先安装Githut库"
+	2)	DM_VNC ;;
+	3)	WEB_BROWSER ;;
+	4)	echo -e "安装Electron\n如果安装不成功，需先添加Githut库"
 		CONFIRM
 		$sudo_t apt install electron -y
 		echo -e "${YELLOW}done${RES}"
 		sleep 1
 		INSTALL_SOFTWARE
 		;;
-	3)	DM_VNC ;;
-	4)	WEB_BROWSER ;;
 	5)
 		dpkg -l | grep electron -q
 if [ "$?" == '0' ]; then
 echo -e "${BLUE}检测到已安装Electron${RES}"
 sleep 1
 else
-echo -e "${BLUE}检测到你未安装Electron，需先安装GitHub仓库与Electron${RES}"
+	echo -e "${BLUE}检测到你未安装Electron，需先添加GitHub仓库与安装electron(目前仅支持bullseye)${RES}"
 CONFIRM
 SETTLE
 fi
@@ -1410,13 +1408,13 @@ TERMUX() {
 5)  创建用户系统登录脚本
 6)  下载Debian(buster)系统
 7)  下载Ubuntu(bionic)系统
-8)  qemu-system-x86_64模拟器
-9)  下载x86架构的Debian(buster)系统(qemu模拟)
-10) 备份恢复系统
-11) 修改termux键盘
-12) 设置打开termux等待七秒(别问为什么)
-13) 下载最新版本termux与xsdl
-14) 下载Debian(bullseye)系统\n"
+8)  下载Debian(bullseye)系统
+9)  qemu-system-x86_64模拟器
+10) 下载x86架构的Debian(buster)系统(qemu模拟)
+11) 备份恢复系统
+12) 修改termux键盘
+13) 设置打开termux等待七秒(别问为什么)
+14) 下载最新版本termux与xsdl\n"
 read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "\n是否一键配置termux
@@ -1696,8 +1694,39 @@ ${SOURCES_ADD}ubuntu-ports/ bionic-backports ${DEB_UBUNTU}" >$bagname/etc/apt/so
 sleep 2
 TERMUX ;;
 
-	8) QEMU_SYSTEM ;;
-	9) echo -e "\n你正在下载的是x86架构的debian(buster),将会通过qemu的模拟方式运行;
+	8) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
+	CONFIRM
+	if [ -e rootfs.tar.xz ]; then
+        rm -rf rootfs.tar.xz
+	fi
+	case $(dpkg --print-architecture) in
+	aarch64|arm64) ;;
+	*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
+	sleep 2  ;;
+	esac
+        echo -e "请选择下载地址
+	1) 清华大学
+	2) 北外大学(推荐)\n"
+	read -r -p "E(exit) M(main)请选择: " input
+	case $input in
+		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
+		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
+        [Ee]) exit 0 ;;
+        [Mm]) MAIN ;;
+        esac
+        echo "下载Debian(bullseye)系统..."
+        sleep 1
+        curl -o rootfs.tar.xz ${CURL_T}
+        SYSTEM_DOWN
+echo "修改为北外源"
+echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
+${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
+${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
+${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
+        sleep 2
+        TERMUX ;;
+	9) QEMU_SYSTEM ;;
+	10) echo -e "\n你正在下载的是x86架构的debian(buster),将会通过qemu的模拟方式运行;
 由于系统包很干净，所以建议进入系统后，再用本脚本安装常用应用"
                 CONFIRM
 		if [ -e rootfs.tar.xz ]; then
@@ -1802,7 +1831,7 @@ deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >$bagname/et
 sleep 2
                 TERMUX
 		;;
-	10)
+	11)
 		echo -e "\n请选择备份或恢复
 		1) 备份
 		2) 恢复\n"
@@ -1848,7 +1877,7 @@ elif [ "${backup##*.}" = "gz" ]; then
 		unset backup
 		TERMUX
 	esac ;;
-11)  echo "修改键盘"
+	12)  echo "修改键盘"
                 if [ -d ${HOME}/.termux ]; then
                         rm -rf ${HOME}/.termux
                 fi
@@ -1869,7 +1898,7 @@ echo "已修改，请重启termux"
 sleep 1
 TERMUX
 ;;
-	12) echo -e "
+	13) echo -e "
 		1) 增加等待7秒\n
 		任意键) 取消等待"
 		read -r -p "请选择: " input
@@ -1891,8 +1920,9 @@ EOF
 sed -i '/seconds/,+8d' ${PREFIX}/etc/bash.bashrc ;;
 esac
 TERMUX ;;
-	13) 
-		read -r -p "1)termux 2)xsdl 3)termux-api " input
+	14) 
+		echo -e "\n1)termux 2)xsdl 3)termux-api"
+		read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) echo -e "\n${YELLOW}检测最新版本${RES}"
 		VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -1934,41 +1964,13 @@ TERMUX ;;
 	echo -e "\n${RED}错误，请重试${RES}"
 	fi
 	sleep 2 ;;
+	[Ee]) echo "exit"
+                exit 1 ;;
+        [Mm]) echo -e "back to Main\n"
+                TERMUX ;;
 	*) INVALID_INPUT ;;
 	esac
         TERMUX ;;
-
-	14) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
-	CONFIRM
-	if [ -e rootfs.tar.xz ]; then
-	rm -rf rootfs.tar.xz
-	fi
-	case $(dpkg --print-architecture) in
-	aarch64|arm64) ;;
-	*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
-	sleep 2  ;;
-	esac
-	echo -e "请选择下载地址
-	1) 清华大学
-	2) 北外大学(推荐)\n"
-	read -r -p "E(exit) M(main)请选择: " input
-	case $input in
-		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
-		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
-	[Ee]) exit 0 ;;
-	[Mm]) MAIN ;;
-	esac
-	echo "下载Debian(bullseye)系统..."
-	sleep 1
-	curl -o rootfs.tar.xz ${CURL_T}
-	SYSTEM_DOWN
-echo "修改为北外源"
-echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
-${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
-	sleep 2
-	TERMUX ;;
 
 
 	[Ee]) echo "exit"
