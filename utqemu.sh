@@ -732,16 +732,14 @@ echo -e "7)  查看日志
 	sleep 2
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
-	sudo_ 
-	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
+	pkg update -y && apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
 	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
 	fi
 	else
-	sudo_
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+       	$sudo apt update -y && $sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
