@@ -31,9 +31,13 @@ echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 sleep 2
 apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar chromium mpv xfce4 xfce4-terminal ristretto dbus-x11 tigervnc-standalone-server tigervnc-viewer -y
 fi
+if [ $(command -v chromium) ]; then
 sed -i "s/Exec=\/usr\/bin\/chromium %U/Exec=\/usr\/bin\/chromium --no-sandbox \%U/g" /usr/share/applications/chromium.desktop
-echo "请设置vnc密码,6到8位,"
+fi
+if [ ! -f ${HOME}/.vnc/passwd ]; then
+echo "请设置vnc密码,6到8位"
 vncpasswd
+fi
 echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
 killall -9 Xtightvnc 2>/dev/null
