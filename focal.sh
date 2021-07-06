@@ -25,12 +25,12 @@ echo ". firstrun" >>focal/etc/profile
 cat >focal/root/firstrun<<-'eof'
 echo -e "正在配置首次运行\n安装常用应用"
 sleep 1
-apt update && apt install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 -y
+apt update && apt install -y && apt install curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
 if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
 echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 sleep 2
-apt --fix-broken install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 tigervnc-standalone-server tigervnc-viewer -y
+apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 tigervnc-standalone-server tigervnc-viewer -y
 fi
 if [ $(command -v firefox) ]; then
 if grep -q '^ex.*MOZ_FAKE_NO_SANDBOX=1' /etc/environment; then

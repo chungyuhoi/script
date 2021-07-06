@@ -281,7 +281,7 @@ command+=" -S $DEBIAN-qemu"
 command+=" -b /sdcard"
 command+=" -b $DEBIAN-qemu/root:/dev/shm"
 command+=" -b /sdcard:/root/sdcard"
-command+=" -b bullseye-qemu/dev/hugepages:/dev/hugepages"
+command+=" -b $DEBIAN-qemu/dev/hugepages:/dev/hugepages"
 command+=" -w /root"
 command+=" /usr/bin/env -i"
 command+=" HOME=/root"
@@ -338,15 +338,30 @@ case $(dpkg --print-architecture) in
 nameserver 223.6.6.6" >$sys_name/etc/resolv.conf
         echo "export  TZ='Asia/Shanghai'" >> $sys_name/root/.bashrc
 	case $DEBIAN in
-		bullseye) echo "${US_URL} sid ${DEB}" >$sys_name/etc/apt/sources.list ;;
-		buster) echo "${US_URL} stable ${DEB}
-${US_URL} stable-updates ${DEB}" >$sys_name/etc/apt/sources.list ;;
+		bullseye)
+echo "${US_URL}/ bullseye ${DEB}
+${US_URL}/ bullseye-updates ${DEB}
+${US_URL}/ bullseye-backports ${DEB}
+#${US_URL}-security/ bullseye/updates ${DEB}
+${US_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
+
+			;;
+		buster) 
+echo "$US_URL buster ${DEB}
+${US_URL} buster-updates ${DEB}
+${US_URL} buster-backports ${DEB}
+${US_URL}-security buster/updates ${DEB}" >$sys_name/etc/apt/sources.list
+: <<\eof
+echo "${US_URL} stable ${DEB}
+${US_URL} stable-updates ${DEB}" >$sys_name/etc/apt/sources.list
+eof
+;;
 	esac
 cat >/dev/null <<EOF
-echo "${BF_URL}/ bullseye ${DEB}
-${BF_URL}/ bullseye-updates ${DEB}
-${BF_URL}/ bullseye-backports ${DEB}
-${BF_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
+echo "${US_URL}/ bullseye ${DEB}
+${US_URL}/ bullseye-updates ${DEB}
+${US_URL}/ bullseye-backports ${DEB}
+${US_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
 EOF
 	if [ ! -f $(pwd)/utqemu.sh ]; then
 	curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
@@ -549,7 +564,10 @@ echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 	case $input in
 		1) 
 		if grep -q 'bullseye' /etc/os-release ;then
-		echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list
+echo "${US_URL}/ bullseye ${DEB}
+${US_URL}/ bullseye-updates ${DEB}
+${US_URL}/ bullseye-backports ${DEB}
+${US_URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
 		elif grep -q 'buster' /etc/os-release ;then
 echo "${US_URL} stable ${DEB}
 ${US_URL} stable-updates ${DEB}" >/etc/apt/sources.list
