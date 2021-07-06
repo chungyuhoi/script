@@ -1835,6 +1835,7 @@ LOGIN_() {
 	3）支持qemu5.0以上版本容器(选项内容丰富)
 	4) 换源(如果无法安装或登录请尝试此操作)
 	5) 在线脚本安装体验linux系统(debian)
+	6) 在线脚本安装体验linux系统(ubuntu)
 
 	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
@@ -1865,6 +1866,7 @@ LOGIN_() {
 		fi ;;
 	4) SOURCE ;;
 	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye.sh)" ;;
+	6) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/focal.sh)" ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
 	1) curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o ${HOME}/utqemu.sh
