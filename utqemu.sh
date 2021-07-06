@@ -4,8 +4,9 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/02"
+	UPDATE="2021/07/06"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	增加qemu安装自动检测与镜像目录联动执行
 	增加termux-api下载
 	修复IDE接口无法加载光驱
 	修改IDE磁盘接口参数，使其速度更快，但缺点是容易丢失数据
@@ -684,6 +685,24 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	QEMU_ETC
 }
 ##################
+PA() {
+	if [ -e "/root/sd" ]; then
+	ln  -s /root/sd /sdcard
+	fi
+	echo -e "创建windows镜像目录及共享目录\n"
+	if [ ! -e "${DIRECT}${STORAGE}" ]; then
+		mkdir -p ${DIRECT}${STORAGE}
+	fi
+	if [ ! -e "${DIRECT}/xinhao/share/" ]; then
+		mkdir -p ${DIRECT}/xinhao/share
+	fi
+	if [ ! -e "${DIRECT}${STORAGE}" ]; then
+		echo -e "${RED}创建目录失败${RES}"
+	else
+		echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
+	fi
+}
+##################
 QEMU_SYSTEM() {
 	if [ ! $(command -v curl) ]; then
 		sudo_
@@ -718,11 +737,22 @@ echo -e "7)  查看日志
 else
 	sudo_
        	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	if [ ! $(command -v qemu-system-x86) ]; then
+	echo -e "\n检测安装失败，重新安装\n"
+	sleep 1
+		$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	fi
+	echo -e "${YELLOW}创建镜像目录${RES}"
+	sleep 1
+	PA
+	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
 #apt install samba
 	fi
         QEMU_SYSTEM
         ;;
-	2) if [ -e "/root/sd" ]; then
+	2)
+: <<\eof
+	if [ -e "/root/sd" ]; then
 	ln  -s /root/sd /sdcard
 	fi
 	echo -e "创建windows镜像目录及共享目录\n"
@@ -737,6 +767,8 @@ else
         else
 	echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
         fi
+eof
+	PA
         CONFIRM
         QEMU_SYSTEM
         ;;
