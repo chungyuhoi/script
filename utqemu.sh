@@ -734,13 +734,18 @@ echo -e "7)  查看日志
 	if [ $? == 0 ]; then
 	sudo_ 
 	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
-else
+	if [ ! $(command -v qemu-system-x86) ]; then
+	echo -e "\n检测安装失败，重新安装\n"
+	sleep 1
+	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
+	fi
+	else
 	sudo_
        	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
-		$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	fi
 	echo -e "${YELLOW}创建镜像目录${RES}"
 	sleep 1
