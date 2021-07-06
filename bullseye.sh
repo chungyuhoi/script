@@ -15,10 +15,10 @@ sed -i "/zh_CN.UTF/s/#//" bullseye/etc/locale.gen
 rm bullseye/etc/resolv.conf 2>/dev/null
 echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >bullseye/etc/resolv.conf
-echo 'deb http://mirrors.bfsu.edu.cn/debian/ bullseye main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian/ bullseye-updates main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian/ bullseye-backports main contrib non-free
-deb http://mirrors.bfsu.edu.cn/debian-security bullseye-security main contrib non-free' >bullseye/etc/apt/sources.list
+echo 'deb http://mirrors.ustc.edu.cn/debian/ bullseye main contrib non-free
+deb http://mirrors.ustc.edu.cn/debian/ bullseye-updates main contrib non-free
+deb http://mirrors.ustc.edu.cn/debian/ bullseye-backports main contrib non-free
+deb http://mirrors.ustc.edu.cn/debian-security/ bullseye/updates main contrib non-free' >bullseye/etc/apt/sources.list
 echo "" >bullseye/proc/version
 echo ". firstrun" >>bullseye/etc/profile
 cat >bullseye/root/firstrun<<-'eof'
