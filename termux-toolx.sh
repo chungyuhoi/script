@@ -857,24 +857,22 @@ sleep 2
 VNCSERVER
 ;;
 8) echo -e "\n创建局域网vnc连接(命令easyvnc-wifi)"
-	sleep 2
-	if [ ! $(command -v tigervncserver) ]; then
-		$sudo_t apt install tigervnc-standalone-server tigervnc-viewer -y
+	if [ ! -f /usr/local/bin/easyvnc ]; then
+		echo -e "请先安装eaayvnc"
+		CONFIRM
+		VNCSERVER
 	fi
-	if [ ! -e ${HOME}/.vnc/xstartup ]; then
-		XSTARTUP
-	fi
-# ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1'
-	echo '#!/usr/bin/env bash
-killall -9 Xtightvnc 2>/dev/null
-killall -9 Xtigertvnc 2>/dev/null
-killall -9 Xvnc 2>/dev/null
-killall -9 vncsession 2>/dev/null
-vncserver -kill $DISPLAY 2>/dev/null
-tigervncserver :0 -localhost no
+cp /usr/local/bin/easyvnc /usr/local/bin/easyvnc-wifi
+sed -i '/exit/d' /usr/local/bin/easyvnc-wifi
+cat >>/usr/local/bin/easyvnc-wifi<<-'eof'
 IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 echo -e "\e[33mVNCVIEWER打开地址为$IP:0\e[0m\n"
-sleep 2' >/usr/local/bin/easyvnc-wifi && chmod +x /usr/local/bin/easyvnc-wifi
+sleep 2
+exit 0
+eof
+chmod +x /usr/local/bin/easyvnc-wifi
+echo -e "\n${YELLOW}已配置${RES}"
+sleep 2
 VNCSERVER
 ;;
 9) $sudo_t apt install xvfb x11vnc -y
