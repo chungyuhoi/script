@@ -33,7 +33,7 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210703${RES}\n"
+${YELLOW}更新日期20210708${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -1122,6 +1122,14 @@ read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "正在安装minetest"
 		$sudo_t apt install minetest -y
+		curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/minetest.mo && $sudo_t mv minetest.mo /usr/share/locale/zh_CN/LC_MESSAGES/
+echo -e "\n是否中文界面(不建议)"
+		read -r -p "1)是 2)否 " input
+		case $input in
+		1) mkdir -p ${HOME}/.minetest/
+			echo 'language = zh_CN' >${HOME}/.minetest/minetest.conf ;;
+		*) ;;
+		esac
 		ENTERTAINMENT ;;
 	2) echo -e "正在安装mame,游戏rom请放/usr/share/games/mame/rom"
 		sleep 2
@@ -1279,6 +1287,9 @@ unzip font.zip && sed -i '$d' ttf-wps-fonts-master/install.sh && . ttf-wps-fonts
 else echo "已安装中文包" 
 	sleep 2
 fi
+mkdir -p ${HOME}/.config/Kingsoft/
+echo '[General]
+languages=zh_CN' >${HOME}/.config/Kingsoft/Office.conf
 INSTALL_SOFTWARE
 		;;
 	[Ee]) exit 2 ;;
@@ -1348,16 +1359,16 @@ DOSBOX() {
 				echo -e "done\n如需创建dos运行文件目录，需先运行一次dosbox以生成配置文件"
 				CONFIRM
 				INSTALL_SOFTWARE ;;
-			2) rm -rf $DIRECT/DOS && mkdir $DIRECT/DOS
+			2) mkdir -p $DIRECT/xinhao/DOS
 		if [ ! -e ${HOME}/.dosbox ]; then
 			echo -e "\n${RED}未检测到dosbox配置文件，请先运行一遍dosbox，再做此步操作${RES}"
 			sleep 2
 		else
 		dosbox=`ls ${HOME}/.dosbox`
-                sed -i "/^\[autoexec/a\mount c $DIRECT/DOS" ${HOME}/.dosbox/$dosbox
+                sed -i "/^\[autoexec/a\mount c $DIRECT/xinhao/DOS" ${HOME}/.dosbox/$dosbox
 #		echo 'mount d $DIRECT/DOS/hospital -t cdrom' ${HOME}/.dosbox/$dosbox
 #		echo 'mount d $DIRECT/DOS/CDROM -t cdrom -label mdk' ${HOME}/.dosbox/$dosbox
-		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录DOS文件夹里，打开dosbox输入c:即可看到运行文件夹${RES}"
+		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录xinhao/DOS文件夹里，打开dosbox输入c:即可看到运行文件夹${RES}"
 		sleep 2
 	fi
 		INSTALL_SOFTWARE ;;
