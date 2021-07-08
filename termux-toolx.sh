@@ -1123,7 +1123,7 @@ case $input in
 	1) echo -e "正在安装minetest"
 		$sudo_t apt install minetest -y
 		curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/minetest.mo && $sudo_t mv minetest.mo /usr/share/locale/zh_CN/LC_MESSAGES/
-echo -e "\n是否中文界面(不建议)"
+echo -e "\n是否中文界面(不建议，默认随系统语言)"
 		read -r -p "1)是 2)否 " input
 		case $input in
 		1) mkdir -p ${HOME}/.minetest/
@@ -1260,7 +1260,7 @@ esac
 		read -r -p "E(exit) M(main)请选择: " input
 		case $input in
 			1|"") echo "安装libreoffice"
-		$sudo_t apt install libreoffice libreoffice-l10n-zh-cn 
+		$sudo_t apt install --no-install-recommends libreoffice libreoffice-l10n-zh-cn libreoffice-gtk3 -y 
 		echo -e "${GREEN}中文界面，请打开LibreOffice，左上角Tools-Options-Language settings-languages，User interface选择Chinese${RES}"
 		CONFIRM ;;
 	2) 
