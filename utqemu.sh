@@ -4,10 +4,14 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/06/25"
+	UPDATE="2021/07/08"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	更新aspice下载地址
+	增加qemu安装自动检测与镜像目录联动执行
+	增加termux-api下载
+	修复IDE接口无法加载光驱
+	修改IDE磁盘接口参数，使其速度更快，但缺点是容易丢失数据
 	新增termux最新版本下载选项
-	加入我另一个脚本termux-toolx，可安装体验linux(debian)系统
 	针对部分用户出现脚本下载错误，换了个服务器
 	容器内新增aspice与xsdl下载地址
 	修复termux环境无法安装qemu的bug
@@ -276,7 +280,7 @@ command+=" -S $DEBIAN-qemu"
 command+=" -b /sdcard"
 command+=" -b $DEBIAN-qemu/root:/dev/shm"
 command+=" -b /sdcard:/root/sdcard"
-command+=" -b bullseye-qemu/dev/hugepages:/dev/hugepages"
+command+=" -b $DEBIAN-qemu/dev/hugepages:/dev/hugepages"
 command+=" -w /root"
 command+=" /usr/bin/env -i"
 command+=" HOME=/root"
@@ -333,15 +337,29 @@ case $(dpkg --print-architecture) in
 nameserver 223.6.6.6" >$sys_name/etc/resolv.conf
         echo "export  TZ='Asia/Shanghai'" >> $sys_name/root/.bashrc
 	case $DEBIAN in
-		bullseye) echo "${US_URL} sid ${DEB}" >$sys_name/etc/apt/sources.list ;;
-		buster) echo "${US_URL} stable ${DEB}
-${US_URL} stable-updates ${DEB}" >$sys_name/etc/apt/sources.list ;;
+		bullseye)
+echo "${US_URL}/ bullseye ${DEB}
+${US_URL}/ bullseye-updates ${DEB}
+${US_URL}/ bullseye-backports ${DEB}
+${US_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
+
+			;;
+		buster) 
+echo "$US_URL buster ${DEB}
+${US_URL} buster-updates ${DEB}
+${US_URL} buster-backports ${DEB}
+${US_URL}-security buster/updates ${DEB}" >$sys_name/etc/apt/sources.list
+: <<\eof
+echo "${US_URL} stable ${DEB}
+${US_URL} stable-updates ${DEB}" >$sys_name/etc/apt/sources.list
+eof
+;;
 	esac
 cat >/dev/null <<EOF
-echo "${BF_URL}/ bullseye ${DEB}
-${BF_URL}/ bullseye-updates ${DEB}
-${BF_URL}/ bullseye-backports ${DEB}
-${BF_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
+echo "${US_URL}/ bullseye ${DEB}
+${US_URL}/ bullseye-updates ${DEB}
+${US_URL}/ bullseye-backports ${DEB}
+${US_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
 EOF
 	if [ ! -f $(pwd)/utqemu.sh ]; then
 	curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
@@ -408,7 +426,7 @@ WEB_SERVER() {
 	if [ ! $(command -v python) ]; then
 	echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
 	sudo_
-	$sudo apt install python -y
+	apt install python -y
 	fi
 	else
 	if [ ! $(command -v python3) ]; then
@@ -420,7 +438,8 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
         fi
 	fi
         echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
-        ${YELLOW}http://$IP:8080${RES}\n
+	${YELLOW}本机	http://127.0.0.1:8080
+        局域网	http://$IP:8080${RES}\n
         如需关闭，请按ctrl+c，然后输pkill python3或直接exit退出shell\n"
         python3 -m http.server 8080 &
         sleep 2
@@ -543,7 +562,10 @@ echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 	case $input in
 		1) 
 		if grep -q 'bullseye' /etc/os-release ;then
-		echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list
+echo "${US_URL}/ bullseye ${DEB}
+${US_URL}/ bullseye-updates ${DEB}
+${US_URL}/ bullseye-backports ${DEB}
+${US_URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
 		elif grep -q 'buster' /etc/os-release ;then
 echo "${US_URL} stable ${DEB}
 ${US_URL} stable-updates ${DEB}" >/etc/apt/sources.list
@@ -582,7 +604,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 			unset FORMAT
 			QEMU_SYSTEM ;;
 		0) exit 1 ;;
-		6) read -r -p "1)termux 2)aspice 3)xsdl " input
+		6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api " input
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
 	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -604,8 +626,9 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	CONFIRM
 	while ( [ "$SPI_URL" != '0' ] && [[ ! $SPI_URL_ =~ apk ]] )
 do
-	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2 `
-SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
+#	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2`
+	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '/' -f 6`
+SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desktop-clients/releases/tag/$SPI_URL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
 	if [[ ! $SPI_URL_ =~ apk ]]; then
 	read -r -p "获取失败，重试请回车，退出请输0 " input
 	case $input in
@@ -614,7 +637,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	esac
 	fi
 	done
-	echo -e "\n下载地址\n${GREEN}https://github.com/$SPI_URL_/$SPI_URL_${RES}\n"
+	echo -e "\n下载地址\n${GREEN}https://github.com/iiordanov/remote-desktop-clients/releases/download/$SPI_URL/$SPI_URL_${RES}\n"
 	CONFIRM ;;
 	3) VERSION=`curl https://sourceforge.net/projects/libsdl-android/files/apk/XServer-XSDL/ | grep android | grep 'XSDL/XServer' | grep '\.apk/download' | head -n 1 | cut -d '/' -f 9`
 	echo -e "\n下载地址\n${GREEN}https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION${RES}\n"
@@ -636,6 +659,13 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	*) ;;
 	esac
 	unset VERSION ;;
+	4) curl https://f-droid.org/packages/com.termux.api/ | grep apk | sed -n 2p | cut -d '"' -f 2 | cut -d '"' -f 1 | xargs curl -o ${DIRECT}${STORAGE}/com.termux.api.apk
+	if [ -f ${DIRECT}${STORAGE}/com.termux.api.apk ]; then
+	echo -e "\n已下载至${DIRECT}${STORAGE}目录"
+	else
+	echo -e "\n${RED}错误，请重试${RES}"
+	fi
+	sleep 2 ;;
 	*) INVALID_INPUT ;;
 	esac
 	QEMU_ETC ;;
@@ -673,6 +703,24 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com$SPI_URL | grep SPICE 
 	QEMU_ETC
 }
 ##################
+PA() {
+	if [ -e "/root/sd" ]; then
+	ln  -s /root/sd /sdcard
+	fi
+	echo -e "创建windows镜像目录及共享目录\n"
+	if [ ! -e "${DIRECT}${STORAGE}" ]; then
+		mkdir -p ${DIRECT}${STORAGE}
+	fi
+	if [ ! -e "${DIRECT}/xinhao/share/" ]; then
+		mkdir -p ${DIRECT}/xinhao/share
+	fi
+	if [ ! -e "${DIRECT}${STORAGE}" ]; then
+		echo -e "${RED}创建目录失败${RES}"
+	else
+		echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
+	fi
+}
+##################
 QEMU_SYSTEM() {
 	if [ ! $(command -v curl) ]; then
 		sudo_
@@ -685,7 +733,8 @@ echo -e "
 1)  安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}
 2)  创建windows镜像目录
 3)  启动qemu-system-x86_64模拟器
-4)  让termux成为网页服务器\n(使模拟系统可以通过浏览器访问本机内容)
+4)  让termux成为网页服务器
+    (使模拟系统可以通过浏览器访问本机内容)
 5)  virtio驱动相关"
 	case $SYS in
 	ANDROID) ;;
@@ -702,16 +751,30 @@ echo -e "7)  查看日志
 	sleep 2
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
-	sudo_ 
+	pkg update -y && apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
+	if [ ! $(command -v qemu-system-x86) ]; then
+	echo -e "\n检测安装失败，重新安装\n"
+	sleep 1
 	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
-else
-	sudo_
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	fi
+	else
+       	$sudo apt update -y && $sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	if [ ! $(command -v qemu-system-x86) ]; then
+	echo -e "\n检测安装失败，重新安装\n"
+	sleep 1
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	fi
+	echo -e "${YELLOW}创建镜像目录${RES}"
+	sleep 1
+	PA
+	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
 #apt install samba
 	fi
         QEMU_SYSTEM
         ;;
-	2) if [ -e "/root/sd" ]; then
+	2)
+: <<\eof
+	if [ -e "/root/sd" ]; then
 	ln  -s /root/sd /sdcard
 	fi
 	echo -e "创建windows镜像目录及共享目录\n"
@@ -726,6 +789,8 @@ else
         else
 	echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
         fi
+eof
+	PA
         CONFIRM
         QEMU_SYSTEM
         ;;
@@ -1463,23 +1528,19 @@ EOF
 ##################
 #IDE			
 		1)
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback"
 	if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=writeback"
 	fi
 	if [ -n "$iso1_name" ]; then
 #		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
-	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=2"
+	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=1"
+	fi
 	if [ -n "$iso_name" ]; then 
-	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=1"
-	fi
-	else
-	if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,index=2,media=cdrom"
-	fi
+	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=2"
 	fi
 	case $SHARE in
-		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=none" ;;
+		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback" ;;
 		*) ;;
 	esac ;;
 	2)
@@ -1501,12 +1562,6 @@ EOF
 	if [ -n "$iso_name" ]; then
 	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=1"
 	fi
-: <<\eof
-	if [ -n "$iso_name" ]; then
-	set -- "${@}" "-drive" "id=cdrom,file=${DIRECT}${STORAGE}$iso_name,if=none"     
-	set -- "${@}" "-device" "ide-cd,drive=cdrom,bus=ahci.2"
-	fi
-eof
 	case $SHARE in
 		true)
 		set -- "${@}" "-usb" "-drive" "if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/"
@@ -1522,10 +1577,10 @@ eof
 		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk,if=virtio,cache=none"
 	fi
 	if [ -n "$iso1_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=2"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=1"
 	fi
 		if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=1"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=2"
 		fi
 	case $SHARE in
 		true)
@@ -1573,7 +1628,7 @@ eof
 ########################
 	if [ -n "$display" ]; then
 	case $display in
-		wlan_vnc) set -- "${@}" "-display" "vnc=$IP:0,lossy=on,non-adaptive=off" ;;
+		wlan_vnc) set -- "${@}" "-display" "vnc=$IP:0" ;;
 		vnc) 
 		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
@@ -1796,7 +1851,9 @@ LOGIN_() {
 	2) 支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3）支持qemu5.0以上版本容器(选项内容丰富)
 	4) 换源(如果无法安装或登录请尝试此操作)
-	5) 在线termux-toolx脚本安装体验linux系统(debian)
+	5) 在线脚本安装体验linux系统(debian)
+	6) 在线脚本安装体验linux系统(ubuntu)
+	7) 下载新版termux
 
 	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
@@ -1826,7 +1883,23 @@ LOGIN_() {
 		LOGIN
 		fi ;;
 	4) SOURCE ;;
-	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/termux-toolx.sh)" ;;
+	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye.sh)" ;;
+	6) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/focal.sh)" ;;
+	7) echo -e "\n${YELLOW}检测最新版本${RES}"
+        VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
+        echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
+        read -r -p "1)下载 9)返回 " input
+        case $input in
+                1) rm termux.apk 2>/dev/null
+        curl https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION -o termux.apk
+        mv -v termux.apk ${DIRECT}${STORAGE}
+        echo -e "\n已下载至${DIRECT}${STORAGE}目录"
+        sleep 2 ;;
+        *) ;;
+        esac
+        unset VERSION
+	clear
+	LOGIN_ ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
 	1) curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o ${HOME}/utqemu.sh

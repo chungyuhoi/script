@@ -33,7 +33,7 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210616${RES}\n"
+${YELLOW}更新日期20210708${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -411,8 +411,11 @@ LANGUAGE_CHANGE(){
                         echo "1)修改为中文; 2)修改为英文"
 			read -r -p "1) 2) " input
 			case $input in
-			1) export LANGUAGE=zh_CN.UTF-8 && sed -i '/^export LANGUAGE/d' /etc/profile && sed -i '1i\export LANGUAGE=zh_CN.UTF-8' /etc/profile && source /etc/profile && echo '修改完毕,请重新登录' && sleep 2 && SETTLE ;;
-2) export LANGUAGE=C.UTF-8 && sed -i '/^export LANGUAGE/d' /etc/profile && echo '修改完毕，请重新登录' && sleep 2 && SETTLE ;;
+			1) $sudo apt install fonts-wqy-zenhei -y
+			sed -i '/zh_CN.UTF/s/^/#//' /etc/locale.gen
+			locale-gen
+			sed -i '/^export LANG/d' /etc/profile && sed -i '1i\export LANG=zh_CN.UTF-8' /etc/profile && source /etc/profile && export LANG=zh_CN.UTF-8 && echo '修改完毕,请重新登录' && sleep 2 && SETTLE ;;
+2) export LANG=C.UTF-8 && sed -i '/^export LANG/d' /etc/profile && echo '修改完毕，请重新登录' && sleep 2 && SETTLE ;;
 *) INVALID_INPUT
 LANGUAGE_CHANGE ;;
 esac
@@ -445,7 +448,7 @@ ${SOURCES_ADD}ubuntu-ports/ groovy-backports ${DEB_UBUNTU}
 ${SOURCES_ADD}ubuntu-ports/ groovy-security ${DEB_UBUNTU}" >/etc/apt/sources.list ;;
 		*kali*)
 echo "${SOURCES_USTC}kali kali-rolling ${DEB_DEBIAN}
-deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >/etc/apt/sources.lis ;;
+deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
 		*strentch*)
 echo "${SOURCES_ADD}debian/ stretch ${DEB_DEBIAN}
 ${SOURCES_ADD}debian/ stretch-updates ${DEB_DEBIAN}
@@ -738,10 +741,10 @@ XSTARTUP
         read resolution
 	echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
 export USER="$(whoami)"
 export PULSE_SERVER=127.0.0.1
 set -- "${@}" "-ZlibLevel=1"
@@ -842,10 +845,10 @@ case $input in
 esac
 # ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1' | sed "s@\$@:5901@"
 echo '#!/usr/bin/env bash
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
 export DISPLAY=127.0.0.1:0
 export PULSE_SERVER=tcp:127.0.0.1:4713' >/usr/local/bin/easyxsdl
 echo "$XWIN" >>/usr/local/bin/easyxsdl && chmod +x /usr/local/bin/easyxsdl
@@ -854,26 +857,86 @@ sleep 2
 VNCSERVER
 ;;
 8) echo -e "\n创建局域网vnc连接(命令easyvnc-wifi)"
-	sleep 2
-	if [ ! $(command -v tigervncserver) ]; then
-		$sudo_t apt install tigervnc-standalone-server tigervnc-viewer -y
+	if [ ! -f /usr/local/bin/easyvnc ]; then
+		echo -e "请先安装eaayvnc"
+		CONFIRM
+		VNCSERVER
 	fi
-	if [ ! -e ${HOME}/.vnc/xstartup ]; then
-		XSTARTUP
-	fi
-# ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1'
-	echo '#!/usr/bin/env bash
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
-vncserver -kill $DISPLAY 2>/dev/null
-tigervncserver :0 -localhost no
+cp /usr/local/bin/easyvnc /usr/local/bin/easyvnc-wifi
+sed -i '/exit/d' /usr/local/bin/easyvnc-wifi
+cat >>/usr/local/bin/easyvnc-wifi<<-'eof'
 IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 echo -e "\e[33mVNCVIEWER打开地址为$IP:0\e[0m\n"
-sleep 2' >/usr/local/bin/easyvnc-wifi && chmod +x /usr/local/bin/easyvnc-wifi
+sleep 2
+exit 0
+eof
+chmod +x /usr/local/bin/easyvnc-wifi
+echo -e "\n${YELLOW}已配置${RES}"
+sleep 2
 VNCSERVER
 ;;
+9) $sudo_t apt install xvfb x11vnc -y
+	echo -n "输入你手机分辨率(例如:2340x1080) : "
+	read resolution
+cat >/usr/local/bin/easyx11vnc<<-'eof'
+#!/usr/bin/env bash
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
+vncserver -kill $DISPLAY 2>/dev/null
+export PULSE_SERVER=127.0.0.1
+export DISPLAY=:233
+#####################
+start_xvfb() {
+set -- "${@}" "${DISPLAY}"
+set -- "${@}" "-screen" "0" "1080x2320x24"
+set -- "${@}" "-ac"
+set -- "${@}" "+extension" "GLX"
+set -- "${@}" "+render"
+set -- "${@}" "-deferglyphs" "16"
+set -- "${@}" "-br"
+set -- "${@}" "-wm"
+set -- "${@}" "-retro"
+set -- "${@}" "-noreset"
+set -- "Xvfb" "${@}"
+"${@}" & >/dev/null 2>&1
+}
+start_x11vnc() {
+set -- "${@}" "-localhost"
+set -- "${@}" "-ncache_cr"
+set -- "${@}" "-xkb"
+set -- "${@}" "-noxrecord"
+#set -- "${@}" "-noxfixes"
+set -- "${@}" "-noxdamage"
+set -- "${@}" "-display" "${DISPLAY}"
+set -- "${@}" "-forever"
+set -- "${@}" "-bg"
+set -- "${@}" "-rfbauth" "${HOME}/.vnc/passwd"
+set -- "${@}" "-users" "$(whoami)"
+set -- "${@}" "-rfbport" "5900"
+set -- "${@}" "-noshm"
+set -- "${@}" "-desktop" "${desktop}"
+set -- "${@}" "-shared"
+set -- "${@}" "-verbose"
+set -- "${@}" "-cursor" "arrow"
+set -- "${@}" "-arrow" "2"
+set -- "${@}" "-nothreads"
+set -- "x11vnc" "${@}"
+"${@}" & >/dev/null 2>&1
+}
+echo -e "如无法启动，请ctrl+c退出"
+start_xvfb
+. /etc/X11/xinit/Xsession &
+start_x11vnc
+###########
+eof
+sed -i "s/1080x2340/${resolution}/" /usr/local/bin/easyx11vnc
+chmod +x /usr/local/bin/easyx11vnc
+echo -e "\n已配置，启动命令${YELLOW}easyx11vnc${RES}\n"
+sleep 1
+INSTALL_SOFTWARE
+	;;
 [Ee])
 	echo "exit"
 	exit 1
@@ -1018,7 +1081,7 @@ DM() {
 	3) 安装mate(有bug，请勿选)\n"
 	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
-		1) $sudo_t apt install xfce4 xfce4-terminal ristretto -y ;;
+		1) $sudo_t apt install xfce4 xfce4-terminal ristretto dbus-x11 -y ;;
 		2) $sudo_t apt install lxde-core lxterminal dbus-x11 -y ;;
 		3) 
 #			$sudo_t apt install mate-desktop-environment mate-terminal -y
@@ -1037,9 +1100,8 @@ DM() {
 }
 #######################
 DM_VNC() {
-	echo -e "${YELLOW}
-	1) 安装桌面图形界面
-	2) 安装VNCSERVER远程服务${RES}\n"
+	echo -e "\n1) 安装桌面图形界面
+2) 安装VNCSERVER远程服务${RES}\n"
 	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) DM ;;
@@ -1060,6 +1122,14 @@ read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "正在安装minetest"
 		$sudo_t apt install minetest -y
+		curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/minetest.mo && $sudo_t mv minetest.mo /usr/share/locale/zh_CN/LC_MESSAGES/
+echo -e "\n是否中文界面(不建议，默认随系统语言)"
+		read -r -p "1)是 2)否 " input
+		case $input in
+		1) mkdir -p ${HOME}/.minetest/
+			echo 'language = zh_CN' >${HOME}/.minetest/minetest.conf ;;
+		*) ;;
+		esac
 		ENTERTAINMENT ;;
 	2) echo -e "正在安装mame,游戏rom请放/usr/share/games/mame/rom"
 		sleep 2
@@ -1085,11 +1155,11 @@ esac
 }
 #######################
 INSTALL_SOFTWARE() {
-echo -e "\n\n${RED}注意，建议先安装常用应用\n${RES}"
-echo -e "1)  ${GREEN}*安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)${RES}
-2)  安装Electron(需先安装GitHub仓库)
-3)  ${YELLOW}*安装桌面图形界面及VNCSERVER远程服务${RES}
-4)  浏览器
+echo -e "\n\n${RED}建议先安装常用应用\n${RES}"
+echo -e "1)  *安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)${RES}
+2)  *桌面图形界面及VNCSERVER远程服务${RES}
+3)  浏览器
+4)  安装Electron(需先安装GitHub仓库)
 5)  安装非官方版electron-netease-cloud-music(需先安装GitHub仓库与Electron)
 6)  中文输入法
 7)  mpv播放器
@@ -1098,7 +1168,7 @@ echo -e "1)  ${GREEN}*安装常用应用(目前包括curl,wget,vim,fonts-wqy-zen
 10) qemu-system-x86_64模拟器
 11) 游戏相关
 12) 让本终端成为局域网浏览器页面
-13) 安装新立得(类软件商店)
+13) 新立得(类软件商店)
 14) linux版qq\n"
 read -r -p "E(exit) M(main)请选择: " input
 
@@ -1111,24 +1181,22 @@ case $input in
 		INSTALL_SOFTWARE
 		
 		;;
-
-	2)
-		echo -e "安装Electron\n如果安装不成功，请先安装Githut库"
+	2)	DM_VNC ;;
+	3)	WEB_BROWSER ;;
+	4)	echo -e "安装Electron\n如果安装不成功，需先添加Githut库"
 		CONFIRM
 		$sudo_t apt install electron -y
 		echo -e "${YELLOW}done${RES}"
 		sleep 1
 		INSTALL_SOFTWARE
 		;;
-	3)	DM_VNC ;;
-	4)	WEB_BROWSER ;;
 	5)
 		dpkg -l | grep electron -q
 if [ "$?" == '0' ]; then
 echo -e "${BLUE}检测到已安装Electron${RES}"
 sleep 1
 else
-echo -e "${BLUE}检测到你未安装Electron，需先安装GitHub仓库与Electron${RES}"
+	echo -e "${BLUE}检测到你未安装Electron，需先添加GitHub仓库与安装electron(目前仅支持bullseye)${RES}"
 CONFIRM
 SETTLE
 fi
@@ -1192,7 +1260,7 @@ esac
 		read -r -p "E(exit) M(main)请选择: " input
 		case $input in
 			1|"") echo "安装libreoffice"
-		$sudo_t apt install libreoffice libreoffice-l10n-zh-cn 
+		$sudo_t apt install --no-install-recommends libreoffice libreoffice-l10n-zh-cn libreoffice-gtk3 -y 
 		echo -e "${GREEN}中文界面，请打开LibreOffice，左上角Tools-Options-Language settings-languages，User interface选择Chinese${RES}"
 		CONFIRM ;;
 	2) 
@@ -1219,6 +1287,9 @@ unzip font.zip && sed -i '$d' ttf-wps-fonts-master/install.sh && . ttf-wps-fonts
 else echo "已安装中文包" 
 	sleep 2
 fi
+mkdir -p ${HOME}/.config/Kingsoft/
+echo '[General]
+languages=zh_CN' >${HOME}/.config/Kingsoft/Office.conf
 INSTALL_SOFTWARE
 		;;
 	[Ee]) exit 2 ;;
@@ -1248,13 +1319,13 @@ IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
 	${YELLOW}本机	http://127.0.0.1:8080
 	局域网	http://$IP:8080${RES}\n
-	如需关闭，请按ctrl+c，然后输pkill python3或直接exit退出shell\n"
+	如需关闭，请按ctrl+c，然后输killall python3或直接exit退出shell\n"
 	python3 -m http.server 8080 &
 	sleep 2
 	;;
 13) echo -e "正在安装新立得"
 	sleep 2
-	apt install synaptic -y
+	$sudo_t apt install synaptic -y
 	echo -e "done"
 	sleep 1
 	INSTALL_SOFTWARE ;;
@@ -1263,7 +1334,7 @@ IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	sleep 2
 	rm linuxqq_${VERSION}_arm64.deb 2>/dev/null
 	wget  https://down.qq.com/qqweb/LinuxQQ/linuxqq_${VERSION}_arm64.deb
-	dpkg -i linuxqq_${VERSION}_arm64.deb
+	$sudo_t dpkg -i linuxqq_${VERSION}_arm64.deb
 	dpkg -l | grep linuxqq -q 2>/dev/null
 	if [ $? == 0 ]; then
 		echo -e "\n${YELLOW}已安装${RES}"
@@ -1288,16 +1359,16 @@ DOSBOX() {
 				echo -e "done\n如需创建dos运行文件目录，需先运行一次dosbox以生成配置文件"
 				CONFIRM
 				INSTALL_SOFTWARE ;;
-			2) rm -rf $DIRECT/DOS && mkdir $DIRECT/DOS
+			2) mkdir -p $DIRECT/xinhao/DOS
 		if [ ! -e ${HOME}/.dosbox ]; then
 			echo -e "\n${RED}未检测到dosbox配置文件，请先运行一遍dosbox，再做此步操作${RES}"
 			sleep 2
 		else
 		dosbox=`ls ${HOME}/.dosbox`
-                sed -i "/^\[autoexec/a\mount c $DIRECT/DOS" ${HOME}/.dosbox/$dosbox
+                sed -i "/^\[autoexec/a\mount c $DIRECT/xinhao/DOS" ${HOME}/.dosbox/$dosbox
 #		echo 'mount d $DIRECT/DOS/hospital -t cdrom' ${HOME}/.dosbox/$dosbox
 #		echo 'mount d $DIRECT/DOS/CDROM -t cdrom -label mdk' ${HOME}/.dosbox/$dosbox
-		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录DOS文件夹里，打开dosbox输入c:即可看到运行文件夹${RES}"
+		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录xinhao/DOS文件夹里，打开dosbox输入c:即可看到运行文件夹${RES}"
 		sleep 2
 	fi
 		INSTALL_SOFTWARE ;;
@@ -1401,20 +1472,20 @@ else
 #################
 TERMUX() {
 	echo -e "\n${PINK}注意！以下均在termux环境中操作\n${RES}"
-	echo -e "1) ${YELLOW}* 一键配置好termux环境 (*^ω^*)${RES}
-2) termux换国内源
-3) 安装常用应用(包括curl tar wget vim proot)
-4) 安装pulseaudio并配置(让termux支持声音输出)
-5) 创建用户系统登录脚本
-6) 下载Debian(buster)系统
-7) 下载Ubuntu(bionic)系统
-8) qemu-system-x86_64模拟器
-9) 下载x86架构的Debian(buster)系统(qemu模拟)
-10) 备份恢复系统
-11) 修改termux键盘
-12) 设置打开termux等待七秒(别问为什么)
-13) 下载最新版本termux与xsdl
-14) 下载Debian(bullseye)系统\n"
+	echo -e "1) ${YELLOW} * 一键配置好termux环境 (*^ω^*)${RES}
+2)  termux换国内源
+3)  安装常用应用(包括curl tar wget vim proot)
+4)  安装pulseaudio并配置(让termux支持声音输出)
+5)  创建用户系统登录脚本
+6)  下载Debian(buster)系统
+7)  下载Ubuntu(bionic)系统
+8)  下载Debian(bullseye)系统
+9)  qemu-system-x86_64模拟器
+10) 下载x86架构的Debian(buster)系统(qemu模拟)
+11) 备份恢复系统
+12) 修改termux键盘
+13) 设置打开termux等待七秒(别问为什么)
+14) 下载最新版本termux与xsdl\n"
 read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "\n是否一键配置termux
@@ -1556,7 +1627,7 @@ esac
 			sleep 2
 			Uid=`sed -n p $rootfs/etc/passwd | grep $name | cut -d ':' -f 3`
 			Gid=`sed -n p $rootfs/etc/passwd | grep $name | cut -d ':' -f 4`
-echo "pkill -9 pulseaudio 2>/dev/null
+echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -r $rootfs -i $Uid:$Gid --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
@@ -1578,7 +1649,7 @@ sleep 2
 			echo "$name:x:$i:$i:,,,:/home/$name:/bin/bash" >>$rootfs/etc/passwd
 			echo "$name:x:$i:" >>$rootfs/etc/group
 			echo "$name:!:18682:0:99999:7:::" >>$rootfs/etc/shadow
-echo "pkill -9 pulseaudio 2>/dev/null
+echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -r $rootfs -i $i:$i --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
@@ -1607,7 +1678,7 @@ fi ;;
 		rm -rf start-$rootfs.sh
 	fi
 	echo "" >$rootfs/proc/version
-		echo "pkill -9 pulseaudio 2>/dev/null
+		echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $rootfs --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $rootfs/proc/version:/proc/version -b $rootfs/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" > start-$rootfs.sh && chmod +x start-$rootfs.sh
@@ -1622,7 +1693,7 @@ case $input in
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./start-$rootfs.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 	if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-		sed -i "1i\pkill -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
+		sed -i "1i\killall -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
 	fi
 fi
 sleep 2 ;;
@@ -1694,8 +1765,39 @@ ${SOURCES_ADD}ubuntu-ports/ bionic-backports ${DEB_UBUNTU}" >$bagname/etc/apt/so
 sleep 2
 TERMUX ;;
 
-	8) QEMU_SYSTEM ;;
-	9) echo -e "\n你正在下载的是x86架构的debian(buster),将会通过qemu的模拟方式运行;
+	8) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
+	CONFIRM
+	if [ -e rootfs.tar.xz ]; then
+        rm -rf rootfs.tar.xz
+	fi
+	case $(dpkg --print-architecture) in
+	aarch64|arm64) ;;
+	*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
+	sleep 2  ;;
+	esac
+        echo -e "请选择下载地址
+	1) 清华大学
+	2) 北外大学(推荐)\n"
+	read -r -p "E(exit) M(main)请选择: " input
+	case $input in
+		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
+		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
+        [Ee]) exit 0 ;;
+        [Mm]) MAIN ;;
+        esac
+        echo "下载Debian(bullseye)系统..."
+        sleep 1
+        curl -o rootfs.tar.xz ${CURL_T}
+        SYSTEM_DOWN
+echo "修改为北外源"
+echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
+${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
+${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
+${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
+        sleep 2
+        TERMUX ;;
+	9) QEMU_SYSTEM ;;
+	10) echo -e "\n你正在下载的是x86架构的debian(buster),将会通过qemu的模拟方式运行;
 由于系统包很干净，所以建议进入系统后，再用本脚本安装常用应用"
                 CONFIRM
 		if [ -e rootfs.tar.xz ]; then
@@ -1738,7 +1840,7 @@ cd && cp termux_tmp/usr/bin/qemu-x86_64-static $bagname/
 echo "删除临时文件"
 sleep 1
 rm -rf termux_tmp
-echo "pkill -9 pulseaudio 2>/dev/null
+echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $bagname --link2symlink -b $bagname/root:/dev/shm -b $DIRECT -q $bagname/qemu-x86_64-static -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 /bin/bash" >$bagname.sh
@@ -1800,7 +1902,7 @@ deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >$bagname/et
 sleep 2
                 TERMUX
 		;;
-	10)
+	11)
 		echo -e "\n请选择备份或恢复
 		1) 备份
 		2) 恢复\n"
@@ -1846,7 +1948,7 @@ elif [ "${backup##*.}" = "gz" ]; then
 		unset backup
 		TERMUX
 	esac ;;
-11)  echo "修改键盘"
+	12)  echo "修改键盘"
                 if [ -d ${HOME}/.termux ]; then
                         rm -rf ${HOME}/.termux
                 fi
@@ -1867,7 +1969,7 @@ echo "已修改，请重启termux"
 sleep 1
 TERMUX
 ;;
-	12) echo -e "
+	13) echo -e "
 		1) 增加等待7秒\n
 		任意键) 取消等待"
 		read -r -p "请选择: " input
@@ -1889,8 +1991,9 @@ EOF
 sed -i '/seconds/,+8d' ${PREFIX}/etc/bash.bashrc ;;
 esac
 TERMUX ;;
-	13) 
-	read -r -p "1)termux 2)xsdl " input
+	14) 
+		echo -e "\n1)termux 2)xsdl 3)termux-api"
+		read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) echo -e "\n${YELLOW}检测最新版本${RES}"
 		VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -1912,7 +2015,7 @@ TERMUX ;;
 	case $input in
 	1) curl -O https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION
 		if [ -f $VERSION ]; then
-		echo -e "移到${DIRECT}${STORAGE}目录中..."
+		echo -e "移到${DIRECT}目录中..."
 		mv -v $VERSION ${DIRECT}
 		if [ -f ${DIRECT}$VERSION ]; then
 		echo -e "\n已下载至${DIRECT}目录"
@@ -1925,41 +2028,20 @@ TERMUX ;;
 	*) ;;
 	esac
 	unset VERSION ;;
+	3) curl https://f-droid.org/packages/com.termux.api/ | grep apk | sed -n 2p | cut -d '"' -f 2 | cut -d '"' -f 1 | xargs curl -o ${DIRECT}/com.termux.api.apk
+	if [ -f ${DIRECT}/com.termux.api.apk ]; then
+	echo -e "\n已下载至${DIRECT}目录"
+	else
+	echo -e "\n${RED}错误，请重试${RES}"
+	fi
+	sleep 2 ;;
+	[Ee]) echo "exit"
+                exit 1 ;;
+        [Mm]) echo -e "back to Main\n"
+                TERMUX ;;
 	*) INVALID_INPUT ;;
 	esac
         TERMUX ;;
-
-	14) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
-	CONFIRM
-	if [ -e rootfs.tar.xz ]; then
-	rm -rf rootfs.tar.xz
-	fi
-	case $(dpkg --print-architecture) in
-	aarch64|arm64) ;;
-	*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
-	sleep 2  ;;
-	esac
-	echo -e "请选择下载地址
-	1) 清华大学
-	2) 北外大学(推荐)\n"
-	read -r -p "E(exit) M(main)请选择: " input
-	case $input in
-		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
-		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
-	[Ee]) exit 0 ;;
-	[Mm]) MAIN ;;
-	esac
-	echo "下载Debian(buster)系统..."
-	sleep 1
-	curl -o rootfs.tar.xz ${CURL_T}
-	SYSTEM_DOWN
-echo "修改为北外源"
-echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
-${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
-	sleep 2
-	TERMUX ;;
 
 
 	[Ee]) echo "exit"
@@ -1990,7 +2072,7 @@ SYSTEM_DOWN() {
                 sleep 2
                 echo "修改时区"
                 sed -i "1i\export TZ='Asia/Shanghai'" $bagname/etc/profile
-		echo 'apt update && apt install curl -y && sed -i "/update/d" /etc/profile' >>$bagname/etc/profile
+		echo 'printf "%b" "\e[33m正常进行首次运行配置\e[0m" && sleep 1 &&apt update && apt install curl -y && sed -i "/update/d" /etc/profile' >>$bagname/etc/profile
                 echo "配置dns"
 		rm $bagname/etc/resolv.conf 2>/dev/null
 		echo "nameserver 223.5.5.5
@@ -2002,17 +2084,16 @@ if grep -q 'ubuntu' "$bagname/etc/os-release" ; then
         touch "$bagname/root/.hushlogin"
 fi
 echo "" >$bagname/proc/version
-echo "pkill -9 pulseaudio 2>/dev/null
+echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $bagname --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $bagname/proc/version:/proc/version -b $bagname/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$bagname.sh && chmod +x $bagname.sh
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./$bagname.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-sed -i "1i\pkill -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
+sed -i "1i\killall -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
 fi
 fi
-ln -s ${HOME}/termux-toolx.sh $bagname/root/
 sleep 2
 }
 #########################
