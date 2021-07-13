@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/08"
+	UPDATE="2021/07/13"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	更新aspice下载地址
 	增加qemu安装自动检测与镜像目录联动执行
@@ -1425,8 +1425,10 @@ esac
 	if [ -n "$UEFI" ]; then
 		set -- "${@}" "-pflash" "${DIRECT}${STORAGE}$UEFI"
 	else
-		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_CODE.fd"
-		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_VARS.fd"
+#		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_CODE.fd"
+#		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_VARS.fd"
+		set -- "${@}" "-drive" "if=pflash,format=raw,file=/usr/share/OVMF/OVMF_CODE.fd,readonly=on"
+		set -- "${@}" "-drive" "if=pflash,format=raw,file=/usr/share/OVMF/OVMF_VARS.fd,readonly=on"
 	fi ;;
 	*) ;;
 	esac ;;
@@ -1748,7 +1750,7 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
                 QEMU_SYSTEM
         else
         echo -e "${YELLOW}下载地址链接为\n\n${GREEN}${FED_CURL}$VERSION$VERSION_${RES}\n"
-	read -r -p "1)下载 9)返回 " input
+	read -r -p "1)下载virtio驱动 2)下载virtio显卡驱动 9)返回 " input
 	case $input in
 		1)
 		curl -O ${FED_CURL}$VERSION$VERSION_
@@ -1761,7 +1763,16 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	fi
 	else
 	echo -e "\n${RED}错误，请重试${RES}"
-	sleep 2
+	sleep 2 
+	fi ;;
+	2) 
+	if [ ! -f ${DIRECT}${STORAGE}virtio-gpu-wddm-dod.iso ]; then
+	echo -e "\n${GREEN}正在下载virtio显卡驱动盘${RES}"
+	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/gpu.tar.gz
+	tar zxvf gpu.tar.gz
+	mv virtio-gpu-wddm-dod.iso ${DIRECT}${STORAGE}
+	rm gpu.tar.gz
+	echo -e "\n已下载virtio显卡至${DIRECT}${STORAGE}目录，名为virtio-gpu-wddm-dod.iso"
 	fi ;;
 	*) ;;
 	esac
