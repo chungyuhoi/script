@@ -858,7 +858,7 @@ VNCSERVER
 ;;
 8) echo -e "\n创建局域网vnc连接(命令easyvnc-wifi)"
 	if [ ! -f /usr/local/bin/easyvnc ]; then
-		echo -e "请先安装eaayvnc"
+		echo -e "请先安装easyvnc"
 		CONFIRM
 		VNCSERVER
 	fi
@@ -968,10 +968,13 @@ read -r -p "E(exit) M(main)请选择: " input
 		elif grep -q 'bionic' "/etc/os-release"; then
 			$sudo_t apt install chromium-browser chromium-codecs-ffmpeg-extra -y
 		elif grep -q 'ID=ubuntu' "/etc/os-release"; then
-			echo -e "${YELLOW}你所使用的ubuntu源装chromium目前有bug，正在临时切换有效的bionic源${RES}"
-			CONFIRM
-			cp /etc/apt/sources.list /etc/apt/sources.list.tmp
-			echo "${SOURCES_ADD}ubuntu-ports/ bionic ${DEB_UBUNTU}
+			echo -e "${YELLOW}你所使用的ubuntu源装chromium目前有bug${RES}
+1) 临时切换有效的bionic(不建议)
+0) 返回"
+read -r -p "请选择: " input
+case $input in
+	1) cp /etc/apt/sources.list /etc/apt/sources.list.tmp
+		echo "${SOURCES_ADD}ubuntu-ports/ bionic ${DEB_UBUNTU}
 ${SOURCES_ADD}ubuntu-ports/ bionic-security ${DEB_UBUNTU}
 ${SOURCES_ADD}ubuntu-ports/ bionic-updates ${DEB_UBUNTU}
 ${SOURCES_ADD}ubuntu-ports/ bionic-backports ${DEB_UBUNTU}" >/etc/apt/sources.list
@@ -979,9 +982,11 @@ apt update && $sudo_t apt install chromium-browser chromium-codecs-ffmpeg-extra 
 PROCESS_CHECK
 sudo echo "chromium-browser hold" | sudo dpkg --set-selections
 sudo echo "chromium-browser-l10n hold" | sudo dpkg --set-selections
-sudo echo "chromium-codecs-ffmpeg-extra hold" | sudo dpkg --set-selection
+sudo echo "chromium-codecs-ffmpeg-extra hold" | sudo dpkg --set-selections
 mv /etc/apt/sources.list.tmp /etc/apt/sources.list
-apt update
+apt update ;;
+*) WEB_BROWSER ;;
+esac
 cat >/dev/null<<-'EOF'
 echo "检测到你用的ubuntu系统,将切换ppa源下载,下载过程会比较慢,请留意进度"
 			sleep 2
@@ -1122,7 +1127,9 @@ read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "正在安装minetest"
 		$sudo_t apt install minetest -y
-		curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/minetest.mo && $sudo_t mv minetest.mo /usr/share/locale/zh_CN/LC_MESSAGES/
+		if [ ! -f /usr/share/locale/zh_CN/LC_MESSAGES/minetest.mo ]; then
+			curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/minetest.mo && $sudo_t mv minetest.mo /usr/share/locale/zh_CN/LC_MESSAGES/
+		fi
 echo -e "\n是否中文界面(不建议，默认随系统语言)"
 		read -r -p "1)是 2)否 " input
 		case $input in
