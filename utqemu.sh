@@ -1733,6 +1733,8 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 
 	read -r -p "请选择: " input
 	case $input in
+		1) read -r -p "1)下载virtio驱动 2)下载virtio显卡驱动 9)返回 " input
+			case $input in
 		1) echo -e "${YELLOW}即将下载，下载速度可能比较慢，你也可以复制下载链接通过其他方式下载${RES}\n\n正在检测下载地址..."
 	DATE=`date +"%Y"`
 	FED_CURL="https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/"
@@ -1750,7 +1752,7 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
                 QEMU_SYSTEM
         else
         echo -e "${YELLOW}下载地址链接为\n\n${GREEN}${FED_CURL}$VERSION$VERSION_${RES}\n"
-	read -r -p "1)下载virtio驱动 2)下载virtio显卡驱动 9)返回 " input
+	read -r -p "1)下载 9)返回 " input
 	case $input in
 		1)
 		curl -O ${FED_CURL}$VERSION$VERSION_
@@ -1765,20 +1767,24 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	echo -e "\n${RED}错误，请重试${RES}"
 	sleep 2 
 	fi ;;
-	2) 
+	*) ;;
+	esac
+	unset VERSION
+	QEMU_SYSTEM
+	fi
+	;;
+2)
 	if [ ! -f ${DIRECT}${STORAGE}virtio-gpu-wddm-dod.iso ]; then
 	echo -e "\n${GREEN}正在下载virtio显卡驱动盘${RES}"
 	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/gpu.tar.gz
-	tar zxvf gpu.tar.gz
+        tar zxvf gpu.tar.gz
 	mv virtio-gpu-wddm-dod.iso ${DIRECT}${STORAGE}
 	rm gpu.tar.gz
 	echo -e "\n已下载virtio显卡至${DIRECT}${STORAGE}目录，名为virtio-gpu-wddm-dod.iso"
 	fi ;;
 	*) ;;
 	esac
-	unset VERSION
 	QEMU_SYSTEM
-	fi
                 ;;
 
 	2) case $SYS in
