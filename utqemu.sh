@@ -261,6 +261,7 @@ LOGIN() {
 	echo $UPDATE >>$DEBIAN-qemu/root/.utqemu_
 	elif ! grep -q $UPDATE "$DEBIAN-qemu/root/.utqemu_" ; then
 	echo -e "\n${GREEN}检测到脚本有更新，更新日期$UPDATE${RES}"
+	INFO
 	read -r -p "1)更新 0)忽略并不再提示此版本 " input
 	case $input in
 		1|"") rm $DEBIAN-qemu/root/utqemu.sh 2>/dev/null
