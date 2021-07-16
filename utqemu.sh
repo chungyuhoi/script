@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/15"
+	UPDATE="2021/07/16"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5版本)
 	更新aspice下载地址
@@ -1293,6 +1293,24 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 		wlan_vnc) ;;
 		*)
 		echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
+	if [[ $(qemu-system-x86_64 --version) =~ :[4] ]] ; then
+	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 5)ac97(修改参数，不适合spice) 6)hda(修改参数，不适合spice) 0)不加载 " input
+	case $input in
+		1|"") SOUND_MODEL=ac97 ;;
+		2) SOUND_MODEL=sb16 ;;
+		0) ;;
+                3) SOUND_MODEL=es1370 ;;
+		4) SOUND_MODEL=hda ;;
+		5) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
+		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
+		*) SOUND_MODEL=all ;;
+	esac
+
+else
+
+
 	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
 	case $input in
                 1|"") SOUND_MODEL=ac97 ;;
@@ -1302,6 +1320,7 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 		4) SOUND_MODEL=hda ;;
 		*) SOUND_MODEL=all ;;
 	esac
+	fi
 	if [ -n "${SOUND_MODEL}" ]; then
 	set -- "${@}" "-soundhw" "${SOUND_MODEL}"
 	fi ;;
