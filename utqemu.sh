@@ -1645,7 +1645,7 @@ EOF
 		vnc) 
 		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
-		xsdl) set -- "${@}" "-no-frame"
+		xsdl)
 			export DISPLAY=127.0.0.1:0
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
