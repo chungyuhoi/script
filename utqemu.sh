@@ -4,17 +4,16 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/13"
+	UPDATE="2021/07/15"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu4与5版本)
 	更新aspice下载地址
 	增加qemu安装自动检测与镜像目录联动执行
 	增加termux-api下载
 	修复IDE接口无法加载光驱
 	修改IDE磁盘接口参数，使其速度更快，但缺点是容易丢失数据
 	新增termux最新版本下载选项
-	针对部分用户出现脚本下载错误，换了个服务器
 	容器内新增aspice与xsdl下载地址
-	修复termux环境无法安装qemu的bug
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -608,7 +607,14 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
 	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
+	if [ ! -z "$VERSION" ]; then
 	echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
+	else 
+	echo -e "${RED}获取错误，请重试${RES}"
+	sleep 2
+	unset VERSION
+	QEMU_ETC
+	fi
 	read -r -p "1)下载 9)返回 " input
 	case $input in
 		1) rm termux.apk 2>/dev/null
@@ -903,7 +909,8 @@ esac
 		*) display=spice ;;
 	esac
 	;;
-		4) echo -e "\n${BLUE}窗口输出${RES}"
+		4) echo -e "\n${BLUE}窗口输出\n${GREEN}鼠标锁定 ctrl+alt+g\n全屏     ctrl+alt+f${RES}"
+			CONFIRM
 			display=gtk_ ;;
 		5) display=wlan_vnc
 	echo -e "\n${GREEN}为减少效率的影响，暂不支持声音输出${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
@@ -931,7 +938,9 @@ esac
 	HDA_READ
 	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
-	3) 	LIST
+	3) echo -e "${GREEN}此选项参数是hda声卡，virtio网卡，qxl显卡，virtio磁盘接口${RES}"
+		sleep 1
+		LIST
 		HDA_READ
 	MA=q35 VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio,cache=none" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
 	;;
@@ -953,7 +962,7 @@ EOF
 	$START >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
 	FAIL
-	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+	printf "%s${RED}启动意外中止，请查看日志${YELLOW}d(ŐдŐ๑)${RES}\n"
 	fi
 	exit 1 ;;
 	esac
@@ -1008,6 +1017,7 @@ EOF
 	MA="usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off,mem-merge=off"
 #enforce-config-section=on
 	TCG="tcg,thread=multi"
+
 	read -r -p "1)pc 2)q35 " input
 	case $input in
 		1|"")
@@ -1017,18 +1027,18 @@ EOF
 		QEMU_PRE) set -- "${@}" "-machine" "pc" "--accel" "$TCG" ;;
 		*)
 	echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-	read -r -p "1)tcg 2)自动检测 " input
+	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
 	case $input in
 		1)
 	set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG" ;;
 		3) if [[ $(qemu-system-x86_64 --version) =~ :[4-5] ]] ; then
-	echo -e "${RED}你选了隐藏选项，注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
+	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
 	if [ -n "$TB" ]; then
 		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG,tb-size=$TB"
 	else
-		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
+		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG,tb-size=$mem_"
 	fi
 	else
 		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
@@ -1046,17 +1056,17 @@ EOF
 		QEMU_PRE) set -- "${@}" "-machine" "q35" "--accel" "$TCG" ;;
 		*)
 		echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-	read -r -p "1)tcg 2)自动检测 " input
+	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
 	case $input in
 		1) set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG" ;;
 		3) if [[ $(qemu-system-x86_64 --version) =~ :[4-5] ]] ; then
-	echo -e "${RED}你选了隐藏选项，注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
+	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
 	if [ -n "$TB" ]; then
 		set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG,tb-size=$TB"
 	else
-		set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG"
+		set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG,tb-size=$mem_"
 	fi
 	else                                                            set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
 	fi ;;
@@ -1634,7 +1644,8 @@ EOF
 		vnc) 
 		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
-		xsdl) export DISPLAY=127.0.0.1:0
+		xsdl) set -- "${@}" "-no-frame"
+			export DISPLAY=127.0.0.1:0
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
