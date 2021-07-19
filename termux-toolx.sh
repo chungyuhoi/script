@@ -997,6 +997,7 @@ curl -o chromium-browser-l10n.deb http://ppa.launchpad.net/xalt7x/chromium-deb-v
 $sudo_t dpkg -i chromium.deb
 $sudo_t dpkg -i chromium_ffmpeg.deb
 $sudo_t dpkg -i chromium-browser-l10n.deb
+apt --fix-broken install -y
 rm chromium*
 sudo echo "chromium-browser hold" | sudo dpkg --set-selections
 sudo echo "chromium-browser-l10n hold" | sudo dpkg --set-selections
