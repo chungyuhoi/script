@@ -953,7 +953,7 @@ esac
 
 ##########################
 WEB_BROWSER() {
-	echo -e "${YELLOW}1) 安装谷歌浏览器chromium
+	echo -e "1) 安装谷歌浏览器chromium
 2) 安装火狐浏览器firefox
 3) 安装epiphany-browser浏览器
 4) 安装360浏览器(有一个月使用限制，需向360获取授权码)\n${RES}"
@@ -994,9 +994,10 @@ curl -o chromium.deb ${CURL}${BRO}
 BRO_FF="$(curl $CURL | grep arm64.deb | grep ffmpeg | tail -n 3 | head -n 1 | cut -d '"' -f 8)"
 curl -o chromium_ffmpeg.deb ${CURL}${BRO_FF}
 curl -o chromium-browser-l10n.deb http://ppa.launchpad.net/xalt7x/chromium-deb-vaapi/ubuntu/pool/main/c/chromium-browser/$(curl http://ppa.launchpad.net/xalt7x/chromium-deb-vaapi/ubuntu/pool/main/c/chromium-browser/ | grep chromium-browser-l10n | awk -F 'href="' '{print $2}' | cut -d '"' -f 1 | tail -n 1)
-$sudo_t dpkg -i chromium.deb && rm chromium.deb
-$sudo_t dpkg -i chromium_ffmpeg.deb && rm chromium_ffmpeg.deb
-$sudo_t dpkg -i chromium-browser-l10n.deb && $sudo_t dpkg -i chromium-browser-l10n.deb
+$sudo_t dpkg -i chromium.deb
+$sudo_t dpkg -i chromium_ffmpeg.deb
+$sudo_t dpkg -i chromium-browser-l10n.deb
+rm chromium*
 sudo echo "chromium-browser hold" | sudo dpkg --set-selections
 sudo echo "chromium-browser-l10n hold" | sudo dpkg --set-selections
 sudo echo "chromium-codecs-ffmpeg-extra hold" | sudo dpkg --set-selections ;;
