@@ -33,7 +33,7 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210708${RES}\n"
+${YELLOW}更新日期20210719${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -412,7 +412,7 @@ LANGUAGE_CHANGE(){
 			read -r -p "1) 2) " input
 			case $input in
 			1) $sudo apt install fonts-wqy-zenhei -y
-			sed -i '/zh_CN.UTF/s/^/#//' /etc/locale.gen
+			sed -i '/zh_CN.UTF/s/#//' /etc/locale.gen
 			locale-gen
 			sed -i '/^export LANG/d' /etc/profile && sed -i '1i\export LANG=zh_CN.UTF-8' /etc/profile && source /etc/profile && export LANG=zh_CN.UTF-8 && echo '修改完毕,请重新登录' && sleep 2 && SETTLE ;;
 2) export LANG=C.UTF-8 && sed -i '/^export LANG/d' /etc/profile && echo '修改完毕，请重新登录' && sleep 2 && SETTLE ;;
@@ -648,7 +648,7 @@ read -r -p "1)xfce4 2)lxde 3)mate " input
 case $input in
         1) echo -e "done" && sleep 2 ;;
         2) sed -i "s/startxfce4/startlxde/g" ${HOME}/.vnc/xstartup 
-		$sudo_t apt purge --allow-change-held-packages gvfs -y && $sudo_t apt purge --allow-change-held-packages udisk2 -y 
+		$sudo_t apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
 		echo -e "done" && sleep 2 ;;
 		3)
 echo '#!/usr/bin/env bash
@@ -660,7 +660,7 @@ x-window-manager
 mate-panel
 mate-session
 thunar' >${HOME}/.vnc/xstartup
-                $sudo_t apt purge --allow-change-held-packages gvfs -y && $sudo_t apt purge --allow-change-held-packages udisk2 -y
+                $sudo_t apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
                 echo -e "done" && sleep 2
                 ;;
         *)
@@ -795,7 +795,7 @@ else
 dbus-launch startxfce4
 fi' >${HOME}/.vnc/xstartup
 EOF
-$sudo_t apt purge --allow-change-held-packages gvfs -y && $sudo_t apt purge --allow-change-held-packages udisk2 -y
+$sudo_t apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
 U_ID=`id | cut -d '(' -f 2 | cut -d ')' -f 1`
 GROUP_ID=`id | cut -d '(' -f 4 | cut -d ')' -f 1`
 touch .ICEauthority .Xauthority 2>/dev/null
@@ -970,6 +970,7 @@ read -r -p "E(exit) M(main)请选择: " input
 		elif grep -q 'ID=ubuntu' "/etc/os-release"; then
 			echo -e "${YELLOW}你所使用的ubuntu源装chromium目前有bug${RES}
 1) 临时切换有效的bionic(不建议)
+2) 通过ppa源安装(未完全测试)
 0) 返回"
 read -r -p "请选择: " input
 case $input in
@@ -985,19 +986,22 @@ sudo echo "chromium-browser-l10n hold" | sudo dpkg --set-selections
 sudo echo "chromium-codecs-ffmpeg-extra hold" | sudo dpkg --set-selections
 mv /etc/apt/sources.list.tmp /etc/apt/sources.list
 apt update ;;
-*) WEB_BROWSER ;;
-esac
-cat >/dev/null<<-'EOF'
-echo "检测到你用的ubuntu系统,将切换ppa源下载,下载过程会比较慢,请留意进度"
+2) echo "检测到你用的ubuntu系统,将切换ppa源下载,下载过程会比较慢,请留意进度"
 			sleep 2
 CURL="http://ppa.launchpad.net/xalt7x/chromium-deb-vaapi/ubuntu/pool/main/c/chromium-browser/"
 BRO="$(curl $CURL | grep arm64 | head -n 2 | tail -n 1 | cut -d '"' -f 8)"
 curl -o chromium.deb ${CURL}${BRO}
 BRO_FF="$(curl $CURL | grep arm64.deb | grep ffmpeg | tail -n 3 | head -n 1 | cut -d '"' -f 8)"
 curl -o chromium_ffmpeg.deb ${CURL}${BRO_FF}
+curl -o chromium-browser-l10n.deb http://ppa.launchpad.net/xalt7x/chromium-deb-vaapi/ubuntu/pool/main/c/chromium-browser/$(curl http://ppa.launchpad.net/xalt7x/chromium-deb-vaapi/ubuntu/pool/main/c/chromium-browser/ | grep chromium-browser-l10n | awk -F 'href="' '{print $2}' | cut -d '"' -f 1 | tail -n 1)
 $sudo_t dpkg -i chromium.deb && rm chromium.deb
 $sudo_t dpkg -i chromium_ffmpeg.deb && rm chromium_ffmpeg.deb
-EOF
+$sudo_t dpkg -i chromium-browser-l10n.deb && $sudo_t dpkg -i chromium-browser-l10n.deb
+sudo echo "chromium-browser hold" | sudo dpkg --set-selections
+sudo echo "chromium-browser-l10n hold" | sudo dpkg --set-selections
+sudo echo "chromium-codecs-ffmpeg-extra hold" | sudo dpkg --set-selections ;;
+*) WEB_BROWSER ;;
+esac
 sleep 2
 else
         echo -e "${RED}你用的不是Debian或Ubuntu系统，操作将中止...${RES}"
@@ -1086,7 +1090,7 @@ DM() {
 	3) 安装mate(有bug，请勿选)\n"
 	read -r -p "E(exit) M(main)请选择: " input
 	case $input in
-		1) $sudo_t apt install xfce4 xfce4-terminal ristretto dbus-x11 -y ;;
+		1) $sudo_t apt install xfce4 xfce4-terminal ristretto dbus-x11 lxtask -y ;;
 		2) $sudo_t apt install lxde-core lxterminal dbus-x11 -y ;;
 		3) 
 #			$sudo_t apt install mate-desktop-environment mate-terminal -y
@@ -2004,7 +2008,14 @@ TERMUX ;;
 	case $input in
 		1) echo -e "\n${YELLOW}检测最新版本${RES}"
 		VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
+		if [ ! -z "$VERSION" ]; then
 		echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
+	else
+		echo -e "${RED}获取失败，请重试${RES}"
+		sleep 2
+		unset VERSION
+		TERMUX
+		fi
 		read -r -p "1)下载 9)返回 " input
 		case $input in
 			1) rm termux.apk 2>/dev/null
