@@ -6,7 +6,7 @@ INFO() {
 	clear
 	UPDATE="2021/07/21"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5版本)
+	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
 	更新aspice下载地址
 	增加qemu安装自动检测与镜像目录联动执行
 	增加termux-api下载
@@ -1033,7 +1033,7 @@ EOF
 	case $input in
 		1)
 	set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG" ;;
-		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-5] ]]; then
+		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
 	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
@@ -1061,7 +1061,7 @@ EOF
 	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
 	case $input in
 		1) set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG" ;;
-		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-5] ]]; then
+		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
 	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
