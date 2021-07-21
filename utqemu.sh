@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/16"
+	UPDATE="2021/07/21"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5版本)
 	更新aspice下载地址
@@ -209,7 +209,8 @@ QEMU_VERSION(){
                 SYS=ANDROID
 	elif [ ! $(command -v qemu-system-x86_64) ]; then
 		echo ""
-        elif [[ $(qemu-system-x86_64 --version) =~ :[5-9] ]] ; then
+	elif [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [5-9] ]]; then
+#        elif [[ $(qemu-system-x86_64 --version) =~ :[5-9] ]] ; then
 		SYS=QEMU_ADV
 	else
 		SYS=QEMU_PRE
@@ -1032,7 +1033,7 @@ EOF
 	case $input in
 		1)
 	set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG" ;;
-		3) if [[ $(qemu-system-x86_64 --version) =~ :[4-5] ]] ; then
+		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-5] ]]; then
 	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
@@ -1060,7 +1061,7 @@ EOF
 	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
 	case $input in
 		1) set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG" ;;
-		3) if [[ $(qemu-system-x86_64 --version) =~ :[4-5] ]] ; then
+		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-5] ]]; then
 	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
@@ -1258,7 +1259,7 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 #PROOT
 #####################
 #<5.0
-	qemu-system-x86_64 --version | grep ':[5-9]' -q || uname -a | grep 'Android' -q
+	[[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [5-9] ]] || uname -a | grep 'Android' -q
 	if [ $? != 0 ]; then
 	echo -e "请选择${YELLOW}显卡${RES}"
 	read -r -p "1)cirrus 2)vmware 3)std 4)virtio 5)qxl " input
@@ -1271,7 +1272,9 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 	esac
 	set -- "${@}" "-vga" "${VGA_MODEL}"
 #内存锁，默认打开
+	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-3] ]]; then
 	set -- "${@}" "-realtime" "mlock=off"
+	fi
 
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
@@ -1293,7 +1296,7 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 		wlan_vnc) ;;
 		*)
 		echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-	if [[ $(qemu-system-x86_64 --version) =~ :[4] ]] ; then
+	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 4 ]]; then
 	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 5)ac97(修改参数，不适合spice) 6)hda(修改参数，不适合spice) 0)不加载 " input
 	case $input in
 		1|"") SOUND_MODEL=ac97 ;;
