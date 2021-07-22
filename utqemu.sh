@@ -62,7 +62,7 @@ ABOUT_UTQEMU(){
 		*) ABOUT_UTQEMU ;;
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
-	$sudo apt install wget git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build -y
+	$sudo apt install wget git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-protocol-dev libspice-server-dev libspice-server1 -y
 #spice qxl 依赖 libspice-protocol-dev libspice-server-dev libspice-server1
 	echo -e "${YELLOW}检测下载${RES}"
 	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
