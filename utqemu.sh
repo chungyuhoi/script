@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/21"
+	UPDATE="2021/07/22"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
 	更新aspice下载地址
@@ -44,7 +44,7 @@ ABOUT_UTQEMU(){
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n\n"
 	case $SYS in
 		ANDROID) CONFIRM ;;
-		*) read -r -p "是否编译安装各版本qemu(仅x86与i386)？1)是 9)返回 " input
+		*) read -r -p "是否编译安装各版本qemu(仅x86与i386) 1)是 9)返回 " input
 	case $input in
 	1) echo -e "请选择qemu版本
 1) 2*
@@ -62,8 +62,9 @@ ABOUT_UTQEMU(){
 		*) ABOUT_UTQEMU ;;
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
-	$sudo apt install wget git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-protocol-dev libspice-server-dev libspice-server1 -y
+	$sudo apt install wget git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc pulseaudio python3 python3-setuptools build-essential ninja-build libspice-protocol-dev libspice-server-dev libspice-server1 libssh2-1-dev libnfs-dev -y
 #spice qxl 依赖 libspice-protocol-dev libspice-server-dev libspice-server1
+#alsa libssh2-1-dev libnfs-dev
 	echo -e "${YELLOW}检测下载${RES}"
 	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
 	if [ -z "$VERSION" ]; then
@@ -79,7 +80,8 @@ ABOUT_UTQEMU(){
 	fi
 	tar xvJf $VERSION.tar.xz && cd $VERSION
 	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
-        ./configure --target-list=aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu --enable-debug && make -j8 && make install
+#aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu
+        ./configure --target-list=i386-softmmu,x86_64-softmmu --audio-drv-list=oss,alsa,sdl,pa --enable-debug && make -j8 && make install
 	unset VERSION
  ;;
 	*) ;;
