@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 
 INFO() {
-#	clear
+	clear
 	UPDATE="2021/07/21"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
@@ -19,7 +19,7 @@ INFO() {
 }
 ###################
 NOTE() {
-#	clear
+	clear
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
@@ -39,7 +39,7 @@ echo -e "\e[32m$(qemu-system-x86_64 --version | head -n 1)\e[0m"
 }
 ###################
 ABOUT_UTQEMU(){
-#	clear
+	clear
 	printf "${YELLOW}关于utqemu脚本${RES}
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n\n"
 	case $SYS in
@@ -63,10 +63,12 @@ ABOUT_UTQEMU(){
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
 	$sudo apt install wget git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build -y
+#spice qxl 依赖 libspice-protocol-dev libspice-server-dev libspice-server1
 	echo -e "${YELLOW}检测下载${RES}"
 	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
 	wget -o $VETSION https://download.qemu.org/$VERSION.tar.xz
 	tar xvJf $VERSION.tar.xz && cd $VERSION
+	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
         ./configure --target-list=aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu --enable-debug && make -j8 && make install
 	unset VERSION
  ;;
@@ -76,7 +78,7 @@ esac
 	QEMU_SYSTEM	
 }
 ABOUT_VIRTIO(){
-#	clear
+	clear
 	printf "${YELLOW}关于virtio驱动${RES}
 	引用官方说法：QEMU为用户提供并行虚拟化块设备和网络设备的能力，其是借助virtio驱动实现的，拥有更好的性能表现以及更低的开销。
 
@@ -1979,7 +1981,7 @@ LOGIN_() {
         *) ;;
         esac
         unset VERSION
-#	clear
+	clear
 	LOGIN_ ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
