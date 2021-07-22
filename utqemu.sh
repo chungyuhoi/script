@@ -66,7 +66,17 @@ ABOUT_UTQEMU(){
 #spice qxl 依赖 libspice-protocol-dev libspice-server-dev libspice-server1
 	echo -e "${YELLOW}检测下载${RES}"
 	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
-	wget -o $VETSION https://download.qemu.org/$VERSION.tar.xz
+	if [ -z "$VERSION" ]; then
+	echo -e "${RED}获取失败，请重试${RES}"
+	CONFIRM
+	ABOUT_UTQEMU
+	fi
+	curl -O https://download.qemu.org/$VERSION.tar.xz
+	if [ ! -f $(pwd)/"$VERSION.tar.xz" ]; then
+	echo -e "${RED}获取失败，请重试${RES}"
+	CONFIRM
+	ABOUT_UTQEMU
+	fi
 	tar xvJf $VERSION.tar.xz && cd $VERSION
 	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
         ./configure --target-list=aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu --enable-debug && make -j8 && make install
@@ -74,7 +84,7 @@ ABOUT_UTQEMU(){
  ;;
 	*) ;;
 	esac ;;
-esac
+	esac
 	QEMU_SYSTEM	
 }
 ABOUT_VIRTIO(){
