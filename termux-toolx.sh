@@ -369,7 +369,8 @@ SETTLE ;;
 6) read -r -p "1)命令安装 2)恢复包安装 " input
 	case $input in
 		2) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PSTREE.tar.gz
-		tar zxvf PSTREE.tar.gz && bash bash_me ;;
+		tar zxvf PSTREE.tar.gz && bash bash_me
+		rm -rf PSTREE.tar.gz bash_me ;;
 		*) 
 	echo "安装进程树"
 	$sudo_t apt install psmisc
@@ -411,6 +412,7 @@ SETTLE ;;
 		esac ;;
 	14) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
 	tar zxvf PKILL.tar.gz && bash PKILL/bash_me
+	rm -rf PKILL*
 	echo -e "${BLUE}done${RES}"
 	SETTLE
 ;;
