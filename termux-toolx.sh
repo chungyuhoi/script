@@ -412,6 +412,7 @@ SETTLE ;;
 	14) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
 	tar zxvf PKILL.tar.gz && bash PKILL/bash_me
 	echo -e "${BLUE}done${RES}"
+	SETTLE
 ;;
 	*) INVALID_INPUT
 		SETTLE ;;
