@@ -1150,7 +1150,8 @@ case $input in
 	1) echo -e "正在安装minetest"
 		$sudo_t apt install minetest -y
 		if [ ! -f /usr/share/locale/zh_CN/LC_MESSAGES/minetest.mo ]; then
-			curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/minetest.mo && $sudo_t mv minetest.mo /usr/share/locale/zh_CN/LC_MESSAGES/
+			curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/MINETEST_MO.tar.gz
+		tar zxvf MINETEST_MO.tar.gz && $sudo_t mv minetest.mo /usr/share/locale/zh_CN/LC_MESSAGES/ && rm MINETEST_MO.tar.gz
 		fi
 echo -e "\n是否中文界面(不建议，默认随系统语言)"
 		read -r -p "1)是 2)否 " input
