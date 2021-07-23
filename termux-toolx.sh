@@ -33,7 +33,7 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210719${RES}\n"
+${YELLOW}更新日期20210722${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -250,7 +250,8 @@ SETTLE() {
 10) GitHub资源库(仅支持debian-bullseye)
 11) python3和pip应用
 12) 中文汉化
-13) 安装系统信息显示(neofetch,screenfetch)\n"
+13) 安装系统信息显示(neofetch,screenfetch)
+14) pkill不可用，下载pkill恢复包\n"
 read -r -p "E(exit) M(main)请选择: " input
 
 case $input in
@@ -365,10 +366,16 @@ done
 		echo "done"
 		sleep 2
 SETTLE ;;
-6)
+6) read -r -p "1)命令安装 2)恢复包安装 " input
+	case $input in
+		2) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PSTREE.tar.gz
+		tar zxvf PSTREE.tar.gz && bash bash_me ;;
+		*) 
 	echo "安装进程树"
 	$sudo_t apt install psmisc
 	echo -e "${BLUE}done${RES}"
+	;;
+	esac
 	SETTLE
                 ;;
 	7)
@@ -402,6 +409,10 @@ SETTLE ;;
 			*) INVALID_INPUT
 				SETTLE ;;
 		esac ;;
+	14) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
+	tar zxvf PKILL.tar.gz && bash PKILL/bash_me
+	echo -e "${BLUE}done${RES}"
+;;
 	*) INVALID_INPUT
 		SETTLE ;;
 esac
@@ -491,7 +502,7 @@ if [ -e /etc/os-release ]; then
 	printf "你的系统是"
 	cat /etc/os-release | head -n 1 | cut -d '"' -f 2
 fi
-echo -e "${YELLOW} 仅支持debian和ubuntu
+echo -e "仅支持debian和ubuntu
 1) 修改debian或ubuntu国内源
 2) 更新源列表
 3) 为http修改为https(使用 HTTPS 可以有效避免国内运营商的缓存劫持)${RES}"
