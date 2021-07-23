@@ -62,6 +62,7 @@ ABOUT_UTQEMU(){
 		*) ABOUT_UTQEMU ;;
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
+	cd
 	$sudo apt install wget git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc pulseaudio python3 python3-setuptools build-essential ninja-build libspice-protocol-dev libspice-server-dev libspice-server1 libssh2-1-dev libnfs-dev -y
 #spice qxl 依赖 libspice-protocol-dev libspice-server-dev libspice-server1
 #alsa libssh2-1-dev libnfs-dev
@@ -72,16 +73,28 @@ ABOUT_UTQEMU(){
 	CONFIRM
 	ABOUT_UTQEMU
 	fi
+	if [ ! -f $(pwd)/"$VERSION.tar.xz" ]; then
 	curl -O https://download.qemu.org/$VERSION.tar.xz
+	fi
 	if [ ! -f $(pwd)/"$VERSION.tar.xz" ]; then
 	echo -e "${RED}获取失败，请重试${RES}"
 	CONFIRM
 	ABOUT_UTQEMU
-	fi
+	else
 	tar xvJf $VERSION.tar.xz && cd $VERSION
+	fi
 	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
 #aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu
-        ./configure --target-list=i386-softmmu,x86_64-softmmu --audio-drv-list=oss,alsa,sdl,pa --enable-debug && make -j8 && make install
+./configure --target-list=i386-softmmu,x86_64-softmmu --audio-drv-list=oss,alsa,sdl,pa --python=$(command -v python3) --enable-debug
+	if [ $? != 0 ]; then
+		echo -e "${RED}编译失败${RES}"
+		CONFIRM
+		ABOUT_UTQEMU
+	fi
+	make -j8 && make install
+	if [ $(command -v qemu-system-i386) ]; then
+		cd && rm -rf $VERSION.tar.xz $VERSION
+	fi
 	unset VERSION
  ;;
 	*) ;;
