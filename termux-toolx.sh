@@ -243,7 +243,7 @@ SETTLE() {
 3)  增加普通用户并赋予sudo功能
 4)  处理Ubuntu出现的groups: cannot find name for group *提示
 5)  设置时区
-6)  安装进程树(可查看进程,kali不可用,命令pstree)
+6)  安装进程树(可查看进程,命令pstree)
 7)  安装网络信息查询(命令ifconfig)
 8)  修改国内源地址sources.list(only for debian and ubuntu)
 9)  修改dns
@@ -251,7 +251,7 @@ SETTLE() {
 11) python3和pip应用
 12) 中文汉化
 13) 安装系统信息显示(neofetch,screenfetch)
-14) pkill不可用，下载pkill恢复包\n"
+14) 用不了pkill，下载pkill恢复包\n"
 read -r -p "E(exit) M(main)请选择: " input
 
 case $input in
@@ -412,7 +412,7 @@ SETTLE ;;
 		esac ;;
 	14) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
 	tar zxvf PKILL.tar.gz && bash PKILL/bash_me
-#	rm -rf PKILL*
+	rm -rf PKILL*
 	echo -e "${BLUE}done${RES}"
 	SETTLE
 ;;
