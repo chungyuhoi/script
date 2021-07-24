@@ -412,7 +412,7 @@ SETTLE ;;
 		esac ;;
 	14) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
 	tar zxvf PKILL.tar.gz && bash PKILL/bash_me
-	rm -rf PKILL*
+#	rm -rf PKILL*
 	echo -e "${BLUE}done${RES}"
 	SETTLE
 ;;
