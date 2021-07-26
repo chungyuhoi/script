@@ -2112,7 +2112,14 @@ SYSTEM_DOWN() {
                 sleep 2
                 echo "修改时区"
                 sed -i "1i\export TZ='Asia/Shanghai'" $bagname/etc/profile
-		echo 'printf "%b" "\e[33m正常进行首次运行配置\e[0m" && sleep 1 &&apt update && apt install curl -y && sed -i "/update/d" /etc/profile' >>$bagname/etc/profile
+		cat >$bagname/root/firstrun<<-'eof'
+		printf "%b" "\e[33m正常进行首次运行配置\e[0m" && sleep 1 &&apt update
+		if ! grep -q https /etc/apt/sources.list ]; then
+		apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && apt update
+		fi
+		apt install curl -y && sed -i "/firstrun/d" /etc/profile
+		eof
+		echo 'bash firstrun' >>$bagname/etc/profile
                 echo "配置dns"
 		rm $bagname/etc/resolv.conf 2>/dev/null
 		echo "nameserver 223.5.5.5
