@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/22"
+	UPDATE="2021/07/26"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
 	更新aspice下载地址
@@ -63,9 +63,28 @@ ABOUT_UTQEMU(){
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
 	cd
-	$sudo apt install wget git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc pulseaudio python3 python3-setuptools build-essential ninja-build libspice-protocol-dev libspice-server-dev libspice-server1 libssh2-1-dev libnfs-dev -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext pulseaudio -y
+
+: <<\eof
 #spice qxl 依赖 libspice-protocol-dev libspice-server-dev libspice-server1
-#alsa libssh2-1-dev libnfs-dev
+#alsa 依赖 libssh2-1-dev libnfs-dev
+#linux-aio
+curl -O https://ftp.debian.org/debian/pool/main/liba/libaio/libaio_0.3.112.orig.tar.xz
+tar Jxvf libaio_0.3.112.orig.tar.xz
+cd libaio-0.3.112.orig
+sed -i '/install.*libaio.a/s/^/#/' src/Makefile
+make && make install
+#sdl2.0 依赖autoconf
+curl -O http://www.libsdl.org/release/SDL2-2.0.14.tar.gz
+#curl -O http://www.libsdl.org/release/SDL2-2.0.14.tar.gz.sig
+tar zxvf SDL2-2.0.14.tar.gz
+cd SDL2-2.0.14
+./autogen.sh && ./configure && make && make install
+#gtk3
+apt install libgtk-3-dev
+libspice-server1 libssh2-1-dev autoconf libnfs-dev
+eof
+
 	echo -e "${YELLOW}检测下载${RES}"
 	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
 	if [ -z "$VERSION" ]; then
@@ -81,11 +100,18 @@ ABOUT_UTQEMU(){
 	CONFIRM
 	ABOUT_UTQEMU
 	else
-	tar xvJf $VERSION.tar.xz && cd $VERSION
+	tar xvJf $VERSION.tar.xz
+	if [ $? == 1 ]; then
+		echo -e "${RED}解压失败，请重试${RES}"
+		sleep 2
+		rm -rf $VERSION.tar.xz
+		ABOUT_UTQEMU
 	fi
-	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
+	rm -rf $VERSION.tar.xz && cd $VERSION
+	fi
+#	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
 #aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu
-./configure --target-list=i386-softmmu,x86_64-softmmu --audio-drv-list=oss,alsa,sdl,pa --python=$(command -v python3) --enable-debug
+./configure --target-list=i386-softmmu,x86_64-softmmu --enable-spice --enable-gtk --enable-sdl --audio-drv-list=oss,alsa,sdl,pa --enable-multiprocess --python=$(command -v python3) --enable-debug
 	if [ $? != 0 ]; then
 		echo -e "${RED}编译失败${RES}"
 		CONFIRM
@@ -93,7 +119,7 @@ ABOUT_UTQEMU(){
 	fi
 	make -j8 && make install
 	if [ $(command -v qemu-system-i386) ]; then
-		cd && rm -rf $VERSION.tar.xz $VERSION
+		cd && rm -rf $VERSION.tar.xz
 	fi
 	unset VERSION
  ;;
@@ -1010,7 +1036,7 @@ esac
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
-START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off,mem-merge=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,mem-merge=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 #-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
 
 cat <<-EOF
@@ -1073,7 +1099,7 @@ EOF
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
-	MA="usb=off,vmport=off,dump-guest-core=off,kernel-irqchip=off,mem-merge=off"
+	MA="usb=off,vmport=off,dump-guest-core=off,mem-merge=off"
 #enforce-config-section=on
 	TCG="tcg,thread=multi"
 
@@ -1476,6 +1502,7 @@ EOF
 		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
 		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
 		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
+		7) set -- "${@}" "-usb" "-device" "usb-audio" ;;
 		*) set -- "${@}" "-device" "AC97" ;;
 	esac	;;
 esac
@@ -1872,7 +1899,8 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	mv virtio-gpu-wddm-dod.iso ${DIRECT}${STORAGE}
 	rm gpu.tar.gz
 	echo -e "\n已下载virtio显卡至${DIRECT}${STORAGE}目录，名为virtio-gpu-wddm-dod.iso"
-	fi ;;
+	fi
+	sleep 2 ;;
 	*) ;;
 	esac
 	QEMU_SYSTEM
