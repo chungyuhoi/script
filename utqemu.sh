@@ -63,6 +63,10 @@ ABOUT_UTQEMU(){
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
 	cd
+	sudo_
+	if ! grep -q https /etc/apt/sources;then
+	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
+	fi
 	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext pulseaudio -y
 
 : <<\eof
@@ -849,7 +853,11 @@ echo -e "7)  查看日志
 	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
 	fi
 	else
-       	$sudo apt update -y && $sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	sudo_
+	if ! grep -q https /etc/apt/sources;then
+	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
+	fi
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
