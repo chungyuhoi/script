@@ -96,7 +96,7 @@ ABOUT_UTQEMU(){
 	fi
 #	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
 #aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu
-./configure --target-list=i386-softmmu,x86_64-softmmu --enable-spice --enable-gtk --enable-sdl --audio-drv-list=oss,alsa,sdl,pa --enable-multiprocess --python=$(command -v python3) --enable-debug
+./configure --target-list=i386-softmmu,x86_64-softmmu --enable-spice --enable-gtk --enable-sdl --audio-drv-list=oss,alsa,sdl,pa --python=$(command -v python3)
 	if [ $? != 0 ]; then
 		echo -e "${RED}编译失败${RES}"
 		CONFIRM
