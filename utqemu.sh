@@ -64,30 +64,11 @@ ABOUT_UTQEMU(){
 	echo -e "${YELLOW}安装所需依赖包${RES}"
 	cd
 	sudo_
-	if ! grep -q https /etc/apt/sources;then
+	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext pulseaudio -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libjpeg8-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev gcc-8-* -y
 
-: <<\eof
-#spice qxl 依赖 libspice-protocol-dev libspice-server-dev libspice-server1
-#alsa 依赖 libssh2-1-dev libnfs-dev
-#linux-aio
-curl -O https://ftp.debian.org/debian/pool/main/liba/libaio/libaio_0.3.112.orig.tar.xz
-tar Jxvf libaio_0.3.112.orig.tar.xz
-cd libaio-0.3.112.orig
-sed -i '/install.*libaio.a/s/^/#/' src/Makefile
-make && make install
-#sdl2.0 依赖autoconf
-curl -O http://www.libsdl.org/release/SDL2-2.0.14.tar.gz
-#curl -O http://www.libsdl.org/release/SDL2-2.0.14.tar.gz.sig
-tar zxvf SDL2-2.0.14.tar.gz
-cd SDL2-2.0.14
-./autogen.sh && ./configure && make && make install
-#gtk3
-apt install libgtk-3-dev
-libspice-server1 libssh2-1-dev autoconf libnfs-dev
-eof
 
 	echo -e "${YELLOW}检测下载${RES}"
 	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
@@ -658,7 +639,6 @@ ${US_URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
 echo "${US_URL} stable ${DEB}
 ${US_URL} stable-updates ${DEB}" >/etc/apt/sources.list
 		fi
-		sudo_
 	       	$sudo apt update ;;
 		2) 
 		if grep -q 'bullseye/sid' /etc/os-release ;then
@@ -672,7 +652,6 @@ ${BF_URL} buster-updates ${DEB}
 ${BF_URL} buster-backports ${DEB}
 ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	fi
-	sudo_
        	$sudo apt update ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 1 ;;
@@ -854,10 +833,10 @@ echo -e "7)  查看日志
 	fi
 	else
 	sudo_
-	if ! grep -q https /etc/apt/sources;then
+	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
