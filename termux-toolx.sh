@@ -33,7 +33,7 @@ DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210722${RES}\n"
+${YELLOW}更新日期20210726${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -425,9 +425,9 @@ LANGUAGE_CHANGE(){
                         echo "1)修改为中文; 2)修改为英文"
 			read -r -p "1) 2) " input
 			case $input in
-			1) $sudo apt install fonts-wqy-zenhei -y
+			1) $sudo apt install fonts-wqy-zenhei locales -y
 			sed -i '/zh_CN.UTF/s/#//' /etc/locale.gen
-			locale-gen
+			locale-gen || /usr/sbin/locale-gen
 			sed -i '/^export LANG/d' /etc/profile && sed -i '1i\export LANG=zh_CN.UTF-8' /etc/profile && source /etc/profile && export LANG=zh_CN.UTF-8 && echo '修改完毕,请重新登录' && sleep 2 && SETTLE ;;
 2) export LANG=C.UTF-8 && sed -i '/^export LANG/d' /etc/profile && echo '修改完毕，请重新登录' && sleep 2 && SETTLE ;;
 *) INVALID_INPUT
