@@ -8,13 +8,7 @@ INFO() {
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
-	更新aspice下载地址
 	增加qemu安装自动检测与镜像目录联动执行
-	增加termux-api下载
-	修复IDE接口无法加载光驱
-	修改IDE磁盘接口参数，使其速度更快，但缺点是容易丢失数据
-	新增termux最新版本下载选项
-	容器内新增aspice与xsdl下载地址
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -1048,6 +1042,8 @@ cat <<-EOF
 $START
 EOF
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
+	echo ""
+	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 	$START >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
