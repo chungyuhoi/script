@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/28"
+	UPDATE="2021/07/29"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
@@ -800,9 +800,63 @@ PA() {
 	if [ ! -e "${DIRECT}${STORAGE}" ]; then
 		echo -e "${RED}创建目录失败${RES}"
 	else
-		echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制)${RES}"
+	uname -a | grep 'Android' -q
+	if [ $? == 0 ]; then
+		echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)${RES}\n"
+	else
+	case $ARCH in
+	computer) echo -e "${GREEN}主目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
+	*) echo -e "${GREEN}手机目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
+	esac
+	fi
 	fi
 }
+##################
+MOVE_IN() {
+	unset FILE_NAME
+	echo -e "\n已为你列出${DIRECT}${STORAGE}目录下的文件"
+	ls ${DIRECT}${STORAGE}
+	echo -n -e "${RES}\n请输入要拷贝的${YELLOW}文件名${RES}全名，请输入: "
+	read FILE_NAME
+	if [ -z $FILE_NAME ]; then
+	echo -e "\n${RED}无此文件${RES}"
+	sleep 1
+		QEMU_SYSTEM
+	elif [ ! -e ${DIRECT}${STORAGE}$FILE_NAME ]; then
+	echo -e "\n${RED}无此文件${RES}"
+	sleep 1
+	QEMU_SYSTEM
+	fi
+	cp -v ${DIRECT}${STORAGE}$FILE_NAME ${HOME}/share -r
+	echo -e "${YELLOW}done..${RES}"
+	unset FILE_NAME
+	sleep 2
+	QEMU_SYSTEM
+}
+
+MOVE_OUT() {
+	unset FILE_NAME
+	echo -e "\n已为你列出本地共享目录下的文件"
+	ls ${HOME}/share
+	echo -n -e "${RES}\n请输入要拷贝的${YELLOW}文件名${RES}全名，请输入: "
+	read FILE_NAME
+	if [ -z $FILE_NAME ]; then
+	echo -e "\n${RED}无此文件${RES}"
+	sleep 1
+	QEMU_SYSTEM
+	elif [ ! -e "${HOME}/share/$FILE_NAME" ]; then
+	echo -e "\n${RED}无此文件${RES}"
+	sleep 1
+	QEMU_SYSTEM
+	fi
+	cp -v ${HOME}/share/$FILE_NAME ${DIRECT}${STORAGE} -r
+	echo -e "${YELLOW}done..${RES}"
+	unset FILE_NAME
+	sleep 2
+	QEMU_SYSTEM
+}
+
+
 ##################
 QEMU_SYSTEM() {
 	if [ ! $(command -v curl) ]; then
@@ -813,9 +867,18 @@ QEMU_SYSTEM() {
 	QEMU_VERSION
 	NOTE
 echo -e "
-1)  安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}
-2)  创建windows镜像目录
-3)  启动qemu-system-x86_64模拟器
+1)  安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}"
+case $ARCH in
+	computer) echo -e "2)  创建windows镜像目录" ;;
+	*)
+	uname -a | grep 'Android' -q
+	if [ $? == 0 ]; then
+	echo -e "2)  创建windows镜像目录"
+else
+	echo -e "2)  创建windows镜像目录及本地共享文件目录share拷贝"
+	fi ;;
+esac
+echo -e "3)  启动qemu-system-x86_64模拟器
 4)  让termux成为网页服务器
     (使模拟系统可以通过浏览器访问本机内容)
 5)  virtio驱动相关"
@@ -878,9 +941,33 @@ eof
         QEMU_SYSTEM
         ;;
 	2)
+	case $ARCH in
+	computer) PA
+		CONFIRM
+		QEMU_SYSTEM ;;
+	*)
+	uname -a | grep 'Android' -q
+	if [ $? == 0 ]; then
 	PA
         CONFIRM
         QEMU_SYSTEM
+	else
+	echo -e "\n1) 创建镜像目录
+2) 拷贝${DIRECT}${STORAGE}文件进本地共享目录share
+3) 拷贝本地共享目录share里的文件到手机存储目录${DIRECT}${STORAGE}"
+	read -r -p "请选择: " input
+	case $input in
+	1) PA
+	CONFIRM ;;
+	2) MOVE_IN ;;
+	3) MOVE_OUT ;;
+	*) INVALID_INPUT
+		CONFIRM ;;
+	esac
+	QEMU_SYSTEM
+	fi ;;
+	esac
+
         ;;
 	3) START_QEMU ;;
 	4) WEB_SERVER ;;
