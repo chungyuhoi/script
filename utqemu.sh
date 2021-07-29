@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/29"
+	UPDATE="2021/07/30"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	新增一些功能参数
@@ -934,6 +934,7 @@ echo -e "7)  查看日志
 	PA
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
 	fi
+	CONFIRM
         QEMU_SYSTEM
         ;;
 	2)
@@ -1089,7 +1090,7 @@ esac
 			QEMU_PRE) INVALID_INPUT
 			QEMU_SYSTEM ;; 
 		*) printf "\n%b\n" "${GREEN}本选项使用常用配置参数${RES}"
-		printf "%-7s %-7s %s\n" 系统 winxp win7 声卡 ac97 hda 显卡 cirrus VGA 网卡 e1000 e1000
+		printf "%-7s %-7s %-7s %s\n" 系统 winxp win7 virtio驱动模式 声卡 ac97 hda hda 显卡 cirrus VGA qxl 网卡 e1000 e1000 virtio 接口 ide scsi virtio
 		printf "%-7s %s %s\n\n" 视频 vnc 127.0.0.1:0
 	mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
 	echo -e "${YELLOW}请选择拟模拟的系统${RES}"
