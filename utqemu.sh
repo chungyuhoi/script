@@ -7,8 +7,8 @@ INFO() {
 	UPDATE="2021/07/29"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
+	新增一些功能参数
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
-	增加qemu安装自动检测与镜像目录联动执行
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -921,8 +921,6 @@ echo -e "7)  查看日志
 	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
 	fi
 	else
-	echo -e "${YELLOW}所有提示请直接回车${RES}"
-	CONFIRM
 	sudo_
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
@@ -933,25 +931,7 @@ echo -e "7)  查看日志
 	sleep 1
 	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba -y
 	fi
-	echo -e "${YELLOW}创建镜像目录${RES}"
-	sleep 1
 	PA
-	if [ $(command -v smbpasswd) ]; then
-		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
-		smbpasswd -a $(whoami)
-	fi
-	if [ -f /etc/samba/smb.conf ]; then
-	cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
-	fi
-	cat >/etc/samba/smb.conf<<-'eof'
-[share]
-path = ${HOME}/share
-available = yes
-browseable = yes
-public = yes
-writeable = yes
-guest ok = yes
-eof
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
 	fi
         QEMU_SYSTEM
@@ -1029,6 +1009,9 @@ START_QEMU() {
 	echo -e "\n${RED}检测到你未安装qemu，请先执行安装选项${RES}"
 	sleep 2
 	QEMU_SYSTEM
+	fi
+	if [ ! -d ${HOME}/share ]; then
+		mkdir ${HOME}/share
 	fi
 	if [ ! -d ${DIRECT}/xinhao ]; then
 		echo -e "\n${RED}未检测到你的镜像目录，请确认已赋予手机存储权限并创建镜像目录${RES}"
@@ -1110,7 +1093,7 @@ esac
 		printf "%-7s %s %s\n\n" 视频 vnc 127.0.0.1:0
 	mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
 	echo -e "${YELLOW}请选择拟模拟的系统${RES}"
-	read -r -p "1)winxp 2)win7 9)返回 " input
+	read -r -p "1)winxp 2)win7 3)virtio驱动模式 9)返回 " input
 	case $input in
 	1) echo -e "\nqemu5.0以上版本模拟winxp开机比较慢\n"
 	LIST
@@ -1120,16 +1103,16 @@ esac
 	else
 	mem_=512
 	fi
-	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
+	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" NET="-device e1000,netdev=user0 -netdev user,id=user0,,smb=${HOME}/share" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
 	2) 	LIST
 	HDA_READ
-	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0,,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
-	3) echo -e "${GREEN}此选项参数是hda声卡，virtio网卡，qxl显卡，virtio磁盘接口${RES}"
+	3) echo -e "${GREEN}此选项参数是hda声卡，virtio网卡，qxl显卡，virtio磁盘接口(注意，模拟系统需已装驱动，否则启动不成功)${RES}"
 		sleep 1
 		LIST
 		HDA_READ
-	MA=q35 VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio,cache=none" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
+	MA=q35 VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio,cache=none" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
 	;;
 	9) QEMU_SYSTEM ;;
 	*) INVALID_INPUT
@@ -1293,7 +1276,6 @@ EOF
 	esac
 	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
 	read iso_name
-#		set -- "${@}" "-net" "nic" "-net" "user,smb=${DIRECT}/xinhao/"
 #内存
 	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)，以m为单位（1g=1024m，例如输512），自动分配请回车: "
         read mem
@@ -1585,7 +1567,7 @@ EOF
 		wlan_vnc) ;;
 		*)
 	echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-	read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数，不适合spice) 6)hda(修改参数，不适合spice) 0)不加载 " input
+	read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数，不适合spice) 6)hda(修改参数，不适合spice) 7)usb-audio 0)不加载 " input
 	case $input in
 		1) set -- "${@}" "-device" "ES1370" ;;
 		2) set -- "${@}" "-device" "sb16" ;;
