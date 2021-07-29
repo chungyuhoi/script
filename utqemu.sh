@@ -4,8 +4,9 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/27"
+	UPDATE="2021/07/28"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
 	更新aspice下载地址
 	增加qemu安装自动检测与镜像目录联动执行
@@ -44,7 +45,14 @@ ABOUT_UTQEMU(){
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n\n"
 	case $SYS in
 		ANDROID) CONFIRM ;;
-		*) read -r -p "是否编译安装各版本qemu(仅编译x86与i386) 1)是 9)返回 " input
+		*) COMPILE ;;
+	esac
+
+
+}
+###################
+COMPILE(){
+	read -r -p "是否编译安装各版本qemu(仅编译x86与i386) 1)是 9)返回 " input
 	case $input in
 	1) echo -e "请选择qemu版本
 1) 2*
@@ -105,16 +113,17 @@ ABOUT_UTQEMU(){
 		ABOUT_UTQEMU
 	fi
 	make -j8 && make install
-	if [ $(command -v qemu-system-i386) ]; then
-		cd && rm -rf $VERSION.tar.xz
+	if [ -e /usr/local/bin/qemu-system-i386 ]; then
+		echo -e "${YELLOW}已安装${RES}"
+		cd && rm -rf $VERSION
 	fi
 	unset VERSION
  ;;
 	*) ;;
-	esac ;;
 	esac
 	QEMU_SYSTEM	
 }
+###################
 ABOUT_VIRTIO(){
 	clear
 	printf "${YELLOW}关于virtio驱动${RES}
@@ -790,10 +799,14 @@ PA() {
 	if [ ! -e "${DIRECT}/xinhao/share/" ]; then
 		mkdir -p ${DIRECT}/xinhao/share
 	fi
+	if [ ! -d "${HOME}/share" ]; then
+		mkdir ${HOME}/share
+	chmod 755 ${HOME}/share
+	fi
 	if [ ! -e "${DIRECT}${STORAGE}" ]; then
 		echo -e "${RED}创建目录失败${RES}"
 	else
-		echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
+		echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制)${RES}"
 	fi
 }
 ##################
@@ -819,7 +832,7 @@ echo -e "
 echo -e "7)  查看日志
 8)  更新内容
 9)  关于utqemu
-10) 在线termux-toolx脚本安装体验linux系统(debian)
+10) 在线termux-toolx脚本体验维护linux系统(debian)
 0)  退出\n"
 	read -r -p "请选择: " input
 	case $input in
@@ -834,42 +847,43 @@ echo -e "7)  查看日志
 	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
 	fi
 	else
+	echo -e "${YELLOW}所有提示请直接回车${RES}"
+	CONFIRM
 	sudo_
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
-	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba -y
 	fi
+	if [ -f /etc/samba/smb.conf ]; then
+	cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
+	fi
+	cat >/etc/samba/smb.conf<<-'eof'
+[share]
+path = ${HOME}/share
+available = yes
+browseable = yes
+public = yes
+writeable = yes
+valid users = root
+guest ok = yes
+eof
 	echo -e "${YELLOW}创建镜像目录${RES}"
 	sleep 1
 	PA
+	if [ $(ommand -v smbpasswd) ]; then
+		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
+		smbpasswd -a $(whoami)
+	fi
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
-#apt install samba
 	fi
         QEMU_SYSTEM
         ;;
 	2)
-: <<\eof
-	if [ -e "/root/sd" ]; then
-	ln  -s /root/sd /sdcard
-	fi
-	echo -e "创建windows镜像目录及共享目录\n"
-        if [ ! -e "${DIRECT}${STORAGE}" ]; then
-                mkdir -p ${DIRECT}${STORAGE}
-        fi
-        if [ ! -e "${DIRECT}/xinhao/share/" ]; then
-                mkdir -p ${DIRECT}/xinhao/share
-        fi
-        if [ ! -e "${DIRECT}${STORAGE}" ]; then        
-	echo -e "${RED}创建目录失败${RES}"
-        else
-	echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n${RES}"
-        fi
-eof
 	PA
         CONFIRM
         QEMU_SYSTEM
@@ -947,9 +961,11 @@ START_QEMU() {
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
 	else
 	grep '\-cpu' $(which $script_name)
-	printf "%s\n${GREEN}启动模拟器"
+	printf "%s\n${GREEN}启动模拟器\n"
 	fi
-	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	echo ""
+	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
+	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	$script_name >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
@@ -1355,12 +1371,10 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 		3) NET_MODEL="nic,model=virtio" ;;
 		0) ;;
 		*) NET_MODEL="nic,model=e1000" ;;
-#set -- "${@}" "-net" "nic"
-#set -- "${@}" "-net" "user,smb=${DIRECT}/xinhao"
 	esac
 	if [ -n "${NET_MODEL}" ]; then
 	set -- "${@}" "-net" "${NET_MODEL}"
-	set -- "${@}" "-net" "user"
+	set -- "${@}" "-net" "user,smb=${HOME}/share"
 	else
 	set -- "${@}" "-net" "none"
 	fi
@@ -1464,7 +1478,7 @@ EOF
 	esac
 	if [ -n "${NET_MODEL}" ]; then
 		set -- "${@}" "-device" "${NET_MODEL}"
-		set -- "${@}" "-netdev" "user,id=user0"
+		set -- "${@}" "-netdev" "user,id=user0,smb=${HOME}/share"
 	else
 		set -- "${@}" "-net" "none"
 	fi
@@ -1510,6 +1524,7 @@ esac
 	1|"") SHARE=true ;;
 	*) ;;
 	esac
+
 #开全内存balloon功能，俗称内存气球
 	echo -e "是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
 	read -r -p "1)开启 2)不开启 " input
