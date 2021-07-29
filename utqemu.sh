@@ -69,7 +69,7 @@ COMPILE(){
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev -y
 	if [ $? != 0 ]; then
 	$sudo apt install
 	fi
@@ -806,7 +806,24 @@ PA() {
 	else
 	case $ARCH in
 	computer) echo -e "${GREEN}主目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
-	*) echo -e "${GREEN}手机目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
+	*) 
+	if [ $(command -v smbpasswd) ]; then
+		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
+		smbpasswd -a $(whoami)
+	fi
+	if [ -f /etc/samba/smb.conf ]; then
+	cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
+	fi
+	cat >/etc/samba/smb.conf<<-'eof'
+[share]
+path = ${HOME}/share
+available = yes
+browseable = yes
+public = yes
+writeable = yes
+guest ok = yes
+eof
+	echo -e "${GREEN}手机目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
 	esac
 	fi
 	fi
@@ -916,6 +933,13 @@ echo -e "7)  查看日志
 	sleep 1
 	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba -y
 	fi
+	echo -e "${YELLOW}创建镜像目录${RES}"
+	sleep 1
+	PA
+	if [ $(command -v smbpasswd) ]; then
+		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
+		smbpasswd -a $(whoami)
+	fi
 	if [ -f /etc/samba/smb.conf ]; then
 	cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
 	fi
@@ -926,16 +950,8 @@ available = yes
 browseable = yes
 public = yes
 writeable = yes
-valid users = root
 guest ok = yes
 eof
-	echo -e "${YELLOW}创建镜像目录${RES}"
-	sleep 1
-	PA
-	if [ $(ommand -v smbpasswd) ]; then
-		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
-		smbpasswd -a $(whoami)
-	fi
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
 	fi
         QEMU_SYSTEM
