@@ -811,6 +811,7 @@ PA() {
 		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
 		smbpasswd -a $(whoami)
 	fi
+	mkdir /etc/samba 2>/dev/null
 	if [ -f /etc/samba/smb.conf ]; then
 	cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
 	fi
