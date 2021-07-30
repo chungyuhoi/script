@@ -1910,6 +1910,8 @@ esac
 		spice|spice_) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
 		*) printf "%s\n${GREEN}启动模拟器" ;;
 	esac
+	echo ""
+	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
