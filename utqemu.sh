@@ -878,7 +878,7 @@ MOVE_OUT() {
 ##################
 QEMU_SYSTEM() {
 	if [ ! $(command -v curl) ]; then
-		sudo_
+		$sudo apt update
 		$sudo apt install curl -y
 	fi
 	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE
