@@ -627,7 +627,7 @@ echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 	esac
 	sleep 2
 	exit 1 ;;
-	4) if ! grep -E -q 'buster|bullseye/sid' "/etc/os-release"; then
+	4) if ! grep -E -q 'buster|bullseye' "/etc/os-release"; then
 	echo -e "\n${RED}只支持bullseye与buster${RES}\n"
 	sleep 2
 	QEMU_ETC
@@ -1091,7 +1091,7 @@ esac
 			QEMU_PRE) INVALID_INPUT
 			QEMU_SYSTEM ;; 
 		*) printf "\n%b\n" "${GREEN}本选项使用常用配置参数${RES}"
-		printf "%-7s %-7s %-7s %s\n" 系统 winxp win7 virtio驱动模式 声卡 ac97 hda hda 显卡 cirrus VGA qxl 网卡 e1000 e1000 virtio 接口 ide scsi virtio
+		printf "%-7s %-7s %-7s %s\n" 系统 winxp win7 virtio驱动模式 声卡 ac97 hda hda 显卡 cirrus VGA qxl 网卡 e1000 e1000 virtio 接口 ide sata virtio
 		printf "%-7s %s %s\n\n" 视频 vnc 127.0.0.1:0
 	mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
 	echo -e "${YELLOW}请选择拟模拟的系统${RES}"
