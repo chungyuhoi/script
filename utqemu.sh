@@ -2144,7 +2144,10 @@ ARCH_CHECK
 MEM
 QEMU_VERSION
 SYSTEM_CHECK
+uname -a | grep 'Android' -q
+if [ $? == 0 ]; then
 INFO
+fi
 LOGIN_
 }
 ####################
