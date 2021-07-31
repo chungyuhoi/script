@@ -26,7 +26,7 @@ NOTE() {
 	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好。\n"
 	if [ $(command -v qemu-system-x86_64) ]; then
 		echo -e "\e[33m检测到你已安装qemu-system-x86，版本是\e[0m"
-echo -e "\e[32m$(qemu-system-x86_64 --version | head -n 1)\e[0m"
+		echo -e "\e[32mQEMU emulator version $(echo $qemu_ver | awk '{print $4}')\e[0m"
 	else
 	echo -e "\e[1;31m检测到你未安装qemu-system-x86，请先选择安装\e[0m"
 	fi
@@ -279,9 +279,12 @@ QEMU_VERSION(){
 	uname -a | grep 'Android' -q
         if [ $? == 0 ]; then
                 SYS=ANDROID
+		qemu_ver=$(qemu-system-x86_64 --version) 2>/dev/null
 	elif [ ! $(command -v qemu-system-x86_64) ]; then
 		echo ""
-	elif [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [5-9] ]]; then
+	elif qemu_ver=$(qemu-system-x86_64 --version)
+		[[ $(echo $qemu_ver | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [5-9] ]]; then
+#	elif [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [5-9] ]]; then
 #        elif [[ $(qemu-system-x86_64 --version) =~ :[5-9] ]] ; then
 		SYS=QEMU_ADV
 	else
@@ -803,7 +806,7 @@ PA() {
 		echo -e "${GREEN}手机根目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)${RES}\n"
 	else
 	case $ARCH in
-	computer) echo -e "${GREEN}主目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
+	computer) echo -e "${GREEN}主目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
 	*) 
 	if [ $(command -v smbpasswd) ]; then
 		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
@@ -1902,15 +1905,17 @@ esac
 	${@}
 	EOF
 	case $display in
-		vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0" ;;
-		wlan_vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer $IP:0" ;;
-		xsdl) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl" ;;
-		spice|spice_) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900" ;;
-		*) printf "%s\n${GREEN}启动模拟器" ;;
+		vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n" ;;
+		wlan_vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer $IP:0\n" ;;
+		xsdl) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl\n" ;;
+		spice|spice_) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900\n" ;;
+		*) printf "%s\n${GREEN}启动模拟器\n" ;;
 	esac
-	echo ""
+	uname -a | grep 'Android' -q
+	if [ $? != 0 ]; then
 	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
-	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	fi
+	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
@@ -2137,7 +2142,7 @@ LOGIN_() {
 MAIN(){
 ARCH_CHECK
 MEM
-QEMU_VERSION
+#QEMU_VERSION
 SYSTEM_CHECK
 uname -a | grep 'Android' -q
 if [ $? == 0 ]; then
