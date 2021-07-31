@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/30"
+	UPDATE="2021/07/31"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	新增一些功能参数
@@ -18,7 +18,6 @@ NOTE() {
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
-	如果模拟效率不佳，请尝试大退到termux主界面，并清设备后台，然后重新启动模拟。
 	xp玩经典游戏(如星际争霸，帝国时代)需使用cirrus显卡才能运行
 	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功。
@@ -455,8 +454,7 @@ SYSTEM_CHECK() {
 	if [ ! -e ${HOME}/storage ]; then
 		termux-setup-storage
 	fi
-	grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep -E -q 'bfsu|tsinghua|ustc|tencent|utqemucheck'
-	if [ $? != 0 ]; then  
+	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep termux.org; then 
 		echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
 		1) 换国内源    
 		2) 不换"   
@@ -2069,8 +2067,6 @@ sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/
 }
 ###################
 LOGIN_() {
-	uname -a | grep 'Android' -q
-	if [ $? == 0 ]; then
 	echo -e "\n\e[33m请选择qemu-system-x86的运行环境\e[0m\n
 	1) 直接运行，termux(utermux)目前版本为5.0以上，由于termux源的qemu编译的功能不全，强烈建议在容器上使用qemu，\e[33m其他系统的版本各不一样，一些功能参数可能没被编译进去${RES}
 	2) 支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
@@ -2136,9 +2132,6 @@ LOGIN_() {
 	*) INVALID_INPUT
 		MAIN ;;
 	esac
-	else
-	QEMU_SYSTEM
-	fi
 }
 ####################
 MAIN(){
@@ -2149,8 +2142,10 @@ SYSTEM_CHECK
 uname -a | grep 'Android' -q
 if [ $? == 0 ]; then
 INFO
-fi
 LOGIN_
+else
+QEMU_SYSTEM
+fi
 }
 ####################
 MAIN "$@"
