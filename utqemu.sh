@@ -4,8 +4,9 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/07/31"
+	UPDATE="2021/08/01"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	cpu增加可自己输入选项
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	新增一些功能参数
 	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
@@ -151,19 +152,6 @@ PINK="\e[35m"
 WHITE="\e[37m"
 RES="\e[0m"
 ####################
-: <<\eof
-	`ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1` 2>/dev/null
-if [ $? != 0 ]; then
-	IP=$(ip a | grep 192 | cut -d " " -f 6 | cut -d "/" -f 1)
-else
-	`ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6` 2>/dev/null
-	if [ $? -ne 0 ]; then
-		IP=$(ip a | grep inet | grep rmnet | cut -d "/" -f 1 | cut -d " " -f 6)
-	else
-		IP=$(ip a | grep inet | grep wlan | cut -d "/" -f 1 | cut -d " " -f 6)
-	fi
-fi
-eof
 IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 ####################
 sudo_() {
@@ -320,11 +308,17 @@ FAIL() {
 FILE="No such file"
 SHARE_="516.06"
 PORT="Address already"
-echo -e "\n\n"
-case $(cat ${HOME}/.utqemu_log | tail -n 1) in
+CPU="CPU model"
+GTK="gtk initialization"
+echo -e "\n"
+LOG=$(cat ${HOME}/.utqemu_log | tail -n 1)
+	echo $LOG
+	case $LOG in
 	*$FILE*) echo -e "${YELLOW}错误：没有匹配的目录或文件名${RES}" ;;
 	*$SHARE_*) echo -e "${YELLOW}错误：共享文件超过516.06 MB${RES}" ;;
 	*$PORT*) echo -e "${YELLOW}\n错误：视频输出端口占用${RES}" ;;
+	*$CPU*) echo -e "${YELLOW}\n错误：cpu名字有误${RES}" ;;
+	*$GTK*) echo -e "${YELLOW}\n错误：图形界面错误${RES}" ;;
 	*)  ;;
 esac
 }
@@ -706,7 +700,6 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	CONFIRM
 	while ( [ "$SPI_URL" != '0' ] && [[ ! $SPI_URL_ =~ apk ]] )
 do
-#	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '"' -f 2`
 	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '/' -f 6`
 SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desktop-clients/releases/tag/$SPI_URL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
 	if [[ ! $SPI_URL_ =~ apk ]]; then
@@ -984,7 +977,8 @@ echo -e "\n${YELLOW}常见错误提示：${RES}
 ${BLUE}开机蓝屏; 通常为机算机类型(pc q35)，磁盘接口(IDE SATA VIRTIO)，运行内存配置过大等原因造成，请尝试修改配置${RES}
 No such file or directory; ${YELLOW}(没有匹配的目录或文件名)${RES}
 Directory does not fit in FAT16 (capacity 516.06 MB); ${YELLOW}(共享文件超过516.06 MB)${RES}
-Failed to find an available port: Address already in use; ${YELLOW}(视频输出端口占用)${RES}"
+Failed to find an available port: Address already in use; ${YELLOW}(视频输出端口占用)${RES}
+unable to find CPU model; ${YELLOW}cpu名字有误${RES}"
 	echo -e "\n${GREEN}到底了${RES}"
         read -r -p "是否删除日志 1)是 0)否 " input
 	case $input in
@@ -1282,7 +1276,7 @@ EOF
 #内存
 	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)，以m为单位（1g=1024m，例如输512），自动分配请回车: "
         read mem
-	mem=`echo $mem | tr -cd [0-9]`
+	mem=`echo $mem | tr -cd '[0-9]'`
 	if [ -n "$mem" ]; then
 		set -- "${@}" "-m" "$mem"
 	else
@@ -1349,8 +1343,8 @@ EOF
 	echo -e "请选择${YELLOW}cpu${RES}"
 	case $SYS in
 	QEMU_ADV|ANDROID)
-		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)Dhyana 9)测试用(勿选) 0)max(推荐) " input ;;
-QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 " input ;;
+		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)Dhyana 9)自己输 0)max(推荐) " input ;;
+QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 9)自己输 0)max " input ;;
 	esac
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
 #部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
@@ -1379,9 +1373,14 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 	0) CPU_MODEL="max,-hle,-rtm"
 		unset _SMP
 		SMP_=4 ;;
-	9) CPU_MODEL="max,level=0xd,vendor=GenuineIntel"
+	9) echo -e -n "请输入: "
+		read CPU_MODEL
+		if echo $CPU_MODEL | grep max; then
 		unset _SMP
-		SMP_=4 ;;
+		SMP_=4
+		else
+		SMP_="4,cores=4,threads=1,sockets=1"
+		fi ;;
         *)      CPU_MODEL=max
 		unset _SMP
 		SMP_=4 ;;
