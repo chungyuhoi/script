@@ -33,6 +33,18 @@ NOTE() {
 	fi
 }
 ###################
+: <<\eof
+#curl -o ${PREFIX}/bin/utqemu https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh && chmod +x ${PREFIX}/bin/utqemu && sed -i 's/\$(dirname \$0)//' ${PREFIX}/bin/utqemu
+#curl -o /usr/local/bin/utqemu https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh && sed -i "1d;2i\#\!$(command -v bash)" /usr/local/bin/utqemu && chmod +x /usr/local/bin/utqemu && sed -i 's/\$(dirname \$0)//' /usr/local/bin/utqemu
+curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh | grep '2021/08/02'
+if [ $? == 0 ]; then
+echo 1
+else
+echo 2
+fi
+eof
+
+
 ABOUT_UTQEMU(){
 	clear
 	printf "${YELLOW}关于utqemu脚本${RES}
@@ -53,7 +65,8 @@ COMPILE(){
 2) 3*
 3) 4*
 4) 5*
-5) 6*"
+5) 6*
+6) 6*最新版"
 	read -r -p "请选择 " input
 	case $input in
 		1) VERSION=2 ;;
@@ -61,6 +74,7 @@ COMPILE(){
 		3) VERSION=4 ;;
 		4) VERSION=5 ;;
 		5) VERSION=6 ;;
+		6) VERSION=6 RC=".*" ;;
 		*) ABOUT_UTQEMU ;;
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
@@ -73,14 +87,15 @@ COMPILE(){
 	if [ $? != 0 ]; then
 	$sudo apt install
 	fi
-
 	echo -e "${YELLOW}检测下载${RES}"
-	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
+	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..$RC\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
 	if [ -z "$VERSION" ]; then
 	echo -e "${RED}获取失败，请重试${RES}"
 	CONFIRM
 	ABOUT_UTQEMU
 	fi
+	echo -e "${YELLOW}最新版本为$VERSION${RES}"
+	sleep 1
 	if [ ! -f $(pwd)/"$VERSION.tar.xz" ]; then
 	curl -O https://download.qemu.org/$VERSION.tar.xz
 	fi
@@ -93,7 +108,7 @@ COMPILE(){
 	if [ $? == 1 ]; then
 		echo -e "${RED}解压失败，请重试${RES}"
 		sleep 2
-		rm -rf $VERSION.tar.xz
+		rm -rf $VERSION.tar.xz $VERSION
 		ABOUT_UTQEMU
 	fi
 	rm -rf $VERSION.tar.xz && cd $VERSION
