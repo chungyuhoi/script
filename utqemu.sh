@@ -801,7 +801,8 @@ PA() {
 	case $ARCH in
 	computer) echo -e "${GREEN}主目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
 	*) 
-	if [ $(command -v smbpasswd) ]; then
+: <<\eof
+if [ $(command -v smbpasswd) ]; then
 		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
 		smbpasswd -a $(whoami)
 	fi
@@ -809,7 +810,7 @@ PA() {
 	if [ -f /etc/samba/smb.conf ]; then
 	cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
 	fi
-	cat >/etc/samba/smb.conf<<-'eof'
+#	cat >/etc/samba/smb.conf<<-'eof'
 [share]
 path = ${HOME}/share
 available = yes
@@ -817,6 +818,7 @@ browseable = yes
 public = yes
 writeable = yes
 guest ok = yes
+#eof
 eof
 	echo -e "${GREEN}手机目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
 	esac
