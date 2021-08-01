@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/08/01"
+	UPDATE="2021/08/02"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	cpu增加可自己输入选项
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
@@ -123,6 +123,7 @@ COMPILE(){
 	fi
 	make -j8 && make install
 	if [ -e /usr/local/bin/qemu-system-i386 ]; then
+		PA
 		echo -e "${YELLOW}已安装${RES}"
 		cd && rm -rf $VERSION
 	fi
@@ -835,6 +836,7 @@ writeable = yes
 guest ok = yes
 #eof
 eof
+	mkdir /etc/samba 2>/dev/null
 	echo -e "${GREEN}手机目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
 	esac
 	fi
