@@ -4,8 +4,9 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/08/02"
+	UPDATE="2021/08/05"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	增加测试本机cpu支持模拟的cpu特性
 	cpu增加可自己输入选项
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	新增一些功能参数
@@ -920,6 +921,7 @@ echo -e "7)  查看日志
 8)  更新内容
 9)  关于utqemu
 10) 在线termux-toolx脚本体验维护linux系统(debian)
+11) 在线测试本机cpu支持模拟的特性
 0)  退出\n"
 	read -r -p "请选择: " input
 	case $input in
@@ -1013,6 +1015,9 @@ unable to find CPU model; ${YELLOW}cpu名字有误${RES}"
 	QEMU_SYSTEM     ;;
 	9) ABOUT_UTQEMU ;;
 	10) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/termux-toolx.sh)" ;;
+	11) bash -c "$(curl -s https://cdn.jsdelivr.net/gh/chungyuhoi/script/Check_cpuids.sh)"
+	CONFIRM
+	QEMU_SYSTEM ;;
 	0) exit 1 ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
 	esac                                            }
