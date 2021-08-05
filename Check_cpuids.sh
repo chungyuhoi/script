@@ -298,6 +298,6 @@ xtpr
 eof
 cat .utqemu_log | grep does | awk -F '.' '{print $NF}' | awk '{print $1}' >> all_flags
 echo -e "\e[33m你cpu支持以下特性\e[0m"
-sleep 2
-sort all_flags | uniq -u
+sleep 1
+echo $(sort all_flags | uniq -u) | sed 'N;s/\n/ /g'
 echo -e "\e[33m本测试仅供参考\e[0m\n"
