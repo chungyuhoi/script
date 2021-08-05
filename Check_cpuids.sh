@@ -1,3 +1,7 @@
+if [ ! $(command -v qemu-system-i386) ]; then
+echo -e "\e[33m请先安装qemu-system-i386\e[0m"
+sleep 1
+else
 echo -e "\n\e[33m针对qemu模拟i386,x86_64的cpu特性支持测试\e[0m\n"
 echo -e "\e[33m正在检测中...\e[0m\n"
 sleep 1
@@ -301,3 +305,4 @@ echo -e "\e[33m你cpu支持以下特性\e[0m"
 sleep 1
 echo $(sort all_flags | uniq -u) | sed 'N;s/\n/ /g'
 echo -e "\e[33m本测试仅供参考\e[0m\n"
+fi
