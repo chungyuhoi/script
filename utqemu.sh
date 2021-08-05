@@ -894,6 +894,9 @@ QEMU_SYSTEM() {
 		$sudo apt update
 		$sudo apt install curl -y
 	fi
+	if ! grep -q https /etc/apt/sources.list; then
+		$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
+	fi
 	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE
 	QEMU_VERSION
 	NOTE
