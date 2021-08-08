@@ -1705,7 +1705,7 @@ eof
 	CONFIRM
 	lsusb 2>/dev/null
 	if [ $? == 1 ]; then
-		echo -e "${RED}未能获取设备信息，请确认${RES}"
+		echo -e "${RED}未能获取设备信息，请确认已获取系统权限${RES}"
 	fi
 	read -r -p "输入usb名称对应的bus序号(如001，请输1或者011，请输11) " HOSTBUS
 	lsusb -t | grep -w "Bus 0$HOSTBUS" -A 4 2>/dev/null
