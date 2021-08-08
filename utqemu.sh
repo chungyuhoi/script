@@ -4,8 +4,10 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/08/05"
+	UPDATE="2021/08/08"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	容器内增加usb直连虚拟机，需设备已root并用root用户，请先执行apt install usbutils
+	容器增加控制台功能
 	增加测试本机cpu支持模拟的cpu特性
 	cpu增加可自己输入选项
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
@@ -18,6 +20,7 @@ INFO() {
 NOTE() {
 	clear
 	printf "${YELLOW}注意事项${RES}
+	最近新增的内容比较多，如不能正常加载，请选择1重新安装qemu
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
 	xp玩经典游戏(如星际争霸，帝国时代)需使用cirrus显卡才能运行
@@ -84,7 +87,7 @@ COMPILE(){
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils -y
 	if [ $? != 0 ]; then
 	$sudo apt install
 	fi
@@ -943,11 +946,11 @@ echo -e "7)  查看日志
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba -y
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
-	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils -y
 	fi
 	PA
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
@@ -1209,7 +1212,7 @@ EOF
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
-	MA="usb=off,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off"
+	MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off"
 #enforce-config-section=on
 	TCG="tcg,thread=multi"
 
@@ -1225,24 +1228,24 @@ EOF
 	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
 	case $input in
 		1)
-	set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG" ;;
+	set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG" ;;
 		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
 	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
 	if [ -n "$TB" ]; then
-		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG,tb-size=$TB"
+		set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG,tb-size=$TB"
 	else
-		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG,tb-size=$mem_"
+		set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG,tb-size=$mem_"
 	fi
 	else
-		set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
+		set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG"
 	fi ;;
 		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,$MA" ;;
 	esac ;;
 	esac ;;
 		*)
-	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=off,dump-guest-core=on" ;;
+	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on" ;;
 	esac ;;
 		2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
 	case $(dpkg --print-architecture) in
@@ -1253,23 +1256,23 @@ EOF
 		echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
 	case $input in
-		1) set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG" ;;
+		1) set -- "${@}" "-machine" "q35,$MA,usb=off" "--accel" "$TCG" ;;
 		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
 	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
 	if [ -n "$TB" ]; then
-		set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG,tb-size=$TB"
+		set -- "${@}" "-machine" "q35,$MA,usb=off" "--accel" "$TCG,tb-size=$TB"
 	else
-		set -- "${@}" "-machine" "q35,$MA" "--accel" "$TCG,tb-size=$mem_"
+		set -- "${@}" "-machine" "q35,$MA,usb=off" "--accel" "$TCG,tb-size=$mem_"
 	fi
-	else                                                            set -- "${@}" "-machine" "pc,$MA" "--accel" "$TCG"
+	else                                                            set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG"
 	fi ;;
 
-		*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA" ;;
+		*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA,usb=off" ;;
 	esac ;;
 	esac ;;
-		*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=off,dump-guest-core=on" ;;
+		*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on" ;;
 	esac ;;
 	esac
 	if [ ! -d "${DIRECT}${STORAGE}" ];then
@@ -1306,8 +1309,8 @@ EOF
 	if [ -n "$mem" ]; then
 		set -- "${@}" "-m" "$mem"
 	else
-		set -- "${@}" "-m" "$mem_"
-#		set -- "${@}" "-m" "$mem_,slots=3,maxmem=$(( $mem_ * 2 ))m"
+#		set -- "${@}" "-m" "$mem_"
+		set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
 	fi
 
 
@@ -1640,12 +1643,38 @@ esac
 	1) set -- "${@}" "-device" "virtio-balloon-pci" ;;
 	*) ;;
 	esac
-#-L是DOS
-#-bios，启动现系统
-#-plash，启动UEFI 的BIOS
 	case $SYS in
 	ANDROID) ;;
 	*)
+	echo -e "是否使用${YELLOW}控制台${RES}调试(部分功能需root用户)"
+        read -r -p "1)使用 2)不使用 " input
+        case $input in
+	1) set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
+	echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n查看设备info block\n换光盘:先查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n退出qemu，输quit\n"
+:<<\eof	
+	if [ -z "$mem" ]; then
+	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
+	set -- "${@}" "-device" "pc-dimm,id=dimm1,memdev=mem1"
+	set -- "${@}" "-object" "memory-backend-file,id=mem2,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
+	set -- "${@}" "-device" "pc-dimm,id=dimm2,memdev=mem2"
+	fi
+eof	
+:<<\eof
+#热插拔内存
+(qemu) object_add memory-backend-ram,id=mem1,size=1G
+(qemu) device_add pc-dimm,id=dimm1,memdev=mem1
+#linux宿主机使用大页热插拔内存
+(qemu) object_add memory-backend-file,id=mem1,size=1G,mem-path=/mnt/hugepages-1GB
+(qemu) device_add pc-dimm,id=dimm1,memdev=mem1
+eof
+
+
+		;;
+	*) ;;
+	esac
+#-L是DOS
+#-bios，启动现系统
+#-plash，启动UEFI 的BIOS
 	echo -e "是否加载${YELLOW}UEFI${RES}"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
@@ -1660,8 +1689,50 @@ esac
 		set -- "${@}" "-drive" "if=pflash,format=raw,file=/usr/share/OVMF/OVMF_VARS.fd,readonly=on"
 	fi ;;
 	*) ;;
-	esac ;;
 #可信平台模块 (TPM) 命令响应缓冲区 （crb）
+	esac
+:<<\eof
+Bus 001 Device 026: ID 0781:5406 SanDisk Corp. Cruzer Micro U3
+需先插入usb，lsusb确认Bus(hostbus) 1 Device(hostport) 26
+-device usb-ehci,id=ehci
+-device usb-host,bus=ehci.0,hostbus=1,hostport=26
+-device usb-host,bus=ehci.0,vendorid=0x0781,productid=0x5406
+eof
+	echo -e "${YELLOW}usb直连${RES}，虚拟机可读u盘(手机需已root并使用root用户)"
+	read -r -p "1)通过端口开启 2)通过物理地址开启 0)不使用 " input
+        case $input in
+	1) echo -e "${YELLOW}请插入usb${RES}"
+	CONFIRM
+	lsusb 2>/dev/null
+	if [ $? == 1 ]; then
+		echo -e "${RED}未能获取设备信息，请确认${RES}"
+	fi
+	read -r -p "输入usb名称对应的bus序号(如001，请输1或者011，请输11) " HOSTBUS
+	lsusb -t | grep -w "Bus 0$HOSTBUS" -A 4 2>/dev/null
+	read -r -p "输入Port序号(如001，请输1或者011，请输11) " HOSTPORT
+        set -- "${@}" "-device" "usb-ehci,id=ehci"
+	set -- "${@}" "-device" "usb-host,bus=ehci.0,hostbus=$HOSTBUS,hostport=$HOSTPORT" ;;
+	2) echo -e "\n${YELLOW}请插入usb${RES}"
+	CONFIRM
+	set -- "${@}" "-device" "usb-ehci,id=ehci"
+	lsusb 2>/dev/null
+	if [ $? == 1 ]; then
+	echo -e "${RED}未能获取设备信息，请确认已获取系统权限${RES}"
+	fi
+	echo -e "${YELLOW}输入usb的ID前段${RES}\n例如，Bus 003 Device 007: ID 0781:5406 SanDisk Corp. Cruzer Micro U3中的\e[1;33m0781${RES}"
+	read -r -p "请输入: " VENDORID
+	PRODUCTID=`lsusb | grep "$VENDORID" | cut -d ':' -f 3 | cut -d ' ' -f 1`
+	echo -e "${GREEN}usb ID为$VENDORID:$PRODUCTID${RES}\n"
+	read -r -p "确认ID信息请直接回车，如果usb后段有误，请输入: " PRODUCTID
+	if [ -n "$PRODUCTID" ]; then
+	set -- "${@}" "-device" "usb-host,bus=ehci.0,vendorid=0x$VENDORID,productid=0x$PRODUCTID"
+	echo -e "${GREEN}usb ID为$VENDORID:$PRODUCTID${RES}\n"
+	else
+	PRODUCTID=`lsusb | grep "$VENDORID" | cut -d ':' -f 3 | cut -d ' ' -f 1`
+	set -- "${@}" "-device" "usb-host,bus=ehci.0,vendorid=0x$VENDORID,productid=0x$PRODUCTID"
+	fi ;;
+        *) ;;
+	esac ;;
 	esac
 #amd
 ####################
