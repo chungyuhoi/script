@@ -4,7 +4,7 @@ cd $(dirname $0)
 
 INFO() {
 	clear
-	UPDATE="2021/08/08"
+	UPDATE="2021/08/09"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	容器内增加usb直连虚拟机，需设备已root并用root用户，请先执行apt install usbutils
 	容器增加控制台功能
@@ -1650,7 +1650,7 @@ esac
         read -r -p "1)使用 2)不使用 " input
         case $input in
 	1) set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
-	echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n查看设备info block\n换光盘:先查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n退出qemu，输quit\n"
+	echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n#换光盘:先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n#热插拔内存，本脚本已预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n输入后可用info memdev或info memory-devices查看\n退出qemu，输quit\n"
 :<<\eof	
 	if [ -z "$mem" ]; then
 	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
@@ -1661,8 +1661,10 @@ esac
 eof	
 :<<\eof
 #热插拔内存
-(qemu) object_add memory-backend-ram,id=mem1,size=1G
-(qemu) device_add pc-dimm,id=dimm1,memdev=mem1
+(qemu) object_add memory-backend-ram,id=mem0,size=1024m
+(qemu) device_add pc-dimm,id=dimm0,memdev=mem0
+(qemu) object_add memory-backend-ram,id=mem,size=1G
+(qemu) device_add pc-dimm,id=dimm,memdev=mem
 #linux宿主机使用大页热插拔内存
 (qemu) object_add memory-backend-file,id=mem1,size=1G,mem-path=/mnt/hugepages-1GB
 (qemu) device_add pc-dimm,id=dimm1,memdev=mem1
@@ -2012,6 +2014,9 @@ esac
 	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
 	fi
 	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	if echo "${@}" | grep -q monitor; then
+	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
+	fi
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
