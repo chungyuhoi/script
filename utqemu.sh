@@ -1212,6 +1212,7 @@ EOF
 #mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
+#NUMA（Non Uniform Memory Access Architecture）技术可以使众多服务器像单一系统那样运转，同时保留小系统便于编程和管理的优点。
 	MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off"
 #enforce-config-section=on
 	TCG="tcg,thread=multi"
@@ -1397,22 +1398,22 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 		*) CPU_MODEL=max
 			unset _SMP
-			SMP_=4 ;;
+			SMP_=4,maxcpus=6 ;;
 	esac ;;
 	9) CPU_MODEL="max,-hle,-rtm"
 		unset _SMP
-		SMP_=4 ;;
+		SMP_="4,maxcpus=6" ;;
 	0) echo -e -n "请输入: "
 		read CPU_MODEL
 		if echo $CPU_MODEL | grep max; then
 		unset _SMP
-		SMP_=4
+		SMP_="4,maxcpus=6"
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
         *)      CPU_MODEL=max
 		unset _SMP
-		SMP_=4 ;;
+		SMP_="4,maxcpus=6" ;;
 	esac
 	set -- "${@}" "-cpu" "${CPU_MODEL}"
 	if [ -n "$_SMP" ]; then
@@ -1650,7 +1651,7 @@ esac
         read -r -p "1)使用 2)不使用 " input
         case $input in
 	1) set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
-	echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n#换光盘:先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n#热插拔内存，本脚本已预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n输入后可用info memdev或info memory-devices查看\n退出qemu，输quit\n"
+		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n#换光盘:先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n#热插拔内存，本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n输入后可用info memdev或info memory-devices查看\n#热插拔cpu，本脚本只对max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到qom_path: 一组，记住type信息，CPUInstance Properties:信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n退出qemu，输quit\n"
 :<<\eof	
 	if [ -z "$mem" ]; then
 	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
