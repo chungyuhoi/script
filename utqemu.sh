@@ -1754,10 +1754,15 @@ eof
 	esac ;;
 	esac
 #让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
-		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试失败，提高响应速度，如出现闪退请关闭)"
+		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(创建大页文件以指派内存占用，提高响应速度，如出现闪退请关闭)"
    	read -r -p "1)加载 2)不加载 " input
 	case $input in
 		1) rm /tmp/hugepage\,share\=yes\,size* 2>/dev/null
+		echo -n -e "请输入大页拟使用的占用数值(以m为单位，例如1800)，回车为默认值，请输入: "
+        read mem_m
+        if [ -n "$mem_m" ]; then
+                set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=${mem_m}m"
+        else
 			#ls /tmp/hugepages.* 2>/dev/null
 		#	if [ $? != 0 ]; then
 		#	mktemp -t hugepages.XXX
@@ -1765,6 +1770,7 @@ eof
 		#	HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
 #		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=$(($mem_ * 1048576))"
 		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=${mem_}m"
+		fi
 		set -- "${@}" "-mem-prealloc" ;;
 		*) ;; esac
 	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
