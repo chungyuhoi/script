@@ -344,9 +344,6 @@ esac
 }
 #################
 LOGIN() {
-	if [ ! -e $DEBIAN-qemu/dev/hugepages ]; then
-		mkdir -p $DEBIAN-qemu/dev/hugepages
-	fi
 	if [[ ! -e "$DEBIAN-qemu/root/.utqemu_" ]]; then
 	echo $UPDATE >>$DEBIAN-qemu/root/.utqemu_
 	elif ! grep -q $UPDATE "$DEBIAN-qemu/root/.utqemu_" ; then
@@ -370,7 +367,6 @@ command+=" -S $DEBIAN-qemu"
 command+=" -b /sdcard"
 command+=" -b $DEBIAN-qemu/root:/dev/shm"
 command+=" -b /sdcard:/root/sdcard"
-command+=" -b $DEBIAN-qemu/dev/hugepages:/dev/hugepages"
 command+=" -w /root"
 command+=" /usr/bin/env -i"
 command+=" HOME=/root"
@@ -1650,8 +1646,9 @@ esac
 	echo -e "是否使用${YELLOW}控制台${RES}调试(部分功能需root用户)"
         read -r -p "1)使用 2)不使用 " input
         case $input in
-	1) set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
-		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n退出qemu，输quit\n"
+	1) rm /mnt/hugepages* 2>/dev/null
+		set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
+		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n退出qemu，输quit\n"
 :<<\eof	
 	if [ -z "$mem" ]; then
 	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
@@ -1760,15 +1757,14 @@ eof
 		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试失败，提高响应速度，如出现闪退请关闭)"
    	read -r -p "1)加载 2)不加载 " input
 	case $input in
-		1) #ls /tmp/hugepages.* 2>/dev/null
+		1) rm /tmp/hugepage\,share\=yes\,size* 2>/dev/null
+			#ls /tmp/hugepages.* 2>/dev/null
 		#	if [ $? != 0 ]; then
 		#	mktemp -t hugepages.XXX
   		#	fi
 		#	HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
 #		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=$(($mem_ * 1048576))"
-	if [ -d "/dev/hugepages" ]; then
-		set -- "${@}" "-mem-path" "/dev/hugepages"
-	fi
+		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=${mem_}m"
 		set -- "${@}" "-mem-prealloc" ;;
 		*)	esac ;;
 	esac
