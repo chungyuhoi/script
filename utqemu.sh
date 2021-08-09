@@ -1752,7 +1752,7 @@ eof
 		1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
 		*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
 	esac ;;
-		*) 
+	esac
 #让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
 		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(测试失败，提高响应速度，如出现闪退请关闭)"
    	read -r -p "1)加载 2)不加载 " input
@@ -1766,14 +1766,13 @@ eof
 #		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=$(($mem_ * 1048576))"
 		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=${mem_}m"
 		set -- "${@}" "-mem-prealloc" ;;
-		*)	esac ;;
-	esac
+		*) ;; esac
 	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	2) ;;
 	*) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
-esac
+	esac
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #driftfix=slew i386存在时间漂移
 	echo -e "请选择${YELLOW}系统时间${RES}标准"
