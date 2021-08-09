@@ -1651,7 +1651,7 @@ esac
         read -r -p "1)使用 2)不使用 " input
         case $input in
 	1) set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
-		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n#换光盘:先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n#热插拔内存，本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n输入后可用info memdev或info memory-devices查看\n#热插拔cpu，本脚本只对max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到qom_path: 一组，记住type信息，CPUInstance Properties:信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n退出qemu，输quit\n"
+		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到qom_path: 一组，记住type信息，CPUInstance Properties:信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n退出qemu，输quit\n"
 :<<\eof	
 	if [ -z "$mem" ]; then
 	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
