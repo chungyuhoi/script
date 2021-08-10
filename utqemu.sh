@@ -6,13 +6,12 @@ INFO() {
 	clear
 	UPDATE="2021/08/09"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	修正电脑上创建使用快捷脚本
 	容器内增加usb直连虚拟机，需设备已root并用root用户，请先执行apt install usbutils
 	容器增加控制台功能
 	增加测试本机cpu支持模拟的cpu特性
 	cpu增加可自己输入选项
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
-	新增一些功能参数
-	放开原来隐藏选项tcg缓存设置，该选项在默认为手机设备运行内存的1/4，最佳设置参数可提高模拟效率(仅支持qemu5以上版本)
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -1050,16 +1049,18 @@ START_QEMU() {
 		*) echo -n -e "\n${GREEN}是否已有快捷脚本，如有请输快捷脚本名字，如无请回车:${RES} "
 	read script_name
 	if [ -n "$script_name" ]; then
-	if [ $(command -v $script_name) ]; then
+	if [ $(command -v $script_name) ] || [ -f "${HOME}/xinhao/$script_name" ]; then
 		printf "%s\n"
 #cat $(which $script_name)
 
-	if grep 'vnc' $(which $script_name); then
+	if grep '\-cpu' ${HOME}/xinhao/$script_name 2>/dev/null; then
+	printf "%s\n${GREEN}启动模拟器\n"
+	elif grep 'vnc' $(which $script_name); then
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
 	elif grep -q 'DISPLAY' $(which $script_name); then
 	grep '\-cpu' $(which $script_name)
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl"
-	elif grep '\-spice' $(which $script_name); then
+	elif grep 'spice' $(which $script_name); then
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
 	else
 	grep '\-cpu' $(which $script_name)
@@ -1069,7 +1070,7 @@ START_QEMU() {
 	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
 	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
-	$script_name >/dev/null 2>>${HOME}/.utqemu_log
+	$script_name >/dev/null 2>>${HOME}/.utqemu_log || bash ${HOME}/xinhao/$script_name >/dev/null 2>>${HOME}/.utqemu_log 
 	if [ $? == 1 ]; then
 	FAIL
 	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
@@ -1967,6 +1968,39 @@ EOF
 	case $input in
 		1) echo -n "请给脚本起个名字: "
 	read script_name
+
+
+	case $ARCH in
+	computer)
+cat >${HOME}/xinhao/$script_name <<-EOF
+killall -9 qemu-system-x86 2>/dev/null
+killall -9 qemu-system-i38 2>/dev/null
+${@}
+EOF
+	chmod +x ${HOME}/xinhao/$script_name
+        echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
+        sleep 2
+        printf "%s\n"
+        cat <<-EOF
+	${@}
+        EOF
+	printf "%s\n${GREEN}启动模拟器\n"
+echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
+        printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志
+${RES}"
+        if echo "${@}" | grep -q monitor; then
+        echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
+        fi
+        sleep 1
+        "${@}" >/dev/null 2>>${HOME}/.utqemu_log
+	if [ $? == 1 ]; then
+	FAIL
+	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+	fi
+	exit 1 ;;
+	esac
+
+
 	case $display in
 		xsdl)
 cat >/usr/local/bin/$script_name <<-EOF
