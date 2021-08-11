@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 cd $(dirname $0)
 ####################
-
+#trap " rm /tmp/hugepage\,share\=yes\,size* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 INFO() {
 	clear
 	UPDATE="2021/08/09"
@@ -636,7 +636,7 @@ echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 		QEMU_ETC ;;
 	esac
 	sleep 2
-	exit 1 ;;
+	exit 0 ;;
 	4) if ! grep -E -q 'buster|bullseye' "/etc/os-release"; then
 	echo -e "\n${RED}只支持bullseye与buster${RES}\n"
 	sleep 2
@@ -669,7 +669,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	fi
        	$sudo apt update ;;
 		9) QEMU_SYSTEM ;;
-		0) exit 1 ;;
+		0) exit 0 ;;
 		*) INVALID_INPUT && QEMU_ETC ;;
 	esac
 	fi ;;
@@ -685,7 +685,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 		9) unset FORMAT_
 			unset FORMAT
 			QEMU_SYSTEM ;;
-		0) exit 1 ;;
+		0) exit 0 ;;
 		6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api " input
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
@@ -783,7 +783,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 		echo -e "\n${GREEN}创建成功，新的镜像目录为${DIRECT}${path_}，请重新登录脚本\n${RES}"
 		sleep 2
 	fi
-	exit 1
+	exit 0
 	QEMU_ETC ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
 	esac
@@ -1019,7 +1019,7 @@ unable to find CPU model; ${YELLOW}cpu名字有误${RES}"
 	11) bash -c "$(curl -s https://cdn.jsdelivr.net/gh/chungyuhoi/script/Check_cpuids.sh)"
 	CONFIRM
 	QEMU_SYSTEM ;;
-	0) exit 1 ;;
+	0) exit 0 ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
 	esac                                            }
 
@@ -1066,16 +1066,21 @@ START_QEMU() {
 	grep '\-cpu' $(which $script_name)
 	printf "%s\n${GREEN}启动模拟器\n"
 	fi
+	echo -e "\n如共享目录成功加载，请在浏览器地址输 \\10.0.2.4"
+	if grep -q monitor ${HOME}/xinhao/$script_name 2>/dev/null; then
+	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
+	elif grep -q monitor $(which $script_name); then
+	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
+	fi
 	echo ""
-	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
-	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 	sleep 1
 	$script_name >/dev/null 2>>${HOME}/.utqemu_log || bash ${HOME}/xinhao/$script_name >/dev/null 2>>${HOME}/.utqemu_log 
 	if [ $? == 1 ]; then
 	FAIL
 	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
 	fi
-	exit 1
+	exit 0
 	else
 	echo -e "\n${RED}未获取到你的快捷脚本${RES}\n"
 	sleep 1
@@ -1159,11 +1164,11 @@ EOF
 	FAIL
 	printf "%s${RED}启动意外中止，请查看日志${YELLOW}d(ŐдŐ๑)${RES}\n"
 	fi
-	exit 1 ;;
+	exit 0 ;;
 	esac
 			;;
 		9) QEMU_SYSTEM ;;
-		0) exit 1 ;;
+		0) exit 0 ;;
 		*) INVALID_INPUT
 			QEMU_SYSTEM ;;
 	esac
@@ -1179,7 +1184,7 @@ EOF
 				echo -e "\n${BLUE}vnc不支持声音输出，输出显示的设备vnc地址为$IP:0${RES}"
 				sleep 1 ;;
 			9) QEMU_SYSTEM ;;
-			0) exit 1 ;;
+			0) exit 0 ;;
 			*) INVALID_INPUT
 				QEMU_SYSTEM ;;
 		esac
@@ -1338,8 +1343,6 @@ EOF
 #	set -- "${@}" "-append" "cmdline"
 	case $QEMU_SYS in
 		qemu-system-i386)
-#更改消息的格式，时间戳
-	set -- "${@}" "-msg" "timestamp=off"
 #取消高精度定时器
 	set -- "${@}" "-no-hpet"
 #取消软盘启动检测
@@ -1349,6 +1352,8 @@ EOF
 ;;
 		*) ;;
 	esac
+#更改消息的格式，时间戳
+	set -- "${@}" "-msg" "timestamp=off"
 #GenuineIntel AuthenticAMD
 	echo -e "是否自定义${YELLOW}逻辑cpu${RES}数量"
 	read -r -p "1)默认配置 2)自定义 " input
@@ -1564,7 +1569,10 @@ else
 	esac ;;
 	esac ;;
 		5) set -- "${@}" "-device" "qxl-vga"
+#			set -- "${@}" "-device" "virtio-keyboard-pci"
 : <<\EOF
+-device ich9-usb-ehci1,id=usb -device ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on -chardev spicevmc,id=charredir0,name=usbredir -device usb-redir,chardev=charredir0,id=redir0,bus=usb.0,port=4 -chardev spicevmc,id=charredir1,name=usbredir -device usb-redir,chardev=charredir1,id=redir1,bus=usb.0,port=5
+
 set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
 #set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
 set -- "${@}" "-device" "ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on"
@@ -1649,7 +1657,7 @@ esac
         case $input in
 	1) rm /mnt/hugepages* 2>/dev/null
 		set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
-		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n退出qemu，输quit\n"
+		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
 :<<\eof	
 	if [ -z "$mem" ]; then
 	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
@@ -1984,9 +1992,9 @@ EOF
         cat <<-EOF
 	${@}
         EOF
-	printf "%s\n${GREEN}启动模拟器\n"
-echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
-        printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志
+	echo -e "${GREEN}启动模拟器\n"
+	echo -e "如共享目录成功加载，请在浏览器地址输 \\10.0.2.4"
+        echo -e "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志
 ${RES}"
         if echo "${@}" | grep -q monitor; then
         echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
@@ -1995,9 +2003,9 @@ ${RES}"
         "${@}" >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
 	FAIL
-	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+	echo -e "${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
 	fi
-	exit 1 ;;
+	exit 0 ;;
 	esac
 
 
@@ -2049,7 +2057,7 @@ esac
 	if [ $? != 0 ]; then
 	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
 	fi
-	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	echo -e  "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	fi
@@ -2059,7 +2067,7 @@ esac
 		FAIL
 	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
 	fi
-	exit 1
+	exit 0
 }
 
 
@@ -2168,7 +2176,7 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	echo -e "\e[33m即将开机，参数是默认的，开机过程会比较慢，Windows会自动检测fake磁盘，并搜索适配的驱动。如果失败了，前往Device Manager，找到SCSI驱动器（带有感叹号图标，应处于打开状态），点击Update driver并选择虚拟的CD-ROM。不要定位到CD-ROM内的文件夹了，只选择CD-ROM设备就行，Windows会自动找到合适的驱动的。完成后请关机，然后正常启动qemu-system-x86_64(qemu-system-i386)方式并选择磁盘接口virtio。${RES}"
 	CONFIRM
 	qemu-system-x86_64 -m 1g -drive file=${DIRECT}${STORAGE}$hda_name,if=ide -drive file=${DIRECT}${STORAGE}fake.qcow2,if=virtio -cdrom ${DIRECT}${STORAGE}$iso_name -vnc :0 2>>${HOME}/.utqemu_log
-	exit 1 ;;
+	exit 0 ;;
 	esac ;;
 	3) case $SYS in
 		ANDROID) INVALID_INPUT && VIRTIO ;;
@@ -2179,7 +2187,7 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	esac ;;
 	8) ABOUT_VIRTIO ;;
 	9) QEMU_SYSTEM ;;
-	0) exit 1 ;;
+	0) exit 0 ;;
 	*) INVALID_INPUT && VIRTIO ;;
 	esac
 }
@@ -2270,7 +2278,7 @@ LOGIN_() {
 	*) sed -i "/utqemu/d" ${PREFIX}/etc/bash.bashrc ;;
 	esac
 	MAIN ;;
-	0) exit 1 ;;
+	0) exit 0 ;;
 	*) INVALID_INPUT
 		MAIN ;;
 	esac
