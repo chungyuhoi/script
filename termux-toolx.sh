@@ -32,6 +32,50 @@ SOURCES_ADD="deb http://mirrors.bfsu.edu.cn/"
 DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
+TERMUX_CHECK() {
+	uname -a | grep 'Android' -q
+	if [ $? == 0 ]; then
+	if [ ! -e ${HOME}/storage ]; then
+	termux-setup-storage
+	fi
+	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep termux.org; then
+	echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n
+	1) 换国内源
+	2) 不换"
+	read -r -p "是否换国内源: " input
+	case $input in
+	1|"") echo "换国内源"
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update ;;
+	*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;
+	esac
+        fi
+        if [ ! $(command -v curl) ]; then
+        pkg update && pkg install curl -y
+        fi
+        dpkg -l | grep pulseaudio -q 2>/dev/null
+        if [ $? != 0 ]; then
+        echo -e "${YELLOW}检测到你未安装pulseaudio，为保证声音正常输出，将自动安装${RES}"
+        sleep 2
+        pkg update && pkg install pulseaudio -y
+        fi
+        if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa; then
+        echo ""
+        else
+        echo "load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" >> ${PREFIX}/etc/pulse/default.pa
+	fi
+	if grep -q "exit-idle" ${PREFIX}/etc/pulse/daemon.conf ; then
+	sed -i '/exit-idle/d' ${PREFIX}/etc/pulse/daemon.conf
+	echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
+	fi
+	if [ ! $(command -v proot) ]; then
+	pkg update && pkg install proot -y
+	fi
+        fi
+}
+#######################
+TERMUX_CHECK
 echo -e "${BLUE}welcome to use termux-toolx!\n
 ${YELLOW}更新日期20210726${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
@@ -210,6 +254,7 @@ if ! grep -E -q 'ID=debian|ID=ubuntu|ID=kali' "/etc/os-release"; then
 	MAIN
 fi
 }
+#####################
 #####################
 SUDO_CHECK() {
 if [ `whoami` != "root" ];then
@@ -1208,7 +1253,7 @@ read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1)
 		echo "安装常用应用..."
-		$sudo_t apt install curl wget vim fonts-wqy-zenhei tar -y
+		$sudo_t apt install curl wget vim fonts-wqy-zenhei tar wget -y
 		echo -e "${YELLOW}done${RES}"
 		sleep 1
 		INSTALL_SOFTWARE
@@ -1218,8 +1263,48 @@ case $input in
 	3)	WEB_BROWSER ;;
 	4)	echo -e "安装Electron\n如果安装不成功，需先添加Githut库"
 		CONFIRM
+		$sudo_t apt update
+		if grep -q bullseye /etc/os-release; then
 		$sudo_t apt install electron -y
-		echo -e "${YELLOW}done${RES}"
+		else
+		$sudo_t	apt install libnss3 unzip wget gnupg2 libxtst-dev -y
+		mkdir /usr/share/electron
+		cd /usr/share/electron
+		wget https://npm.taobao.org/mirrors/electron/10.1.4/chromedriver-v10.1.4-linux-arm64.zip
+		wget https://npm.taobao.org/mirrors/electron/10.1.4/ffmpeg-v10.1.4-linux-arm64.zip
+		wget https://npm.taobao.org/mirrors/electron/10.1.4/electron-v10.1.4-linux-arm64.zip
+        echo -e "\e[33m即将解压包，如遇到提示，请输y回车\e[0m"
+        read -r -p "确认请回车" input
+        case $input in
+        *) ;;
+        esac
+        unzip chromedriver-v10.1.4-linux-arm64.zip
+        unzip ffmpeg-v10.1.4-linux-arm64.zip
+        unzip electron-v10.1.4-linux-arm64.zip
+        ln -s /usr/share/electron/electron /usr/bin/
+        if grep -q 'Package: electron' /var/lib/dpkg/status; then
+        RAW=`cat -n /var/lib/dpkg/status | grep 'Package: electron' | awk '{print $1}'`
+        let RAW_="$RAW+10"
+        sed -i "${RAW},${RAW_}d" /var/lib/dpkg/status
+        fi
+cat >>/var/lib/dpkg/status<<-eof
+Package: electron
+Status: install ok installed
+Priority: extra
+Section: devel
+Installed-Size: 185860
+Maintainer: coslyk <cos.lyk@gmail.com>
+Architecture: arm64
+Version: 10.1.4-1
+Depends: libasound2 (>= 1.0.16), libatk-bridge2.0-0 (>= 2.5.3), libatk1.0-0 (>= 2.2.0), libatspi2.0-0 (>= 2.9.90), libc6 (>= 2.17), libcairo2 (>= 1.6.0), libcups2 (>= 1.7.0), libdbus-1-3 (>= 1.9.14), libdrm2 (>= 2.4.38), libexpat1 (>= 2.0.1), libgbm1 (>= 17.1.0~rc2), libgcc1 (>= 1:4.2), libgdk-pixbuf2.0-0 (>= 2.22.0), libglib2.0-0 (>= 2.39.4), libgtk-3-0 (>= 3.19.12), libnspr4 (>= 2:4.9-2~), libnss3 (>= 2:3.22), libpango-1.0-0 (>= 1.14.0), libpangocairo-1.0-0 (>= 1.14.0), libx11-6 (>= 2:1.4.99.1), libx11-xcb1, libxcb-dri3-0, libxcb1 (>= 1.6), libxcomposite1 (>= 1:0.3-1), libxcursor1 (>> 1.1.2), libxdamage1 (>= 1:1.1), libxext6, libxfixes3, libxi6 (>= 2:1.2.99.4), libxrandr2, libxrender1, libxtst6
+Description: Build cross platform desktop apps with web technologies
+Homepage: https://github.com/electron/electron
+eof
+		fi
+        electron --version --no-sandbox
+        if [ $? == 0 ]; then
+        echo -e "\e[33m安装成功\e[0m"
+	fi
 		sleep 1
 		INSTALL_SOFTWARE
 		;;
@@ -1504,7 +1589,7 @@ else
 #################
 #################
 TERMUX() {
-	echo -e "\n${PINK}注意！以下均在termux环境中操作\n${RES}"
+	echo -e "\n${GREEN}注意！以下均在termux环境中操作\n${RES}"
 	echo -e "1) ${YELLOW} * 一键配置好termux环境 (*^ω^*)${RES}
 2)  termux换国内源
 3)  安装常用应用(包括curl tar wget vim proot)
