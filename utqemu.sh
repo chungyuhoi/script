@@ -770,17 +770,35 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	QEMU_ETC ;;
 	8) echo -e "\n目前仅支持镜像目录，共享目录暂不支持，此操作并不能修改本脚本参数，会创建一个名为${YELLOW}.utqemu_${RES}的文件，如删除文件则指定目录将失效\n"
 	CONFIRM
-	echo -n -e "请输入目录路径(例如/xinhao注意'/') " 
+	echo -e "请选择目录路径\n1)本地目录\n2)手机平板目录\n9)返回 "
+	read -r -p "请选择: " input
+	case $input in
+	1) echo -e "本地目录，输'目录名'(例如${YELLOW}windows${RES}，则本地目录生成一个windows文件夹) "
 	read path_
-	sed -i "/STORAGE/d" ${HOME}/.utqemu_
-	echo "STORAGE=$path_" >>${HOME}/.utqemu_
-	if [ ! -e "${DIRECT}${path_}" ]; then
-		mkdir -p ${DIRECT}${path_} 2>/dev/null
+	sed -i "/STORAGE/d" ${HOME}/.utqemu_ 2>/dev/null
+	sed -i "/DIRECT/d" ${HOME}/.utqemu_ 2>/dev/null
+	echo 'DIRECT=${HOME}' >>${HOME}/.utqemu_
+	echo "STORAGE=/$path_" >>${HOME}/.utqemu_
+	DIRECT="${HOME}"
+	if [ ! -e "${DIRECT}/${path_}" ]; then
+	mkdir -p ${DIRECT}/${path_} 2>/dev/null
+	fi ;;
+	2) echo -e "手机平板目录则'目录名'(例如${YELLOW}windows${RES}，则手机平板目录生成windows) "
+	read path_
+	sed -i "/STORAGE/d" ${HOME}/.utqemu_ 2>/dev/null
+        sed -i "/DIRECT/d" ${HOME}/.utqemu_ 2>/dev/null
+	echo "STORAGE=/$path_" >>${HOME}/.utqemu_
+	DIRECT=/sdcard
+	if [ ! -e "${DIRECT}/${path_}" ]; then
+	mkdir -p ${DIRECT}/${path_} 2>/dev/null
 	fi
+		;;
+	*) QEMU_ETC ;;
+	esac
 	if ! grep -q 'STORAGE' ${HOME}/.utqemu_ 2>/dev/null ; then
 		echo -e "\n${RED}创建失败，请重试${RES}\n"
 	else
-		echo -e "\n${GREEN}创建成功，新的镜像目录为${DIRECT}${path_}，请重新登录脚本\n${RES}"
+		echo -e "\n${GREEN}创建成功，新的镜像目录为${DIRECT}/${path_}，请重新登录脚本\n${RES}"
 		sleep 2
 	fi
 	exit 0
@@ -1034,7 +1052,7 @@ START_QEMU() {
 	if [ ! -d ${HOME}/share ]; then
 		mkdir ${HOME}/share
 	fi
-	if [ ! -d ${DIRECT}/xinhao ]; then
+	if [ ! -d ${DIRECT}${STORAGE} ]; then
 		echo -e "\n${RED}未检测到你的镜像目录，请确认已赋予手机存储权限并创建镜像目录${RES}"
 		CONFIRM
 	fi
@@ -1195,8 +1213,8 @@ EOF
 ###################
 	SELECT_EMU_MODE
 
-	case $ARCH in
-		tablet)
+	case $DIRECT in
+		\/sdcard)
 	echo -e "\n${GREEN}请确认系统镜像已放入手机目录${STORAGE}里${RES}\n" ;;
 		*) echo -e "\n${GREEN}请确认系统镜像已放入目录${STORAGE}里${RES}\n" ;;
 	esac
