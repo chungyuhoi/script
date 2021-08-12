@@ -778,7 +778,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	sed -i "/STORAGE/d" ${HOME}/.utqemu_ 2>/dev/null
 	sed -i "/DIRECT/d" ${HOME}/.utqemu_ 2>/dev/null
 	echo 'DIRECT=${HOME}' >>${HOME}/.utqemu_
-	echo "STORAGE=/$path_" >>${HOME}/.utqemu_
+	echo "STORAGE=/$path_/" >>${HOME}/.utqemu_
 	DIRECT="${HOME}"
 	if [ ! -e "${DIRECT}/${path_}" ]; then
 	mkdir -p ${DIRECT}/${path_} 2>/dev/null
@@ -787,7 +787,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	read path_
 	sed -i "/STORAGE/d" ${HOME}/.utqemu_ 2>/dev/null
         sed -i "/DIRECT/d" ${HOME}/.utqemu_ 2>/dev/null
-	echo "STORAGE=/$path_" >>${HOME}/.utqemu_
+	echo "STORAGE=/$path_/" >>${HOME}/.utqemu_
 	DIRECT=/sdcard
 	if [ ! -e "${DIRECT}/${path_}" ]; then
 	mkdir -p ${DIRECT}/${path_} 2>/dev/null
