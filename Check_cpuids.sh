@@ -301,8 +301,15 @@ xstore-en
 xtpr
 eof
 cat .utqemu_log | grep does | awk -F '.' '{print $NF}' | awk '{print $1}' >> all_flags
-echo -e "\e[33m你cpu支持以下特性\e[0m"
-sleep 1
+echo -e "\e[33m你的设备参数\e[0m"
+cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/null>1
+if [ $? == 0 ]; then
+printf "%-15s %s %s\n" cpu核数: $(cat -n /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | tail -n 1 | awk '{print $1}') 核
+printf "%-15s %s %s\n" cpu低频: $(cat -n /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | head -n 1 | awk '{printf ("%.2f", $2 / 1048576"G")}') G
+printf "%-15s %s %s\n" cpu高频: $(cat -n /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | tail -n 1 | awk '{printf "%.2f", $2 / 1048576}') G
+printf "%-17s %s %s\n" 运行内存: $(free -m | awk '{print $2}' | sed -n 2p | cut -d '.' -f 1) M
+fi
+echo -e "\e[33mcpu支持以下特性\e[0m"
 echo $(sort all_flags | uniq -u) | sed 'N;s/\n/ /g'
 echo -e "\e[33m本测试仅供参考\e[0m\n"
 fi
