@@ -25,12 +25,13 @@ echo ". firstrun" >>focal/etc/profile
 cat >focal/root/firstrun<<-'eof'
 echo -e "正在配置首次运行\n安装常用应用"
 sleep 1
-apt update && apt install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 -y
+apt update
+apt install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 lxtask -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
 if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
 echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 sleep 2
-apt --fix-broken install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 tigervnc-standalone-server tigervnc-viewer -y
+apt --fix-broken install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 lxtask tigervnc-standalone-server tigervnc-viewer -y
 fi
 if [ $(command -v firefox) ]; then
 if grep -q '^ex.*MOZ_FAKE_NO_SANDBOX=1' /etc/environment; then
@@ -51,10 +52,10 @@ vncpasswd
 fi
 echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
-killall -9 Xtightvnc 2>/dev/null
-killall -9 Xtigertvnc 2>/dev/null
-killall -9 Xvnc 2>/dev/null
-killall -9 vncsession 2>/dev/null
+pkill -9 Xtightvnc 2>/dev/null
+pkill -9 Xtigertvnc 2>/dev/null
+pkill -9 Xvnc 2>/dev/null
+pkill -9 vncsession 2>/dev/null
 export USER="$(whoami)"
 export PULSE_SERVER=127.0.0.1
 set -- "${@}" "-ZlibLevel=1"
@@ -100,7 +101,7 @@ source /etc/environment
 export LANG=zh_CN.UTF-8
 eof
 
-echo "killall -9 pulseaudio 2>/dev/null
+echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S focal --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b focal/proc/version:/proc/version -b focal/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-focal.sh && chmod +x start-focal.sh
