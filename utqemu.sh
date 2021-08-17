@@ -1991,9 +1991,9 @@ TCG="tcg,thread=multi"
         echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
         read TB
         if [ -n "$TB" ]; then
-                set "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
+        set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
         else
-                set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$mem_" "${@}"
+        set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$mem_" "${@}"
         fi
 	else
 	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
