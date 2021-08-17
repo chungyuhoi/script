@@ -1318,7 +1318,7 @@ EOF
 	echo -e "请选择${YELLOW}cpu${RES}"
 	case $SYS in
 	QEMU_ADV|ANDROID)
-		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)max(推荐) 9)本人个性定制(慎选) 0)自己输 " input ;;
+		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)max(推荐) 9)(慎选) 0)自己输 " input ;;
 QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 9)max 0)自己输 " input ;;
 	esac
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
