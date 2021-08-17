@@ -4,13 +4,12 @@ cd $(dirname $0)
 #trap " rm /tmp/hugepage\,share\=yes\,size* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 INFO() {
 	clear
-	UPDATE="2021/08/09"
+	UPDATE="2021/08/17"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	加入了看到与看不到的选项
+	为方便配置-machine(-M)参数，相关选项与accel加速选项移至磁盘接口后面
 	修正电脑上创建使用快捷脚本
-	容器内增加usb直连虚拟机，需设备已root并用root用户，请先执行apt install usbutils
-	容器增加控制台功能
 	增加测试本机cpu支持模拟的cpu特性
-	cpu增加可自己输入选项
 	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
@@ -320,7 +319,6 @@ LIST() {
 	if [ $? == 1 ]; then
 		echo -e "${GREEN}\n貌似没有符合格式的镜像，请以实际文件名为主${RES}"
 	fi
-	sleep 1
 }
 #################
 FAIL() {
@@ -1223,79 +1221,6 @@ EOF
 #	pkill -9 qemu-system-i38
 	killall -9 qemu-system-x86 2>/dev/null
 	killall -9 qemu-system-i38 2>/dev/null
-	echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
-#cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
-#kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。仅kvm
-#vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
-#dump-guest-core=on|off将客户机内存包括在核心转储中，类似于dump日志。默认为开。
-#tb-size=n (TCG translation block cache size)，Controls the size (in MiB) of the TCG translation block cache.Host instruction codes are stored in code_gen_buffer[]. The default buffer size is 32MB.(Ram_size/4, while ram_size default value is 128MB).
-#mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
-#aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
-#dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
-#NUMA（Non Uniform Memory Access Architecture）技术可以使众多服务器像单一系统那样运转，同时保留小系统便于编程和管理的优点。
-	MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off"
-#enforce-config-section=on
-	TCG="tcg,thread=multi"
-
-	read -r -p "1)pc 2)q35 " input
-	case $input in
-		1|"")
-		case $(dpkg --print-architecture) in
-					arm*|aarch64) 
-	case $SYS in
-		QEMU_PRE) set -- "${@}" "-machine" "pc" "--accel" "$TCG" ;;
-		*)
-	echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
-	case $input in
-		1)
-	set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG" ;;
-		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
-	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
-	read TB
-	if [ -n "$TB" ]; then
-		set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG,tb-size=$TB"
-	else
-		set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG,tb-size=$mem_"
-	fi
-	else
-		set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG"
-	fi ;;
-		*) set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,$MA" ;;
-	esac ;;
-	esac ;;
-		*)
-	set -- "${@}" "-machine" "pc,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on" ;;
-	esac ;;
-		2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
-	case $(dpkg --print-architecture) in
-		arm*|aarch64) 
-	case $SYS in
-		QEMU_PRE) set -- "${@}" "-machine" "q35" "--accel" "$TCG" ;;
-		*)
-		echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
-	case $input in
-		1) set -- "${@}" "-machine" "q35,$MA,usb=off" "--accel" "$TCG" ;;
-		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
-	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
-	read TB
-	if [ -n "$TB" ]; then
-		set -- "${@}" "-machine" "q35,$MA,usb=off" "--accel" "$TCG,tb-size=$TB"
-	else
-		set -- "${@}" "-machine" "q35,$MA,usb=off" "--accel" "$TCG,tb-size=$mem_"
-	fi
-	else                                                            set -- "${@}" "-machine" "pc,$MA,usb=off" "--accel" "$TCG"
-	fi ;;
-
-		*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,$MA,usb=off" ;;
-	esac ;;
-	esac ;;
-		*) set -- "${@}" "-machine" "q35,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on" ;;
-	esac ;;
-	esac
 	if [ ! -d "${DIRECT}${STORAGE}" ];then
 		echo -e "${RED}未获取到镜像目录，请确认已创建镜像目录${RES}\n"
 		CONFIRM
@@ -1393,7 +1318,7 @@ EOF
 	echo -e "请选择${YELLOW}cpu${RES}"
 	case $SYS in
 	QEMU_ADV|ANDROID)
-		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)Dhyana 9)max(推荐) 0)自己输 " input ;;
+		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)max(推荐) 9)本人个性定制(慎选) 0)自己输 " input ;;
 QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 9)max 0)自己输 " input ;;
 	esac
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
@@ -1414,15 +1339,31 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 	7) CPU_MODEL=Opteron_G5
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 	8) case $SYS in
-		QEMU_ADV|ANDROID) CPU_MODEL=Dhyana
+		QEMU_ADV|ANDROID) CPU_MODEL="max,-hle,-rtm"
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 		*) CPU_MODEL=max
 			unset _SMP
 			SMP_=4,maxcpus=6 ;;
 	esac ;;
-	9) CPU_MODEL="max,-hle,-rtm"
+	9) 
+: <<\eof
+hv_spinlocks=0xffff：GuestOS执行spinlock期间，其实是可以转让CPU给其他vCPU调度的。短时间的spinlock可以节省vCPU调度开销，长时间的spinlock会浪费CPU资源。为此，参数用于让guest重试"hv-spinlocks=number"次无果后通告hypervisor，主动转让CPU。
+hv-spinlocks=0 表示不尝试(一旦guest调用spinlock，立刻退出到hypervisor转让CPU)
+hv-spinlocks=0xFFFFFFFF(x86虚机缺省值)任其guest一直执行spinlock。
+配置hv-spinlocks决定#cpuid 0x40000004返回后的整个EBX寄存器值。
+
+hv_relaxed：配置hv-relaxed后，vCPU被长时间抢占不会导致WindowsOS蓝屏，建议所有Windows虚机都打开。
+
+hv_time：配置hv-time决定Guest执行#cpuid 0x40000003返回的寄存器EAX中的bit2，bit2表示运行环境的Hypervisor有提供如上MSRs供Guest用。KVM实现了如下MSR，Synthetic-interrupt-controller（SynIC，是LAPIC的功能扩展）SynIC是一个半虚拟化中断控制器提供向Guest发送中断机制(VMBus Message)，guest通过如下MSR接口控制，VMBus-devices和Hyper-V-synthetic-timers依赖此特性，QEMU目前尚未有VMBus-devices设备。
+hv-vapic：是否配置hv-vapic决定Guest执行#cpuid 0x40000003返回的寄存器EAX中的bit4，同时也决定Guest执行#cpuid 0x40000004返回的寄存器EAX的bit3。#cpuid 0x40000003返回值各个位表示Hypervisor具备哪些特性。#cpuid 0x40000004返回值各个位表示Hypervisor推荐Guest使用哪些特性。EAX.bit4(HV_SYNTIMERS_AVAILABLE)为1时指示Guest当前Hypervisor有提供如上三个MSRs。guest可以通过rdmsr/wrmsr指令直接提交中断请求或中断应答，相比全模拟的APCI，HV-VAPIC大量减少vmexit。倘若EAX.bit4(HV_SYNTIMERS_AVAILABLE)为0，Guest执行#wrmsr HV_X64_MSR_EOI将引发异常。KVM提供了如下三个MSR(半虚拟化的APIC)，用于pv-guest一次性提交中断请求或中断应答：
+
+HV_X64_MSR_EOI
+HV_X64_MSR_ICR
+HV_X64_MSR_TPR
+eof
+		CPU_MODEL="max,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
 		unset _SMP
-		SMP_="4,maxcpus=6" ;;
+		SMP_="2,maxcpus=4" ;;
 	0) echo -e -n "请输入: "
 		read CPU_MODEL
 		if echo $CPU_MODEL | grep max; then
@@ -1454,7 +1395,7 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 		case $input in
 		1|"") VGA_MODEL=vmware-svga ;;
-		*) VGA_MODEL=vmware-svga,vgamem_mb=512 ;;
+		*) VGA_MODEL=vmware-svga,vgamem_mb=256 ;;
 	esac ;;
 		4) VGA_MODEL=virtio-vga ;;
 		*) VGA_MODEL=VGA ;;
@@ -1558,7 +1499,7 @@ else
 		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
 	case $input in
 		1|"") set -- "${@}" "-device" "vmware-svga" ;;
-		*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=512" ;;
+		*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=256" ;;
 	esac ;;
 		4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
 	read -r -p "1)不设置3D参数 2)设置3D参数 " input
@@ -1675,7 +1616,7 @@ esac
         case $input in
 	1) rm /mnt/hugepages* 2>/dev/null
 		set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
-		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem0,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem0\n(qemu) object_add memory-backend-ram,id=mem,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
+		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem1,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem1\n(qemu) object_add memory-backend-ram,id=mem2,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem2\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
 :<<\eof	
 	if [ -z "$mem" ]; then
 	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
@@ -1958,7 +1899,111 @@ EOF
 	esac ;;
 	esac
 
+####################
+#test
+	if echo ${@} | egrep -wq "512|1024|2048"; then
+	case $SYS in
+	QEMU_ADV)
+	echo -e ""
+	read -r -p "请回车" input
+	case $input in
+	1)
+	if echo ${@} | grep -wq "512"; then
+	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
+	set -- "${@}" "-numa" "node,memdev=mem"
+	HMAT=",hmat=on"
+	fi
+	if echo ${@} | egrep -wq "1024|2048"; then
+	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=1024m"
+	set -- "${@}" "-numa" "node,memdev=mem"
+	HMAT=",hmat=on"
+	fi
+	if echo ${@} | egrep -wq "2048"; then
+	set -- "${@}" "-object" "memory-backend-ram,id=mem0,size=1024m"
+	set -- "${@}" "-numa" "node,memdev=mem0"
+	fi
+#       set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
+#       set -- "${@}" "-numa" "cpu,node-id=0,socket-id=0"
+#        set -- "${@}" "-numa" "cpu,node-id=0,socket-id=1"
+	;;
+	*) ;;
+	esac ;;
 
+	esac
+	fi
+####################
+#cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
+#kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。仅kvm
+#vmport=on|off|auto为vmmouse等 启用VMWare IO端口的仿真，默认开
+#dump-guest-core=on|off将客户机内存包括在核心转储中，类似于dump日志。默认为开。
+#tb-size=n (TCG translation block cache size)，Controls the size (in MiB) of the TCG translation block cache.Host instruction codes are stored in code_gen_buffer[]. The default buffer size is32MB.(Ram_size/4, while ram_size default value is 128MB).
+#mem-merge=on|off启用或禁用内存合并支持。主机支持时，此功能可在VM实例之间重复删除相同的内存页面（默认情况下启用）。
+#aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
+#dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
+#NUMA（Non Uniform Memory Access Architecture）技术可以使众多服务器像单一系统那样运转，同时保留小系统便于编程和管理的优点。
+	echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
+MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off"
+#enforce-config-section=on
+TCG="tcg,thread=multi"
+	read -r -p "1)pc 2)q35 " input
+	case $input in
+	1|"")
+	case $(dpkg --print-architecture) in
+	arm*|aarch64)
+	case $SYS in
+		QEMU_PRE) set -- "-machine" "pc" "--accel" "$TCG" "${@}" ;;
+		*)
+        echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
+	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
+	case $input in
+		1)
+	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}" ;;
+	3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
+	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
+	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
+	read TB
+	if [ -n "$TB" ]; then
+	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
+	else
+	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$mem_" "${@}"
+        fi
+        else
+	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
+	fi ;;
+        *) set -- "-machine" "pc,accel=kvm:xen:hax:tcg,$MA$HMAT,usb=off" "${@}" ;;
+        esac ;;
+        esac ;;
+	*)
+	set -- "-machine" "pc,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on$HMAT" "${@}" ;;
+	esac ;;
+        2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
+        case $(dpkg --print-architecture) in
+                arm*|aarch64)
+        case $SYS in
+                QEMU_PRE) set -- "-machine" "q35" "--accel" "$TCG" "${@}" ;;
+		*)
+                echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
+        read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
+        case $input in
+                1) set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}" ;;
+                3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
+        echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
+        echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
+        read TB
+        if [ -n "$TB" ]; then
+                set "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
+        else
+                set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$mem_" "${@}"
+        fi
+	else
+	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
+        fi ;;
+	*) set -- "-machine" "q35,accel=kvm:xen:hax:tcg,$MA$HMAT,usb=off" "${@}" ;;
+        esac ;;
+        esac ;;
+	*) set -- "-machine" "q35,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on$HMAT" "${@}" ;;
+	esac ;;
+	esac
 ########################
 	if [ -n "$display" ]; then
 	case $display in
