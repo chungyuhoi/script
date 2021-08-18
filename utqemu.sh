@@ -1071,21 +1071,21 @@ START_QEMU() {
 
 	if grep '\-cpu' ${HOME}/xinhao/$script_name 2>/dev/null; then
 	printf "%s\n${GREEN}启动模拟器\n"
-	elif grep 'vnc' $(which $script_name); then
+	elif grep 'vnc' /usr/local/bin/$script_name; then
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
-	elif grep -q 'DISPLAY' $(which $script_name); then
-	grep '\-cpu' $(which $script_name)
+	elif grep -q 'DISPLAY' /usr/local/bin/$script_name; then
+	grep '\-cpu' /usr/local/bin/$script_name
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl"
-	elif grep 'spice' $(which $script_name); then
+	elif grep 'spice' /usr/local/bin/$script_name; then
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
 	else
-	grep '\-cpu' $(which $script_name)
+	grep '\-cpu' /usr/local/bin/$script_name
 	printf "%s\n${GREEN}启动模拟器\n"
 	fi
-	echo -e "\n如共享目录成功加载，请在浏览器地址输 \\10.0.2.4"
+	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
 	if grep -q monitor ${HOME}/xinhao/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
-	elif grep -q monitor $(which $script_name); then
+	elif grep -q monitor /usr/local/bin/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
 	fi
 	echo ""
@@ -2076,7 +2076,7 @@ EOF
 	${@}
         EOF
 	echo -e "${GREEN}启动模拟器\n"
-	echo -e "如共享目录成功加载，请在浏览器地址输 \\10.0.2.4"
+	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
         echo -e "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志
 ${RES}"
         if echo "${@}" | grep -q monitor; then
@@ -2118,7 +2118,7 @@ ${@}
 EOF
 ;;
 esac
-	chmod +x /usr/local/bin/$script_name
+	chmod +x /usr/local/bin/$script_name 2>/dev/null
 	echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
 	sleep 2 ;;
 		*) ;;
