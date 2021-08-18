@@ -1361,7 +1361,7 @@ HV_X64_MSR_EOI
 HV_X64_MSR_ICR
 HV_X64_MSR_TPR
 eof
-		CPU_MODEL="max,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
+		CPU_MODEL="core2duo,-lm,-syscall,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
 		unset _SMP
 		SMP_="2,maxcpus=4" ;;
 	0) echo -e -n "请输入: "
@@ -1372,6 +1372,8 @@ eof
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
+	99) CPU_MODEL="Penryn-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-lm,-syscall"
+		SMP_="2,cores=2,threads=1,sockets=3,maxcpus=6" ;;
         *)      CPU_MODEL=max
 		unset _SMP
 		SMP_="4,maxcpus=6" ;;
@@ -1901,11 +1903,25 @@ EOF
 
 ####################
 #test
+: <<\eof
+BIOS Information BIOS信息(Type 0)
+System Information 系统信息(Type 1)
+Baseboard (or Module) Information 、基板（或模块）信息(Type 2)
+System Enclosure or Chassis 系统外围或底架 (Type 3)
+Processor Information 处理器信息(Type 4)
+Memory Controller Information 存储控制器信息(已废弃)(Type 5, Obsolete)
+Memory Module Information 、存储模块信息(已废弃)(Type 6, Obsolete)
+调整缓存信息(Type7)
+端口连接器信息(Type8)
+系统插槽(Type9)
+OEM Strings (Type 11)
+从SMBIOS 2.3版本开始，兼容SMBIOS的实现必须包含以下10个数据表结构：BIOS信息(Type 0)、系统信息(Type 1)、系统外围或底架(Type 3)、处理器信息(Type 4)、高速缓存信息(Type 7)、系统插槽(Type 9)、物理存储阵列(Type 16)、存储设备(Type 17)、存储阵列映射地址(Type 19)、系统引导信息(Type 32)。
+eof
 	if echo ${@} | egrep -wq "512|1024|2048"; then
 	case $SYS in
 	QEMU_ADV)
 	echo -e ""
-	read -r -p "请回车" input
+	read -r -p "请回车 " input
 	case $input in
 	1)
 	if echo ${@} | grep -wq "512"; then
@@ -1920,7 +1936,11 @@ EOF
 	fi
 	if echo ${@} | egrep -wq "2048"; then
 	set -- "${@}" "-object" "memory-backend-ram,id=mem0,size=1024m"
-	set -- "${@}" "-numa" "node,memdev=mem0"
+	if echo ${@} | egrep -wq "maxcpus"; then
+		set -- "${@}" "-numa" "node,memdev=mem0"
+	else
+	set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
+	fi
 	fi
 #       set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
 #       set -- "${@}" "-numa" "cpu,node-id=0,socket-id=0"
