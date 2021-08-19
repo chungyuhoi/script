@@ -4,8 +4,9 @@ cd $(dirname $0)
 #trap " rm /tmp/hugepage\,share\=yes\,size* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 INFO() {
 	clear
-	UPDATE="2021/08/17"
+	UPDATE="2021/08/19"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	增加大页文件创建，相当于虚拟内存，降低设备ram占用率
 	加入了看到与看不到的选项
 	为方便配置-machine(-M)参数，相关选项与accel加速选项移至磁盘接口后面
 	修正电脑上创建使用快捷脚本
@@ -1087,6 +1088,8 @@ START_QEMU() {
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
 	elif grep -q monitor /usr/local/bin/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
+	else
+	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 	fi
 	echo ""
 	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
@@ -1253,6 +1256,14 @@ EOF
         read mem
 	mem=`echo $mem | tr -cd '[0-9]'`
 	if [ -n "$mem" ]; then
+		if (( "$mem" > "$mem_" )); then
+			echo -e "${YELLOW}你设置的内存值大于推荐值，建议使用大页内存(通过创建相应大页文件代替设备ram，响应速度略降低)${RES}"
+		read -r -p "1)使用大页 0)使用设备ram " input
+		case $input in
+			1) HUGEPAGE=true ;;
+			*) ;;
+		esac
+		fi
 		set -- "${@}" "-m" "$mem"
 	else
 #		set -- "${@}" "-m" "$mem_"
@@ -1466,9 +1477,9 @@ eof
 		0) ;;
                 3) SOUND_MODEL=es1370 ;;
 		4) SOUND_MODEL=hda ;;
-		5) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+		5) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
 		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
-		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
 		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
 		*) SOUND_MODEL=all ;;
 	esac
@@ -1579,9 +1590,9 @@ EOF
 #缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
 #周期长度out.period-length=1020
 #pa参数
-		set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+		set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
 		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
-		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024"
+		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
 		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
 		7) set -- "${@}" "-usb" "-device" "usb-audio" ;;
 		*) set -- "${@}" "-device" "AC97" ;;
@@ -1723,26 +1734,28 @@ eof
 		*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
 	esac ;;
 	esac
-#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
-		echo -e "是否加载${YELLOW}mem-prealloc${RES}参数(创建大页文件以指派内存占用，提高响应速度，如出现闪退请关闭)"
-   	read -r -p "1)加载 2)不加载 " input
+	if [ -z "$HUGEPAGE" ]; then	
+		echo -e "
+1) 创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}
+2) 加载${YELLOW}mem-prealloc${RES}参数(创建大页文件以指派内存占用，提高响应速度，${RED}测试无效，勿选${RES})
+0) 跳过"
+	read -r -p "请选择:  " input
 	case $input in
-		1) rm /tmp/hugepage\,share\=yes\,size* 2>/dev/null
+		1) HUGEPAGE=true ;;
+		2)
+#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
+	rm /tmp/hugepage* 2>/dev/null
 		echo -n -e "请输入大页拟使用的占用数值(以m为单位，例如1800)，回车为默认值，请输入: "
         read mem_m
         if [ -n "$mem_m" ]; then
-                set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=${mem_m}m"
+                set -- "${@}" "-mem-path" "/tmp/hugepage,share=on,size=${mem_m}m"
         else
-			#ls /tmp/hugepages.* 2>/dev/null
-		#	if [ $? != 0 ]; then
-		#	mktemp -t hugepages.XXX
-  		#	fi
-		#	HUGEPAGES=`ls /tmp/hugepages.* | sed -n 1p`
 #		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=$(($mem_ * 1048576))"
-		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=${mem_}m"
-		fi
-		set -- "${@}" "-mem-prealloc" ;;
-		*) ;; esac
+		set -- "${@}" "-mem-path" "/tmp/hugepage,share=on,size=${mem_}m"
+	fi
+	set -- "${@}" "-mem-prealloc" ;;
+	*) ;; esac
+	fi
 	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
@@ -1917,14 +1930,49 @@ Memory Module Information 、存储模块信息(已废弃)(Type 6, Obsolete)
 OEM Strings (Type 11)
 从SMBIOS 2.3版本开始，兼容SMBIOS的实现必须包含以下10个数据表结构：BIOS信息(Type 0)、系统信息(Type 1)、系统外围或底架(Type 3)、处理器信息(Type 4)、高速缓存信息(Type 7)、系统插槽(Type 9)、物理存储阵列(Type 16)、存储设备(Type 17)、存储阵列映射地址(Type 19)、系统引导信息(Type 32)。
 eof
+	case $HUGEPAGE in
+		true)
+	if echo ${@} | egrep -qw "512|1024|2048"; then
+	if echo ${@} | grep -wq "512"; then
+	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
+	set -- "${@}" "-numa" "node,memdev=mem"
+	HMAT=",hmat=on"
+	fi
+	if echo ${@} | egrep -wq "1024|2048"; then
+	set -- "${@}" "-object" "memory-backend-file,id=mem,size=1024m,mem-path=/tmp/hugepage,prealloc=on,share=on"
+	set -- "${@}" "-numa" "node,memdev=mem"
+	HMAT=",hmat=on"
+	fi
+	if echo ${@} | egrep -wq "2048"; then
+	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=1024m,mem-path=/tmp/hugepage1,prealloc=on,share=on"
+	if echo ${@} | egrep -wq "maxcpus"; then
+	set -- "${@}" "-numa" "node,memdev=pc.ram"
+	else
+	set -- "${@}" "-numa" "node,memdev=pc.ram,initiator=0"
+	fi
+	fi
+#       set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
+#       set -- "${@}" "-numa" "cpu,node-id=0,socket-id=0"
+#        set -- "${@}" "-numa" "cpu,node-id=0,socket-id=1"
+	else
+	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=${mem}m,mem-path=/tmp/hugepage,prealloc=on,share=on"
+        set -- "${@}" "-numa" "node,memdev=pc.ram"
+        HMAT=",hmat=on"
+        fi
+	;;
+
+	*)
+	if echo ${@} | grep -q 'mem-prealloc'; then
+		echo ""
+	else
 	if echo ${@} | egrep -wq "512|1024|2048"; then
 	case $SYS in
 	QEMU_ADV)
 	echo -e ""
-	read -r -p "请回车 " input
-	case $input in
-	1)
-	if echo ${@} | grep -wq "512"; then
+        read -r -p "请回车 " input
+        case $input in
+        1)
+        if echo ${@} | grep -wq "512"; then
 	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
 	set -- "${@}" "-numa" "node,memdev=mem"
 	HMAT=",hmat=on"
@@ -1934,23 +1982,21 @@ eof
 	set -- "${@}" "-numa" "node,memdev=mem"
 	HMAT=",hmat=on"
 	fi
-	if echo ${@} | egrep -wq "2048"; then
+        if echo ${@} | egrep -wq "2048"; then                 
 	set -- "${@}" "-object" "memory-backend-ram,id=mem0,size=1024m"
 	if echo ${@} | egrep -wq "maxcpus"; then
-		set -- "${@}" "-numa" "node,memdev=mem0"
+	set -- "${@}" "-numa" "node,memdev=mem0"
 	else
 	set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
 	fi
-	fi
-#       set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
-#       set -- "${@}" "-numa" "cpu,node-id=0,socket-id=0"
-#        set -- "${@}" "-numa" "cpu,node-id=0,socket-id=1"
-	;;
-	*) ;;
-	esac ;;
+        fi ;;
+        *) ;;
+        esac ;;
 
-	esac
+        esac
 	fi
+	fi ;;
+	esac
 ####################
 #cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。仅kvm
@@ -1961,6 +2007,9 @@ eof
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
 #NUMA（Non Uniform Memory Access Architecture）技术可以使众多服务器像单一系统那样运转，同时保留小系统便于编程和管理的优点。
+	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-4] ]]; then
+	unset HMAT
+	fi
 	echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
 MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off"
 #enforce-config-section=on
@@ -2081,6 +2130,8 @@ EOF
 ${RES}"
         if echo "${@}" | grep -q monitor; then
         echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
+	else
+	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
         fi
         sleep 1
         "${@}" >/dev/null 2>>${HOME}/.utqemu_log
@@ -2143,6 +2194,8 @@ esac
 	echo -e  "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
+	else
+	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 	fi
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
