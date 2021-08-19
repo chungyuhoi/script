@@ -3,10 +3,10 @@ cd $(dirname $0)
 ####################
 #trap " rm /tmp/hugepage\,share\=yes\,size* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 INFO() {
-	clear
+#	clear
 	UPDATE="2021/08/19"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	增加大页文件创建，相当于虚拟内存，降低设备ram占用率
+	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
 	加入了看到与看不到的选项
 	为方便配置-machine(-M)参数，相关选项与accel加速选项移至磁盘接口后面
 	修正电脑上创建使用快捷脚本
@@ -17,7 +17,7 @@ INFO() {
 }
 ###################
 NOTE() {
-	clear
+#	clear
 	printf "${YELLOW}注意事项${RES}
 	最近新增的内容比较多，如不能正常加载，请选择1重新安装qemu
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
@@ -49,7 +49,7 @@ eof
 
 
 ABOUT_UTQEMU(){
-	clear
+#	clear
 	printf "${YELLOW}关于utqemu脚本${RES}
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n\n"
 	case $SYS in
@@ -138,7 +138,7 @@ COMPILE(){
 }
 ###################
 ABOUT_VIRTIO(){
-	clear
+#	clear
 	printf "${YELLOW}关于virtio驱动${RES}
 	引用官方说法：QEMU为用户提供并行虚拟化块设备和网络设备的能力，其是借助virtio驱动实现的，拥有更好的性能表现以及更低的开销。
 
@@ -909,8 +909,11 @@ QEMU_SYSTEM() {
 		$sudo apt update
 		$sudo apt install curl -y
 	fi
+	uname -a | grep 'Android' -q
+	if [ $? != 0 ]; then
 	if ! grep -q https /etc/apt/sources.list; then
 		$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
+	fi
 	fi
 	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE
 	QEMU_VERSION
@@ -1091,6 +1094,11 @@ START_QEMU() {
 	else
 	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 	fi
+	if grep -q hugepage ${HOME}/xinhao/$script_name 2>/dev/null; then
+	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
+	elif grep -q hugepage /usr/local/bin/$script_name 2>/dev/null; then
+	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
+	fi
 	echo ""
 	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 	sleep 1
@@ -1256,6 +1264,8 @@ EOF
         read mem
 	mem=`echo $mem | tr -cd '[0-9]'`
 	if [ -n "$mem" ]; then
+		uname -a | grep 'Android' -q
+		if [ $? != 0 ]; then
 		if (( "$mem" > "$mem_" )); then
 			echo -e "${YELLOW}你设置的内存值大于推荐值，建议使用大页内存(通过创建相应大页文件代替设备ram，响应速度略降低)${RES}"
 		read -r -p "1)使用大页 0)使用设备ram " input
@@ -1263,6 +1273,7 @@ EOF
 			1) HUGEPAGE=true ;;
 			*) ;;
 		esac
+		fi
 		fi
 		set -- "${@}" "-m" "$mem"
 	else
@@ -1624,10 +1635,11 @@ esac
 	case $SYS in
 	ANDROID) ;;
 	*)
-	echo -e "是否使用${YELLOW}控制台${RES}调试(部分功能需root用户)"
+	echo -e "是否使用${YELLOW}控制台${RES}调试(部分功能需root用户)${RES}"
         read -r -p "1)使用 2)不使用 " input
         case $input in
 	1) rm /mnt/hugepages* 2>/dev/null
+	echo -e "${RED}注意！使用控制台不会因为qemu退出而自动删除大页文件，请退出后输rm /tmp/hugepage* /dev/hugepage*自行删除${RES}"
 		set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
 		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem1,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem1\n(qemu) object_add memory-backend-ram,id=mem2,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem2\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
 :<<\eof	
@@ -1734,6 +1746,8 @@ eof
 		*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
 	esac ;;
 	esac
+	uname -a | grep 'Android' -q
+	if [ $? != 0 ]; then
 	if [ -z "$HUGEPAGE" ]; then	
 		echo -e "
 1) 创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}
@@ -1756,7 +1770,9 @@ eof
 	set -- "${@}" "-mem-prealloc" ;;
 	*) ;; esac
 	fi
-	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
+	fi
+
+	echo -e "\n是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	2) ;;
@@ -2191,12 +2207,15 @@ esac
 	if [ $? != 0 ]; then
 	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
 	fi
-	echo -e  "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	else
 	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
+	if echo "${@}" | grep -q hugepage 2>/dev/null; then
+	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
 	fi
+	fi
+	echo -e  "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
@@ -2405,7 +2424,7 @@ LOGIN_() {
         *) ;;
         esac
         unset VERSION
-	clear
+#	clear
 	LOGIN_ ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
