@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 #trap " rm /tmp/hugepage\,share\=yes\,size* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 INFO() {
-#	clear
+	clear
 	UPDATE="2021/08/19"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
@@ -17,7 +17,7 @@ INFO() {
 }
 ###################
 NOTE() {
-#	clear
+	clear
 	printf "${YELLOW}注意事项${RES}
 	最近新增的内容比较多，如不能正常加载，请选择1重新安装qemu
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
@@ -49,7 +49,7 @@ eof
 
 
 ABOUT_UTQEMU(){
-#	clear
+	clear
 	printf "${YELLOW}关于utqemu脚本${RES}
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n\n"
 	case $SYS in
@@ -138,7 +138,7 @@ COMPILE(){
 }
 ###################
 ABOUT_VIRTIO(){
-#	clear
+	clear
 	printf "${YELLOW}关于virtio驱动${RES}
 	引用官方说法：QEMU为用户提供并行虚拟化块设备和网络设备的能力，其是借助virtio驱动实现的，拥有更好的性能表现以及更低的开销。
 
@@ -2424,7 +2424,7 @@ LOGIN_() {
         *) ;;
         esac
         unset VERSION
-#	clear
+	clear
 	LOGIN_ ;;
 	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
 	case $input in
