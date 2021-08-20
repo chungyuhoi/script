@@ -20,6 +20,7 @@ NOTE() {
 	clear
 	printf "${YELLOW}注意事项${RES}
 	最近新增的内容比较多，如不能正常加载，请选择1重新安装qemu
+	大页文件虽然可以分担设备ram，但同时会提高设备cpu负担，且创建大容量文件，请审慎使用
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
 	xp玩经典游戏(如星际争霸，帝国时代)需使用cirrus显卡才能运行
@@ -86,7 +87,7 @@ COMPILE(){
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet -y
 	if [ $? != 0 ]; then
 	$sudo apt install
 	fi
@@ -100,8 +101,14 @@ COMPILE(){
 	echo -e "${YELLOW}最新版本为$VERSION${RES}"
 	sleep 1
 	if [ ! -f $(pwd)/"$VERSION.tar.xz" ]; then
-	curl -O https://download.qemu.org/$VERSION.tar.xz
+		read -r -p "选择下载工具 1)curl 2)wget :" input
+		case $input in
+			1) curl -O https://download.qemu.org/$VERSION.tar.xz ;;
+			*) wget https://download.qemu.org/$VERSION.tar.xz ;;
+		esac
 	fi
+	echo -e "缓冲中...以免下载失败"
+	sleep 2
 	if [ ! -f $(pwd)/"$VERSION.tar.xz" ]; then
 	echo -e "${RED}获取失败，请重试${RES}"
 	CONFIRM
@@ -114,7 +121,7 @@ COMPILE(){
 		rm -rf $VERSION.tar.xz $VERSION
 		ABOUT_UTQEMU
 	fi
-	rm -rf $VERSION.tar.xz && cd $VERSION
+	cd $VERSION
 	fi
 #	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
 #aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu
@@ -129,6 +136,7 @@ COMPILE(){
 		PA
 		echo -e "${YELLOW}已安装\n删除源文件...${RES}"
 		cd && rm -rf $VERSION
+		rm -rf $VERSION.tar.xz
 	fi
 	unset VERSION
  ;;
@@ -1176,7 +1184,7 @@ esac
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
-START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 #-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
 
 cat <<-EOF
@@ -1287,6 +1295,8 @@ EOF
 	set -- "${@}" "-nodefaults"
 #不加载用户自定义的配置文件。
 	set -- "${@}" "-no-user-config"
+	set -- "${@}" "-k" "en-us"
+	set -- "${@}" "-usbdevice" "keyboard"
 	case $ARCH in
 		tablet)
 #重定向虚拟串口到主机设备
@@ -1394,6 +1404,8 @@ eof
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
+	98) CPU_MODEL="Opteron_G5,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
+		SMP_="2,cores=2,threads=1,sockets=3,maxcpus=6" ;;
 	99) CPU_MODEL="Penryn-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-lm,-syscall"
 		SMP_="2,cores=2,threads=1,sockets=3,maxcpus=6" ;;
         *)      CPU_MODEL=max
