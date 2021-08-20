@@ -1295,8 +1295,8 @@ EOF
 	set -- "${@}" "-nodefaults"
 #不加载用户自定义的配置文件。
 	set -- "${@}" "-no-user-config"
-	set -- "${@}" "-k" "en-us"
-	set -- "${@}" "-usbdevice" "keyboard"
+#	set -- "${@}" "-k" "en-us"
+#	set -- "${@}" "-usbdevice" "keyboard"
 	case $ARCH in
 		tablet)
 #重定向虚拟串口到主机设备
