@@ -88,9 +88,9 @@ COMPILE(){
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet wget -y
 	if [ $? != 0 ]; then
-	$sudo apt install
+	$sudo apt install -f
 	fi
 	echo -e "${YELLOW}检测下载${RES}"
 	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..$RC\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
@@ -108,13 +108,17 @@ COMPILE(){
 			*) wget https://download.qemu.org/$VERSION.tar.xz ;;
 		esac
 	fi
-	echo -e "缓冲中...以免下载失败"
-	sleep 2
 	if [ ! -f $(pwd)/"$VERSION.tar.xz" ]; then
 	echo -e "${RED}获取失败，请重试${RES}"
 	CONFIRM
 	ABOUT_UTQEMU
 	else
+	LENGTH=$(curl -sI https://download.qemu.org/$VERSION.tar.xz | grep Length | awk '{print $2}'| sed "s/\r//")
+
+	if [ $(ls -l "$VERSION".tar.xz | awk '{print $5}') -ne $LENGTH ]; then
+	echo -e "${YELLOW}下载的文件大小与检测的不符，请确认是否下载成功${RES}"
+	sleep 2
+	fi
 	tar xvJf $VERSION.tar.xz
 	if [ $? == 1 ]; then
 		echo -e "${RED}解压失败，请重试${RES}"
