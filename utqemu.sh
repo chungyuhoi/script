@@ -2093,7 +2093,7 @@ TCG="tcg,thread=multi"
 	if [ -n "$TB" ]; then
 	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
 	else
-	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$mem_" "${@}"
+	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=1024" "${@}"
         fi
         else
 	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
@@ -2121,7 +2121,7 @@ TCG="tcg,thread=multi"
         if [ -n "$TB" ]; then
         set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
         else
-        set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$mem_" "${@}"
+        set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=1024" "${@}"
         fi
 	else
 	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
