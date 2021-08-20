@@ -4,8 +4,9 @@ cd $(dirname $0)
 #trap " rm /tmp/hugepage\,share\=yes\,size* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 INFO() {
 	clear
-	UPDATE="2021/08/19"
+	UPDATE="2021/08/20"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
 	加入了看到与看不到的选项
 	为方便配置-machine(-M)参数，相关选项与accel加速选项移至磁盘接口后面
@@ -539,16 +540,17 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
 ##################
 QEMU_ETC() {
 
-echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
-2) 转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
-3) 修改设备标识(手机、平板、电脑)
-4) 修改源(只适用本脚本下载的系统)
-5) 安装aqemu(适用于图形界面中操作的qemu皮肤)
-6) 获取最新版termux、aspice与xsdl的安卓版下载地址(非永久有效)
-7) 模拟系统的时间不准
-8) 修改镜像目录
-9) 返回
-0) 退出\n"
+echo -e "\n1)  创建空磁盘(目前支持qcow2,vmdk)
+2)  转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
+3)  修改设备标识(手机、平板、电脑)
+4)  修改源(只适用本脚本下载的系统)
+5)  安装aqemu(适用于图形界面中操作的qemu皮肤)
+6)  获取最新版termux、aspice与xsdl的安卓版下载地址(非永久有效)
+7)  模拟系统的时间不准
+8)  修改镜像目录
+9)  更新为qemu6.0
+10) 返回
+0)  退出\n"
 	read -r -p "请选择: " input
 	case $input in
 		1) if [ ! $(command -v qemu-img) ]; then
@@ -644,8 +646,8 @@ echo -e "\n1) 创建空磁盘(目前支持qcow2,vmdk)
 	esac
 	sleep 2
 	exit 0 ;;
-	4) if ! grep -E -q 'buster|bullseye' "/etc/os-release"; then
-	echo -e "\n${RED}只支持bullseye与buster${RES}\n"
+	4) if ! grep -E -q 'buster|bullseye|sid' "/etc/os-release"; then
+	echo -e "\n${RED}只支持bullseye，sid与buster${RES}\n"
 	sleep 2
 	QEMU_ETC
 	else
@@ -660,10 +662,12 @@ ${US_URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
 		elif grep -q 'buster' /etc/os-release ;then
 echo "${US_URL} stable ${DEB}
 ${US_URL} stable-updates ${DEB}" >/etc/apt/sources.list
+		elif grep -q 'sid' /etc/os-release ;then
+echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list
 		fi
 	       	$sudo apt update ;;
 		2) 
-		if grep -q 'bullseye/sid' /etc/os-release ;then
+		if grep -q 'bullseye' /etc/os-release ;then
 echo "${BF_URL}/ bullseye ${DEB}
 ${BF_URL}/ bullseye-updates ${DEB}
 ${BF_URL}/ bullseye-backports ${DEB}
@@ -673,6 +677,8 @@ echo "$BF_URL buster ${DEB}
 ${BF_URL} buster-updates ${DEB}
 ${BF_URL} buster-backports ${DEB}
 ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
+	elif grep -q 'sid' /etc/os-release ;then
+echo "$BF_URL sid ${DEB}" >/etc/apt/sources.list
 	fi
        	$sudo apt update ;;
 		9) QEMU_SYSTEM ;;
@@ -688,12 +694,9 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 		echo -e "${RED}安装失败，请重试${RES}"
 		sleep 1
 		fi
+	QEMU_ETC
 		;;
-		9) unset FORMAT_
-			unset FORMAT
-			QEMU_SYSTEM ;;
-		0) exit 0 ;;
-		6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api " input
+	6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api " input
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
 	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -810,6 +813,19 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	fi
 	exit 0
 	QEMU_ETC ;;
+	9) echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list && $sudo apt update
+	$sudo apt install qemu-system-x86 -y
+	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 6 ]]; then
+	echo -e "更新成功"
+	else
+	echo -e "更新失败"
+	fi
+	sleep 2
+	QEMU_ETC
+	;;
+	10) unset FORMAT_ FORMAT
+		QEMU_SYSTEM ;;
+	0) exit 0 ;;
 	*) INVALID_INPUT && QEMU_ETC ;;
 	esac
 	unset FORMAT_ FORMAT
@@ -954,7 +970,7 @@ echo -e "7)  查看日志
 0)  退出\n"
 	read -r -p "请选择: " input
 	case $input in
-	1)  echo -e "${YELLOW}安装过程中，如遇到询问选择，请输(y)，安装过程容易出错，请重试安装${RES}"
+	1) echo -e "${YELLOW}安装过程中，如遇到询问选择，请输(y)，安装过程容易出错，请重试安装${RES}"
 	sleep 2
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
@@ -966,6 +982,14 @@ echo -e "7)  查看日志
 	fi
 	else
 	sudo_
+	if grep -q 'bullseye' "/etc/os-release"; then
+		echo -e "\n${YELLOW}debian-sid源地址已有qemu6.0可供安装，是否更新版本？${RES}"
+		read -r -p "1)更新为qemu6.0系统 2)继续使用qemu5.2系统 "
+		case $input in
+			1) echo 'deb http://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && apt update ;;
+			*) ;;
+		esac
+	fi
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
@@ -1375,7 +1399,8 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 		*) CPU_MODEL=max
 			unset _SMP
-			SMP_=4,maxcpus=6 ;;
+			SMP_=4,maxcpus=5
+			;;
 	esac ;;
 	9) 
 : <<\eof
@@ -1395,22 +1420,26 @@ HV_X64_MSR_TPR
 eof
 		CPU_MODEL="core2duo,-lm,-syscall,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
 		unset _SMP
-		SMP_="2,maxcpus=4" ;;
+		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
 	0) echo -e -n "请输入: "
 		read CPU_MODEL
 		if echo $CPU_MODEL | grep max; then
 		unset _SMP
-		SMP_="4,maxcpus=6"
+		SMP_="4,maxcpus=5"
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
+	96) CPU_MODEL="phenom-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fxsr-opt,-syscall,-lm"
+		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
+	97) CPU_MODEL="EPYC-IBPB,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fma,-avx,-f16c,-avx2,-rdseed,-sha-ni,-syscall,-fxsr-opt,-lm,-misalignsse,-3dnowprefetch,-osvw,-topoext,-ibpb,-nrip-save,-xsavec"
+		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
 	98) CPU_MODEL="Opteron_G5,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
-		SMP_="2,cores=2,threads=1,sockets=3,maxcpus=6" ;;
+		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
 	99) CPU_MODEL="Penryn-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-lm,-syscall"
-		SMP_="2,cores=2,threads=1,sockets=3,maxcpus=6" ;;
+		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
         *)      CPU_MODEL=max
 		unset _SMP
-		SMP_="4,maxcpus=6" ;;
+		SMP_="4,maxcpus=5" ;;
 	esac
 	set -- "${@}" "-cpu" "${CPU_MODEL}"
 	if [ -n "$_SMP" ]; then
@@ -1653,7 +1682,7 @@ esac
 	1) rm /mnt/hugepages* 2>/dev/null
 	echo -e "${RED}注意！使用控制台不会因为qemu退出而自动删除大页文件，请退出后输rm /tmp/hugepage* /dev/hugepage*自行删除${RES}"
 		set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
-		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem1,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem1\n(qemu) object_add memory-backend-ram,id=mem2,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem2\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留两个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
+		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem1,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem1\n(qemu) object_add memory-backend-ram,id=mem2,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem2\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留一个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
 :<<\eof	
 	if [ -z "$mem" ]; then
 	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
