@@ -653,8 +653,9 @@ echo -e "\n1)  创建空磁盘(目前支持qcow2,vmdk)
 	else
 	read -r -p "1)中科源 2)北外源 9)返回主目录 0)退出 " input
 	case $input in
-		1) 
-		if grep -q 'bullseye' /etc/os-release ;then
+		1) if grep -q 'sid' /etc/apt/sources.list ;then
+		echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list
+		elif grep -q 'bullseye' /etc/os-release ;then
 echo "${US_URL}/ bullseye ${DEB}
 ${US_URL}/ bullseye-updates ${DEB}
 ${US_URL}/ bullseye-backports ${DEB}
@@ -662,12 +663,11 @@ ${US_URL}-security bullseye-security ${DEB}" >/etc/apt/sources.list
 		elif grep -q 'buster' /etc/os-release ;then
 echo "${US_URL} stable ${DEB}
 ${US_URL} stable-updates ${DEB}" >/etc/apt/sources.list
-		elif grep -q 'sid' /etc/os-release ;then
-echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list
 		fi
 	       	$sudo apt update ;;
-		2) 
-		if grep -q 'bullseye' /etc/os-release ;then
+		2) if grep -q 'sid' /etc/apt/sources.list ;then
+		echo "$BF_URL sid ${DEB}" >/etc/apt/sources.list
+		elif grep -q 'bullseye' /etc/os-release ;then
 echo "${BF_URL}/ bullseye ${DEB}
 ${BF_URL}/ bullseye-updates ${DEB}
 ${BF_URL}/ bullseye-backports ${DEB}
@@ -677,8 +677,6 @@ echo "$BF_URL buster ${DEB}
 ${BF_URL} buster-updates ${DEB}
 ${BF_URL} buster-backports ${DEB}
 ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
-	elif grep -q 'sid' /etc/os-release ;then
-echo "$BF_URL sid ${DEB}" >/etc/apt/sources.list
 	fi
        	$sudo apt update ;;
 		9) QEMU_SYSTEM ;;
