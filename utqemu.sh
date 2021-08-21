@@ -552,7 +552,7 @@ echo -e "\n1)  创建空磁盘(目前支持qcow2,vmdk)
 6)  获取最新版termux、aspice与xsdl的安卓版下载地址(非永久有效)
 7)  模拟系统的时间不准
 8)  修改镜像目录
-9)  更新为qemu6.0
+9)  更新为支持qemu6.0容器
 10) 返回
 0)  退出\n"
 	read -r -p "请选择: " input
@@ -985,7 +985,7 @@ echo -e "7)  查看日志
 	else
 	sudo_
 	if grep -q 'bullseye' "/etc/os-release"; then
-		echo -e "\n${YELLOW}debian-sid源地址已有qemu6.0可供安装，是否更新版本？${RES}"
+		echo -e "\n${YELLOW}debian-sid源地址已有qemu6.0可供安装，是否更新版本？(非本脚本安装的容器慎选)${RES}"
 		read -r -p "1)更新为qemu6.0系统 2)继续使用qemu5.2系统 "
 		case $input in
 			1) echo 'deb http://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && apt update ;;
@@ -1431,14 +1431,17 @@ eof
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
-	96) CPU_MODEL="phenom-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fxsr-opt,-syscall,-lm"
-		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
+	95) CPU_MODEL="Opteron_G5,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
+		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
+	96) CPU_MODEL="Penryn-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-lm,-syscall"
+		SMP_="2,cores=2,threads=1,sockets=2,m
+axcpus=4" ;;
 	97) CPU_MODEL="EPYC-IBPB,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fma,-avx,-f16c,-avx2,-rdseed,-sha-ni,-syscall,-fxsr-opt,-lm,-misalignsse,-3dnowprefetch,-osvw,-topoext,-ibpb,-nrip-save,-xsavec"
 		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
-	98) CPU_MODEL="Opteron_G5,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
-		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
-	99) CPU_MODEL="Penryn-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-lm,-syscall"
-		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
+	98) CPU_MODEL="Cascadelake-Server-v4,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-syscall,-lm"
+		SMP_="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
+	99) CPU_MODEL="phenom-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fxsr-opt,-syscall,-lm"
+		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
         *)      CPU_MODEL=max
 		unset _SMP
 		SMP_="4,maxcpus=5" ;;
