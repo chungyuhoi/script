@@ -2199,16 +2199,14 @@ export PULSE_SERVER=tcp:127.0.0.1:4713
 ${@}
 EOF
 ;;
-		amd|gtk_)
+		gtk_)
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 ${@}
 EOF
 ;;
-		*)
-	case $ARCH in
-	computer)
+		amd)
 cat >${HOME}/xinhao/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
@@ -2236,7 +2234,6 @@ EOF
 	echo -e "${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
 	fi
 	exit 0 ;;
-        esac ;;
 
 
 	esac
