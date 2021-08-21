@@ -1794,12 +1794,21 @@ eof
 	esac
 	uname -a | grep 'Android' -q
 	if [ $? != 0 ]; then
-	if [ -z "$HUGEPAGE" ]; then	
-		echo -e "
+	if [ -z "$HUGEPAGE" ]; then
+	echo -e "创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}"
+	read -r -p "1)加载 2)不加载 " input
+	case $input in
+	1) HUGEPAGE=true ;;
+	*) ;;
+	esac
+	fi
+	fi
+:<<\eof
+echo -e "
 1) 创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}
 2) 加载${YELLOW}mem-prealloc${RES}参数(创建大页文件以指派内存占用，提高响应速度，${RED}测试无效，勿选${RES})
 0) 跳过"
-	read -r -p "请选择:  " input
+	read -r -p "请选择: " input
 	case $input in
 		1) HUGEPAGE=true ;;
 		2)
@@ -1817,8 +1826,8 @@ eof
 	*) ;; esac
 	fi
 	fi
-
-	echo -e "\n是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
+eof
+	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	2) ;;
