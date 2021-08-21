@@ -638,7 +638,7 @@ echo -e "\n1)  创建空磁盘(目前支持qcow2,vmdk)
 		sleep 1 ;;
 	3) read -r -p "1)手机平板 2)电脑 " input
 	case $input in
-		1) sed -i '/computer/d' ${HOME}/.utqemu_
+		1) sed -i '/computer/d' ${HOME}/.utqemu_ 2>/dev/null
 		echo "tablet" >>${HOME}/.utqemu_
 	      	echo -e "${GREEN}已修改，请重新登录脚本${RES}" ;;
 		2) sed -i '/tablet/d' ${HOME}/.utqemu_
@@ -2181,39 +2181,6 @@ TCG="tcg,thread=multi"
 	read script_name
 
 
-	case $ARCH in
-	computer)
-cat >${HOME}/xinhao/$script_name <<-EOF
-killall -9 qemu-system-x86 2>/dev/null
-killall -9 qemu-system-i38 2>/dev/null
-${@}
-EOF
-	chmod +x ${HOME}/xinhao/$script_name
-        echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
-        sleep 2
-        printf "%s\n"
-        cat <<-EOF
-	${@}
-        EOF
-	echo -e "${GREEN}启动模拟器\n"
-	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
-        echo -e "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志
-${RES}"
-        if echo "${@}" | grep -q monitor; then
-        echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
-	else
-	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
-        fi
-        sleep 1
-        "${@}" >/dev/null 2>>${HOME}/.utqemu_log
-	if [ $? == 1 ]; then
-	FAIL
-	echo -e "${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
-	fi
-	exit 0 ;;
-	esac
-
-
 	case $display in
 		xsdl)
 cat >/usr/local/bin/$script_name <<-EOF
@@ -2232,14 +2199,47 @@ export PULSE_SERVER=tcp:127.0.0.1:4713
 ${@}
 EOF
 ;;
-		amd|gtk_|*)
+		amd|gtk_)
 cat >/usr/local/bin/$script_name <<-EOF
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 ${@}
 EOF
 ;;
-esac
+		*)
+	case $ARCH in
+	computer)
+cat >${HOME}/xinhao/$script_name <<-EOF
+killall -9 qemu-system-x86 2>/dev/null
+killall -9 qemu-system-i38 2>/dev/null
+${@}
+EOF
+	chmod +x ${HOME}/xinhao/$script_name
+	echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
+	sleep 2
+        printf "%s\n"
+cat <<-EOF
+${@}
+EOF
+	echo -e "${GREEN}启动模拟器\n"
+	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
+	echo -e "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	if echo "${@}" | grep -q monitor; then
+	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
+	else
+	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
+	fi
+	sleep 1
+	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
+	if [ $? == 1 ]; then
+	FAIL
+	echo -e "${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
+	fi
+	exit 0 ;;
+        esac ;;
+
+
+	esac
 	chmod +x /usr/local/bin/$script_name 2>/dev/null
 	echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
 	sleep 2 ;;
