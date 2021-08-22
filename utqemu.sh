@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 cd $(dirname $0)
 ####################
-#trap " rm /tmp/hugepage\,share\=yes\,size* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
 INFO() {
 	clear
 	UPDATE="2021/08/20"
@@ -859,25 +858,6 @@ PA() {
 	case $ARCH in
 	computer) echo -e "${GREEN}主目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
 	*) 
-: <<\eof
-if [ $(command -v smbpasswd) ]; then
-		echo -e "${YELLOW}请设置模拟系统访问本地共享目录的密码(输入过程不会显示)，用户名为本用户$(whoami)${RES}"
-		smbpasswd -a $(whoami)
-	fi
-	mkdir /etc/samba 2>/dev/null
-	if [ -f /etc/samba/smb.conf ]; then
-	cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
-	fi
-#	cat >/etc/samba/smb.conf<<-'eof'
-[share]
-path = ${HOME}/share
-available = yes
-browseable = yes
-public = yes
-writeable = yes
-guest ok = yes
-#eof
-eof
 	echo -e "${GREEN}手机目录下已创建/xinhao/windows文件夹，请把系统镜像，分驱镜像，光盘放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n本地共享目录是本系统主目录下的share(容量不受限制，可随意修改)${RES}" ;;
 	esac
 	fi
@@ -1075,7 +1055,8 @@ unable to find CPU model; ${YELLOW}cpu名字有误${RES}"
 	QEMU_SYSTEM ;;
 	0) exit 0 ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
-	esac                                            }
+	esac
+}
 
 
 ################
@@ -1110,12 +1091,12 @@ START_QEMU() {
 	if grep '\-cpu' ${HOME}/xinhao/$script_name 2>/dev/null; then
 	printf "%s\n${GREEN}启动模拟器\n"
 	elif grep 'vnc' /usr/local/bin/$script_name; then
-	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n"
 	elif grep -q 'DISPLAY' /usr/local/bin/$script_name; then
 	grep '\-cpu' /usr/local/bin/$script_name
-	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl"
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl\n"
 	elif grep 'spice' /usr/local/bin/$script_name; then
-	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900"
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900\n"
 	else
 	grep '\-cpu' /usr/local/bin/$script_name
 	printf "%s\n${GREEN}启动模拟器\n"
@@ -1262,8 +1243,6 @@ EOF
 		*) echo -e "\n${GREEN}请确认系统镜像已放入目录${STORAGE}里${RES}\n" ;;
 	esac
 	sleep 1
-#       pkill -9 qemu-system-x86
-#	pkill -9 qemu-system-i38
 	killall -9 qemu-system-x86 2>/dev/null
 	killall -9 qemu-system-i38 2>/dev/null
 	if [ ! -d "${DIRECT}${STORAGE}" ];then
@@ -1946,10 +1925,6 @@ EOF
 	case $SHARE in
 		true)
 		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
-#		set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
-#		set -- "${@}" "-device" "virtio-9p-pci,fsdev=fsdev-fs0,mount_tag=virtio9p01"
-#		set -- "${@}" "-fsdev" "local,security_model=none,id=fsdev-fs0,path=/sdcard/xinhao/"
-#		set -- "${@}" "-device" "virtio-9p-pci,id=fs0,fsdev=fsdev-fs0,mount_tag=virtio9p01,bus=pci.0,addr=0x1d"
 ;;
 		*) ;;
 	esac ;;
