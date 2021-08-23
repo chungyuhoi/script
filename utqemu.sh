@@ -966,9 +966,9 @@ echo -e "7)  查看日志
 	sudo_
 	if grep -q 'bullseye' "/etc/os-release"; then
 		echo -e "\n${YELLOW}debian-sid源地址已有qemu6.0可供安装，是否更新版本？(非本脚本安装的容器慎选)${RES}"
-		read -r -p "1)更新为qemu6.0系统 2)继续使用qemu5.2系统 "
+		read -r -p "1)继续使用qemu5.2系统 2)更新为qemu6.0系统 "
 		case $input in
-			1) echo 'deb http://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && apt update ;;
+			2) echo 'deb http://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && apt update ;;
 			*) ;;
 		esac
 	fi
