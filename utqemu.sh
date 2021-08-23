@@ -2129,9 +2129,9 @@ TCG="tcg,thread=multi"
 		xsdl)
 			export DISPLAY=127.0.0.1:0
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
-		spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
+		spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing=on,seamless-migration=off"
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
-		spice_) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing,seamless-migration=off"
+		spice_) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing=on,seamless-migration=off"
 			set -- "${@}" "-device" "virtio-serial-pci" "-device" "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0" "-chardev" "spicevmc,id=spicechannel0,name=vdagent"
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		amd) set -- "${@}" "-display" "gtk,gl=off" ;;
