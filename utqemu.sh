@@ -5,13 +5,10 @@ INFO() {
 	clear
 	UPDATE="2021/08/20"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	完善编译安装的依赖问题
 	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
 	加入了看到与看不到的选项
-	为方便配置-machine(-M)参数，相关选项与accel加速选项移至磁盘接口后面
-	修正电脑上创建使用快捷脚本
-	增加测试本机cpu支持模拟的cpu特性
-	新增本地共享文件夹，主目录下share，由于镜像原因，可能部份镜像不支持
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -87,7 +84,7 @@ COMPILE(){
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-*-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet wget -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-2.91-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet wget libusb-1.0-0 libjpeg-dev libgbm-dev libgoogle-perftools-dev libui-gxmlcpp-dev libvirglrenderer-dev -y
 	if [ $? != 0 ]; then
 	$sudo apt install -f
 	fi
@@ -547,7 +544,7 @@ echo -e "\n1)  创建空磁盘(目前支持qcow2,vmdk)
 2)  转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
 3)  修改设备标识(手机、平板、电脑)
 4)  修改源(只适用本脚本下载的系统)
-5)  安装aqemu(适用于图形界面中操作的qemu皮肤)
+5)  安装aqemu(适用于图形界面中操作的图形前端)
 6)  获取最新版termux、aspice与xsdl的安卓版下载地址(非永久有效)
 7)  模拟系统的时间不准
 8)  修改镜像目录
@@ -1359,7 +1356,7 @@ EOF
 QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 9)max 0)自己输 " input ;;
 	esac
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
-#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
+#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。syscal 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大约300个系统调用。
         case $input in
         1) CPU_MODEL=n270
 		SMP_="2,cores=1,threads=2,sockets=1" ;;
@@ -1398,6 +1395,7 @@ hv-vapic：是否配置hv-vapic决定Guest执行#cpuid 0x40000003返回的寄存
 HV_X64_MSR_EOI
 HV_X64_MSR_ICR
 HV_X64_MSR_TPR
+hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic
 eof
 		CPU_MODEL="core2duo,-lm,-syscall,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
 		unset _SMP
@@ -1410,16 +1408,16 @@ eof
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
-	95) CPU_MODEL="Opteron_G5,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
+	95) CPU_MODEL="Opteron_G5,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
 		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
-	96) CPU_MODEL="Penryn-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-lm,-syscall"
+	96) CPU_MODEL="Penryn-v1,-lm,-syscall"
 		SMP_="2,cores=2,threads=1,sockets=2,m
 axcpus=4" ;;
-	97) CPU_MODEL="EPYC-IBPB,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fma,-avx,-f16c,-avx2,-rdseed,-sha-ni,-syscall,-fxsr-opt,-lm,-misalignsse,-3dnowprefetch,-osvw,-topoext,-ibpb,-nrip-save,-xsavec"
-		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
+	97) CPU_MODEL="EPYC-v2,-fma,-avx,-f16c,-avx2,-rdseed,-sha-ni,-syscall,-fxsr-opt,-lm,-misalignsse,-3dnowprefetch,-osvw,-topoext,-ibpb,-nrip-save,-xsavec"
+		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
 	98) CPU_MODEL="Cascadelake-Server-v4,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-syscall,-lm"
 		SMP_="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
-	99) CPU_MODEL="phenom-v1,hv_spinlocks=0xffff,hv_relaxed,hv_time,hv_vapic,-fxsr-opt,-syscall,-lm"
+	99) CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-lm"
 		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
         *)      CPU_MODEL=max
 		unset _SMP
@@ -1576,22 +1574,10 @@ else
 		fi ;;
 	esac ;;
 	esac ;;
-		5) set -- "${@}" "-device" "qxl-vga"
+		5) set -- "${@}" "-device" "qxl-vga,max_outputs=1"
 #			set -- "${@}" "-device" "virtio-keyboard-pci"
-: <<\EOF
--device ich9-usb-ehci1,id=usb -device ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on -chardev spicevmc,id=charredir0,name=usbredir -device usb-redir,chardev=charredir0,id=redir0,bus=usb.0,port=4 -chardev spicevmc,id=charredir1,name=usbredir -device usb-redir,chardev=charredir1,id=redir1,bus=usb.0,port=5
-
-set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
-#set -- "${@}" "-device" "ich9-usb-ehci1,id=usb"
-set -- "${@}" "-device" "ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on"
-#set -- "${@}" "-device" "ich9-usb-uhci2,masterbus=usb.0,firstport=2"
-#set -- "${@}" "-device" "ich9-usb-uhci3,masterbus=usb.0,firstport=4"
-set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev1" "-device" "usb-redir,chardev=usbredirchardev1,id=usbredirdev1"
-#set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev2" "-device" "usb-redir,chardev=usbredirchardev2,id=usbredirdev2"
-#set -- "${@}" "-chardev" "spicevmc,name=usbredir,id=usbredirchardev3" "-device" "usb-redir,chardev=usbredirchardev3,id=usbredirdev3"
-EOF
 ;;
-		*) set -- "${@}" "-device" "VGA" ;;
+		*) set -- "${@}" "-device" "VGA,vgamem_mb=256" ;;
 	esac
 
 	echo -e "请选择${YELLOW}网卡${RES}"
@@ -1704,6 +1690,7 @@ eof
 #		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_CODE.fd"
 #		set -- "${@}" "-pflash" "/usr/share/OVMF/OVMF_VARS.fd"
 		set -- "${@}" "-drive" "if=pflash,format=raw,file=/usr/share/OVMF/OVMF_CODE.fd,readonly=on"
+#OVMF变量（“ VARS”）文件的脚本，该文件中注册了默认的安全启动密钥。 并验证它是否可以正常工作。
 		set -- "${@}" "-drive" "if=pflash,format=raw,file=/usr/share/OVMF/OVMF_VARS.fd,readonly=on"
 	fi ;;
 	*) ;;
@@ -2015,9 +2002,9 @@ eof
 	case $SYS in
 	QEMU_ADV)
 	echo -e ""
-        read -r -p "请回车 " input
-        case $input in
-        1)
+#        read -r -p "请回车 " input
+#        case $input in
+#        1)
         if echo ${@} | grep -wq "512"; then
 	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
 	set -- "${@}" "-numa" "node,memdev=mem"
@@ -2035,9 +2022,10 @@ eof
 	else
 	set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
 	fi
-        fi ;;
-        *) ;;
-        esac ;;
+        fi
+#	;;
+#       *) ;;
+#       esac ;;
 
         esac
 	fi
@@ -2124,7 +2112,7 @@ TCG="tcg,thread=multi"
 	case $display in
 		wlan_vnc) set -- "${@}" "-display" "vnc=$IP:0" ;;
 		vnc) 
-		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=on"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		xsdl)
 			export DISPLAY=127.0.0.1:0
