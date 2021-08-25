@@ -20,7 +20,7 @@ deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ focal-updates main restricted univ
 deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ focal-backports main restricted universe multiverse
 deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ focal-security main restricted universe multiverse' >focal/etc/apt/sources.list
 touch "focal/root/.hushlogin"
-echo "" >focal/proc/version
+echo $(uname -a) | sed 's/Android/GNU\/Linux/' >focal/proc/version
 echo ". firstrun" >>focal/etc/profile
 cat >focal/root/firstrun<<-'eof'
 echo -e "正在配置首次运行\n安装常用应用"

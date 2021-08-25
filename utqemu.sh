@@ -1104,7 +1104,7 @@ START_QEMU() {
 	elif grep -q monitor /usr/local/bin/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
 	else
-	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
+	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	fi
 	if grep -q hugepage ${HOME}/xinhao/$script_name 2>/dev/null; then
 	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
@@ -1170,7 +1170,7 @@ esac
 	else
 	mem_=512
 	fi
-	MA=pc-i440fx-3.1 VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
+	MA=pc-i440fx-3.1 VIDEO="-global migration.send-configuration=off -device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
 	2) 	LIST
 	HDA_READ
 	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
@@ -1274,8 +1274,6 @@ EOF
         read mem
 	mem=`echo $mem | tr -cd '[0-9]'`
 	if [ -n "$mem" ]; then
-		uname -a | grep 'Android' -q
-		if [ $? != 0 ]; then
 		if (( "$mem" > "$mem_" )); then
 			echo -e "${YELLOW}你设置的内存值大于推荐值，建议使用大页内存(通过创建相应大页文件代替设备ram，响应速度略降低)${RES}"
 		read -r -p "1)使用大页 0)使用设备ram " input
@@ -1283,7 +1281,6 @@ EOF
 			1) HUGEPAGE=true ;;
 			*) ;;
 		esac
-		fi
 		fi
 		set -- "${@}" "-m" "$mem"
 	else
@@ -1649,10 +1646,10 @@ esac
 	echo -e "是否使用${YELLOW}控制台${RES}调试(部分功能需root用户)${RES}"
         read -r -p "1)使用 2)不使用 " input
         case $input in
-	1) rm /mnt/hugepages* 2>/dev/null
-	echo -e "${RED}注意！使用控制台不会因为qemu退出而自动删除大页文件，请退出后输rm /tmp/hugepage* /dev/hugepage*自行删除${RES}"
+	1) rm ${HOME}/hugepages* 2>/dev/null
+	echo -e "${RED}注意！使用控制台不会因为qemu退出而自动删除大页文件，请退出后输rm ${HOME}/hugepage*自行删除${RES}"
 		set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
-		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem1,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem1\n(qemu) object_add memory-backend-ram,id=mem2,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem2\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留一个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
+		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem1,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem1\n(qemu) object_add memory-backend-ram,id=mem2,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem2\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=${HOME}/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留一个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
 :<<\eof	
 	if [ -z "$mem" ]; then
 	set -- "${@}" "-object" "memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=/mnt/hugepages-$(( $mem_ / 2 ))m"
@@ -1739,6 +1736,14 @@ eof
         *) ;;
 	esac ;;
 	esac
+	if [ -z "$HUGEPAGE" ]; then
+        echo -e "创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}"
+        read -r -p "1)加载 2)不加载 " input
+        case $input in
+        1) HUGEPAGE=true ;;
+        *) ;;
+        esac
+        fi
 #amd
 ####################
 	case $(dpkg --print-architecture) in
@@ -1758,17 +1763,6 @@ eof
 		*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
 	esac ;;
 	esac
-	uname -a | grep 'Android' -q
-	if [ $? != 0 ]; then
-	if [ -z "$HUGEPAGE" ]; then
-	echo -e "创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}"
-	read -r -p "1)加载 2)不加载 " input
-	case $input in
-	1) HUGEPAGE=true ;;
-	*) ;;
-	esac
-	fi
-	fi
 :<<\eof
 echo -e "
 1) 创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}
@@ -1779,14 +1773,14 @@ echo -e "
 		1) HUGEPAGE=true ;;
 		2)
 #让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
-	rm /tmp/hugepage* 2>/dev/null
+	rm ${HOME}/hugepage* 2>/dev/null
 		echo -n -e "请输入大页拟使用的占用数值(以m为单位，例如1800)，回车为默认值，请输入: "
         read mem_m
         if [ -n "$mem_m" ]; then
-                set -- "${@}" "-mem-path" "/tmp/hugepage,share=on,size=${mem_m}m"
+                set -- "${@}" "-mem-path" "${HOME}/hugepage,share=on,size=${mem_m}m"
         else
-#		set -- "${@}" "-mem-path" "/tmp/hugepage,share=yes,size=$(($mem_ * 1048576))"
-		set -- "${@}" "-mem-path" "/tmp/hugepage,share=on,size=${mem_}m"
+#		set -- "${@}" "-mem-path" "${HOME}/hugepage,share=yes,size=$(($mem_ * 1048576))"
+		set -- "${@}" "-mem-path" "${HOME}/hugepage,share=on,size=${mem_}m"
 	fi
 	set -- "${@}" "-mem-prealloc" ;;
 	*) ;; esac
@@ -1972,12 +1966,12 @@ eof
 	HMAT=",hmat=on"
 	fi
 	if echo ${@} | egrep -wq "1024|2048"; then
-	set -- "${@}" "-object" "memory-backend-file,id=mem,size=1024m,mem-path=/tmp/hugepage,prealloc=on,share=on"
+	set -- "${@}" "-object" "memory-backend-file,id=mem,size=1024m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
 	set -- "${@}" "-numa" "node,memdev=mem"
 	HMAT=",hmat=on"
 	fi
 	if echo ${@} | egrep -wq "2048"; then
-	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=1024m,mem-path=/tmp/hugepage1,prealloc=on,share=on"
+	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=1024m,mem-path=${HOME}/hugepage1,prealloc=on,share=on"
 	if echo ${@} | egrep -wq "maxcpus"; then
 	set -- "${@}" "-numa" "node,memdev=pc.ram"
 	else
@@ -1988,7 +1982,7 @@ eof
 #       set -- "${@}" "-numa" "cpu,node-id=0,socket-id=0"
 #        set -- "${@}" "-numa" "cpu,node-id=0,socket-id=1"
 	else
-	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=${mem}m,mem-path=/tmp/hugepage,prealloc=on,share=on"
+	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=${mem}m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
         set -- "${@}" "-numa" "node,memdev=pc.ram"
         HMAT=",hmat=on"
         fi
@@ -2050,62 +2044,46 @@ MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off"
 TCG="tcg,thread=multi"
 	read -r -p "1)pc 2)q35 " input
 	case $input in
-	1|"")
+	2) PC=q35 ;;
+	3) case $SYS in                                                                  QEMU_PRE) PC=pc ;;
+	*) PC=pc-i440fx-3.1 
+	set -- "-global" "migration.send-configuration=off" "${@}"
+	;;
+	esac ;;
+	*) PC=pc ;;
+	esac
 	case $(dpkg --print-architecture) in
 	arm*|aarch64)
 	case $SYS in
-		QEMU_PRE) set -- "-machine" "pc" "--accel" "$TCG" "${@}" ;;
+		QEMU_PRE) set -- "-machine" "$PC" "--accel" "$TCG" "${@}" ;;
 		*)
+#	set -- "-global" "migration.send-configuration=on" "${@}"
+	if [ $PC == pc-i440fx-3.1 ]; then
+	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
+	else
         echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
 	case $input in
 		1)
-	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}" ;;
+	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}" ;;
 	3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
 	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
 	if [ -n "$TB" ]; then
-	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
 	else
-	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=1024" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=1024" "${@}"
         fi
         else
-	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
 	fi ;;
-        *) set -- "-machine" "pc,accel=kvm:xen:hax:tcg,$MA$HMAT,usb=off" "${@}" ;;
-        esac ;;
+        *) set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,$MA$HMAT,usb=off" "${@}" ;;
+        esac
+	fi ;;
         esac ;;
 	*)
-	set -- "-machine" "pc,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on$HMAT" "${@}" ;;
-	esac ;;
-        2) echo -e ${BLUE}"如果无法进入系统，请选择pc${RES}"
-        case $(dpkg --print-architecture) in
-                arm*|aarch64)
-        case $SYS in
-                QEMU_PRE) set -- "-machine" "q35" "--accel" "$TCG" "${@}" ;;
-		*)
-                echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-        read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
-        case $input in
-                1) set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}" ;;
-                3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
-        echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-        echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
-        read TB
-        if [ -n "$TB" ]; then
-        set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
-        else
-        set -- "-machine" "q35,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=1024" "${@}"
-        fi
-	else
-	set -- "-machine" "pc,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
-        fi ;;
-	*) set -- "-machine" "q35,accel=kvm:xen:hax:tcg,$MA$HMAT,usb=off" "${@}" ;;
-        esac ;;
-        esac ;;
-	*) set -- "-machine" "q35,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on$HMAT" "${@}" ;;
-	esac ;;
+	set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on$HMAT" "${@}" ;;
 	esac
 ########################
 	if [ -n "$display" ]; then
@@ -2188,7 +2166,7 @@ EOF
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	else
-	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
+	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	fi
 	sleep 1
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
@@ -2225,7 +2203,7 @@ EOF
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	else
-	trap " rm /tmp/hugepage* /mnt/hugepages* 2>/dev/null;exit" SIGINT EXIT
+	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	if echo "${@}" | grep -q hugepage 2>/dev/null; then
 	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
 	fi

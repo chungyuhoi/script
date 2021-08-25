@@ -1795,7 +1795,7 @@ fi ;;
 	if [ -e start-$rootfs.sh ]; then
 		rm -rf start-$rootfs.sh
 	fi
-	echo "" >$rootfs/proc/version
+	echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$rootfs/proc/version
 		echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD

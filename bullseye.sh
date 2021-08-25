@@ -9,6 +9,7 @@ tar xvf rootfs.tar.xz -C bullseye
 rm rootfs.tar.xz
 echo -e "\e[33m系统已下载,文件夹名为bullseye\e[0m"
 sleep 2
+echo $(uname -a) | sed 's/Android/GNU\/Linux/' >bullseye/proc/version
 sed -i "1i\export TZ='Asia/Shanghai'" bullseye/etc/profile
 sed -i "3i\rm -rf \/tmp\/.X\*" bullseye/etc/profile
 sed -i "/zh_CN.UTF/s/#//" bullseye/etc/locale.gen
@@ -20,12 +21,15 @@ deb http://mirrors.ustc.edu.cn/debian/ bullseye-updates main contrib non-free
 deb http://mirrors.ustc.edu.cn/debian/ bullseye-backports main contrib non-free
 #deb http://mirrors.ustc.edu.cn/debian-security/ bullseye/updates main contrib non-free
 deb http://mirrors.ustc.edu.cn/debian-security bullseye-security main contrib non-free' >bullseye/etc/apt/sources.list
-echo "" >bullseye/proc/version
 echo ". firstrun" >>bullseye/etc/profile
 cat >bullseye/root/firstrun<<-'eof'
 echo -e "正在配置首次运行\n安装常用应用"
 sleep 1
-apt update && apt install -y && apt install curl wget vim fonts-wqy-zenhei tar chromium mpv xfce4 xfce4-terminal ristretto lxtask dbus-x11 -y
+apt update
+if ! grep -q https /etc/apt/sources.list; then
+apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && apt update
+fi
+apt install -y && apt install curl wget vim fonts-wqy-zenhei tar chromium mpv xfce4 xfce4-terminal ristretto lxtask dbus-x11 -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
 if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
 echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
