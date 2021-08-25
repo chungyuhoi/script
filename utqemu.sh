@@ -3,9 +3,9 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/08/20"
+	UPDATE="2021/08/23"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	完善编译安装的依赖问题
+	增加编译安装的依赖包
 	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
 	加入了看到与看不到的选项
@@ -1129,7 +1129,7 @@ esac
 	case $ARCH in
 	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
 	case $SYS in
-	QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 9)返回 0)退出 " input ;;
+		QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面(桌面环境) 5)局域网vnc 9)返回 0)退出 " input ;;
 	*) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(测试阶段) 9)返回 0)退出 " input
 	esac
 	case $input in
