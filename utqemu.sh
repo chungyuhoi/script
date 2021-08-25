@@ -3,11 +3,10 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/08/23"
+	UPDATE="2021/08/24"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	增加编译安装的依赖包
-	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
+	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	加入了看到与看不到的选项
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
@@ -16,16 +15,16 @@ INFO() {
 NOTE() {
 	clear
 	printf "${YELLOW}注意事项${RES}
-	最近新增的内容比较多，如不能正常加载，请选择1重新安装qemu
-	大页文件虽然可以分担设备ram，但同时会提高设备cpu负担，且创建大容量文件，请审慎使用
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
 	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
 	xp玩经典游戏(如星际争霸，帝国时代)需使用cirrus显卡才能运行
-	模拟效率，因手机而异，我用的是华为手机，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
+	模拟效率，因手机而异，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功。
 	声音输出（不支持termux与utermux环境，pc建议ac97，q35建议hda）。
 	sdl输出显示，源地址并未编译qemu的sdl，这里只是通过信号输出，需先开启xsdl(不支持termux与utermux环境）。
-	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好。\n"
+	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好。
+	大页文件虽然可以分担设备ram，但同时会提高设备cpu负担，且创建大容量文件，请审慎使用
+	最近新增的内容比较多，如不能正常加载，请选择1重新安装qemu\n"
 	if [ $(command -v qemu-system-x86_64) ]; then
 		echo -e "\e[33m检测到你已安装qemu-system-x86，版本是\e[0m"
 		echo -e "\e[32mQEMU emulator version $(echo $qemu_ver | awk '{print $4}')\e[0m"
@@ -354,8 +353,8 @@ LOGIN() {
 	if [[ ! -e "$DEBIAN-qemu/root/.utqemu_" ]]; then
 	echo $UPDATE >>$DEBIAN-qemu/root/.utqemu_
 	elif ! grep -q $UPDATE "$DEBIAN-qemu/root/.utqemu_" ; then
-	echo -e "\n${GREEN}检测到脚本有更新，更新日期$UPDATE${RES}"
 	INFO
+	echo -e "\n${GREEN}检测到脚本有更新，是否更新${RES}"
 	read -r -p "1)更新 0)忽略并不再提示此版本 " input
 	case $input in
 		1|"") rm $DEBIAN-qemu/root/utqemu.sh 2>/dev/null
@@ -374,6 +373,7 @@ command+=" -S $DEBIAN-qemu"
 command+=" -b /sdcard"
 command+=" -b $DEBIAN-qemu/root:/dev/shm"
 command+=" -b /sdcard:/root/sdcard"
+#command+=" -b $DEBIAN-qemu/proc/version:/proc/version"
 command+=" -w /root"
 command+=" /usr/bin/env -i"
 command+=" HOME=/root"
@@ -459,6 +459,7 @@ EOF
 	else
 		cp utqemu.sh $sys_name/root/
 	fi
+	echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$sys_name/proc/version
 	echo "bash utqemu.sh" >>$sys_name/root/.bashrc
 	echo "$UPDATE" >>$sys_name/root/.utqemu_
 	echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"
@@ -1844,7 +1845,7 @@ EOF
 		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso_name" ;;
 		*)
 		echo -e "\n请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
-	read -r -p "1)ide 2)sata 3)virtio 4)测试用(勿选) " input
+	read -r -p "1)ide 2)sata 3)virtio " input
 	case $input in
 ##################
 #IDE			
@@ -1910,20 +1911,6 @@ EOF
 		*) ;;
 	esac ;;
 ##################
-#test
-		4) set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk"
-	if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk"
-	fi
-	if [ -n "$iso_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,index=2,media=cdrom"
-	fi
-	case $SHARE in
-		true)
-		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,format=raw" ;;
-		*) ;;
-	esac
-				;;
 ##################
 #hda
 		*) set -- "${@}" "-hda" "${DIRECT}${STORAGE}$hda_name" 
