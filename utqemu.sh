@@ -1100,7 +1100,7 @@ START_QEMU() {
 	grep '\-cpu' /usr/local/bin/$script_name
 	printf "%s\n${GREEN}启动模拟器\n"
 	fi
-	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
+	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 	if grep -q monitor ${HOME}/xinhao/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
 	elif grep -q monitor /usr/local/bin/$script_name 2>/dev/null; then
@@ -1175,7 +1175,7 @@ esac
 	MA=pc-i440fx-3.1 VIDEO="-global migration.send-configuration=off -device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
 	2) 	LIST
 	HDA_READ
-	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-usb -drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
 	3) echo -e "${GREEN}此选项参数是hda声卡，virtio网卡，qxl显卡，virtio磁盘接口(注意，模拟系统需已装驱动，否则启动不成功)${RES}"
 		sleep 1
@@ -1190,7 +1190,7 @@ esac
 killall -9 qemu-system-x86 2>/dev/null
 killall -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
-START="qemu-system-x86_64 -machine $MA,hmat=off,usb=off,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -usb -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+START="qemu-system-x86_64 -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 #-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
 
 cat <<-EOF
@@ -1198,7 +1198,7 @@ $START
 EOF
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
 	echo ""
-	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
+	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 	$START >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
@@ -1297,6 +1297,10 @@ EOF
 #不加载用户自定义的配置文件。
 	set -- "${@}" "-no-user-config"
 #	set -- "${@}" "-k" "en-us"
+#OHCI1.1 UHCI1.1 EHCI2.0 XHCI3.0
+#-device ich9-usb-ehci1,id=usb
+#-device ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on
+#-device nec-usb-xhci
 #	set -- "${@}" "-usbdevice" "keyboard"
 	case $ARCH in
 		tablet)
@@ -1615,7 +1619,7 @@ else
 		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
 		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
 		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
-		7) set -- "${@}" "-usb" "-device" "usb-audio" ;;
+		7) set -- "${@}" "-device" "usb-audio" ;;
 		*) set -- "${@}" "-device" "AC97" ;;
 	esac	;;
 esac
@@ -1638,7 +1642,7 @@ esac
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	1)
-	set -- "${@}" "-usb" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
+	set -- "${@}" "-device" "ich9-usb-ehci1,id=ehci" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
 	*) ;;
 	esac
 #开全内存balloon功能，俗称内存气球
@@ -1720,11 +1724,15 @@ eof
 	read -r -p "输入usb名称对应的bus序号(如001，请输1或者011，请输11) " HOSTBUS
 	lsusb -t | grep -w "Bus 0$HOSTBUS" -A 4 2>/dev/null
 	read -r -p "输入Port序号(如001，请输1或者011，请输11) " HOSTPORT
+	if echo ${@} | grep ! -q echi; then
         set -- "${@}" "-device" "usb-ehci,id=ehci"
+	fi
 	set -- "${@}" "-device" "usb-host,bus=ehci.0,hostbus=$HOSTBUS,hostport=$HOSTPORT" ;;
 	2) echo -e "\n${YELLOW}请插入usb${RES}"
 	CONFIRM
+	if echo ${@} | grep ! -q echi; then
 	set -- "${@}" "-device" "usb-ehci,id=ehci"
+	fi
 	lsusb 2>/dev/null
 	if [ $? == 1 ]; then
 	echo -e "${RED}未能获取设备信息，请确认已获取系统权限${RES}"
@@ -1799,7 +1807,7 @@ eof
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	2) ;;
-	*) set -- "${@}" "-usb" "-device" "usb-tablet" ;;
+	*) set -- "${@}" "-device" "usb-tablet" ;;
 	esac
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #driftfix=slew i386存在时间漂移
@@ -1823,7 +1831,7 @@ eof
 	*)
         set -- "${@}" "-rtc" "base=localtime"
         set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
-        set -- "${@}" "-usb" "-device" "usb-tablet"
+        set -- "${@}" "-device" "usb-tablet"
         ;;
 	esac
 
@@ -1893,7 +1901,7 @@ EOF
 	fi
 	case $SHARE in
 		true)
-		set -- "${@}" "-usb" "-drive" "if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/"
+		set -- "${@}" "-drive" "if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/"
 		set -- "${@}" "-device" "usb-storage,drive=disk1"
 		;;
 	*) ;;
@@ -2033,7 +2041,7 @@ eof
 	unset HMAT
 	fi
 	echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
-MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off"
+MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off,usb=on"
 #enforce-config-section=on
 TCG="tcg,thread=multi"
 	read -r -p "1)pc 2)q35 " input
@@ -2049,30 +2057,30 @@ TCG="tcg,thread=multi"
 	case $(dpkg --print-architecture) in
 	arm*|aarch64)
 	case $SYS in
-		QEMU_PRE) set -- "-machine" "$PC" "--accel" "$TCG" "${@}" ;;
+		QEMU_PRE) set -- "-machine" "$PC,usb=on" "--accel" "$TCG" "${@}" ;;
 		*)
 #	set -- "-global" "migration.send-configuration=on" "${@}"
 	if [ $PC == pc-i440fx-3.1 ]; then
-	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}"
 	else
         echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
 	case $input in
 		1)
-	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}" ;;
+	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}" ;;
 	3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
 	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
 	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
 	read TB
 	if [ -n "$TB" ]; then
-	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=$TB" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=$TB" "${@}"
 	else
-	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG,tb-size=1024" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=1024" "${@}"
         fi
         else
-	set -- "-machine" "$PC,$MA$HMAT,usb=off" "--accel" "$TCG" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}"
 	fi ;;
-        *) set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,$MA$HMAT,usb=off" "${@}" ;;
+        *) set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,$MA$HMAT" "${@}" ;;
         esac
 	fi ;;
         esac ;;
@@ -2155,7 +2163,7 @@ cat <<-EOF
 ${@}
 EOF
 	echo -e "${GREEN}启动模拟器\n"
-	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
+	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 	echo -e "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
@@ -2192,7 +2200,7 @@ EOF
 	esac
 	uname -a | grep 'Android' -q
 	if [ $? != 0 ]; then
-	echo '如共享目录成功加载，请在浏览器地址输 \\10.0.2.4'
+	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 	fi
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
