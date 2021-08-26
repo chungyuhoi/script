@@ -3,11 +3,12 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/08/24"
+	UPDATE="2021/08/25"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
 	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	加入了看到与看不到的选项
+	增加另一种只读共享方式，可访问整个设备，部分文件显示类型有bug
 	增加了一些未经完全测试通过的参数配置
 	修改了一些细节\n"
 }
@@ -1627,13 +1628,19 @@ esac
 	read -r -p "1)是 2)否 " input
 	case $input in
         1)
-	echo -e "是否加载${YELLOW}共享文件夹${RES}"
+		echo -e "是否加载${YELLOW}共享文件夹${RES}(500m容量，只读)"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	1|"") SHARE=true ;;
 	*) ;;
 	esac
-
+	echo -e "是否加载${YELLOW}共享文件夹${RES}(mtp协议，可访问整个设备目录，显示部分文件有bug，只读，部分旧系统或精简系统需驱动)${RES}"
+	read -r -p "1)加载 2)不加载 " input
+	case $input in
+	1)
+	set -- "${@}" "-usb" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
+	*) ;;
+	esac
 #开全内存balloon功能，俗称内存气球
 	echo -e "是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
 	read -r -p "1)开启 2)不开启 " input
