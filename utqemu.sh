@@ -3,13 +3,13 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/08/25"
+	UPDATE="2021/08/26"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
 	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	加入了看到与看不到的选项
 	增加另一种只读共享方式，可访问整个设备，部分文件显示类型有bug
-	增加了一些未经完全测试通过的参数配置
+	做了些参数优化
 	修改了一些细节\n"
 }
 ###################
@@ -1181,7 +1181,7 @@ esac
 		sleep 1
 		LIST
 		HDA_READ
-	MA=q35 VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio,cache=none" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
+	MA=q35 VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
 	;;
 	9) QEMU_SYSTEM ;;
 	*) INVALID_INPUT
@@ -1507,7 +1507,7 @@ axcpus=4" ;;
 		*)
 		echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
 	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 4 ]]; then
-	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 5)ac97(修改参数，不适合spice) 6)hda(修改参数，不适合spice) 0)不加载 " input
+	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 5)ac97(修改参数，优化声音卡顿，不适合spice) 6)hda(修改参数，优化声卡卡顿，不适合spice) 0)不加载 " input
 	case $input in
 		1|"") SOUND_MODEL=ac97 ;;
 		2) SOUND_MODEL=sb16 ;;
@@ -1601,7 +1601,7 @@ else
 		wlan_vnc) ;;
 		*)
 	echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-	read -r -p "1)es1370 2)sb16 3)hda 4)ac97(推荐) 5)ac97(修改参数，不适合spice) 6)hda(修改参数，不适合spice) 7)usb-audio 0)不加载 " input
+	read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)ac97(修改参数，优化声音卡顿，不适合spice) 6)hda(修改参数，优化声音卡顿，不适合spice) 7)usb-audio 0)不加载 " input
 	case $input in
 		1) set -- "${@}" "-device" "ES1370" ;;
 		2) set -- "${@}" "-device" "sb16" ;;
@@ -1642,7 +1642,7 @@ esac
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	1)
-	set -- "${@}" "-device" "ich9-usb-ehci1,id=ehci" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
+	set -- "${@}" "-device" "ich9-usb-ehci1,id=ehci" "-device" "ich9-usb-uhci1,masterbus=ehci.0,multifunction=on" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
 	*) ;;
 	esac
 #开全内存balloon功能，俗称内存气球
@@ -1807,7 +1807,7 @@ eof
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	2) ;;
-	*) set -- "${@}" "-device" "usb-tablet" ;;
+	*) set -- "-device" "usb-tablet" "${@}" ;;
 	esac
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #driftfix=slew i386存在时间漂移
@@ -1831,7 +1831,7 @@ eof
 	*)
         set -- "${@}" "-rtc" "base=localtime"
         set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
-        set -- "${@}" "-device" "usb-tablet"
+        set -- "-device" "usb-tablet" "${@}"
         ;;
 	esac
 
@@ -1884,12 +1884,12 @@ EOF
 
 ##################
 #SATA        
-	set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none,cache=none"
+	set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none"
 	set -- "${@}" "-device" "ahci,id=ahci"
 	set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
 
 	if [ -n "$hdb_name" ]; then
-	set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none,cache=none"
+	set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none"
 	set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
 	fi
 	if [ -n "$iso1_name" ]; then
@@ -1909,9 +1909,9 @@ EOF
 ##################
 #VIRTIO
 
-	3) set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio,cache=none"
+	3) set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio"
 	if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk,if=virtio,cache=none"
+		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,index=1,media=disk,if=virtio"
 	fi
 	if [ -n "$iso1_name" ]; then
 		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=1"
