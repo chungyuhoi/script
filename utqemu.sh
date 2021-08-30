@@ -34,18 +34,6 @@ NOTE() {
 	fi
 }
 ###################
-: <<\eof
-#curl -o ${PREFIX}/bin/utqemu https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh && chmod +x ${PREFIX}/bin/utqemu && sed -i 's/\$(dirname \$0)//' ${PREFIX}/bin/utqemu
-#curl -o /usr/local/bin/utqemu https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh && sed -i "1d;2i\#\!$(command -v bash)" /usr/local/bin/utqemu && chmod +x /usr/local/bin/utqemu && sed -i 's/\$(dirname \$0)//' /usr/local/bin/utqemu
-curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh | grep '2021/08/02'
-if [ $? == 0 ]; then
-echo 1
-else
-echo 2
-fi
-eof
-
-
 ABOUT_UTQEMU(){
 	clear
 	printf "${YELLOW}关于utqemu脚本${RES}
@@ -84,7 +72,8 @@ COMPILE(){
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-2.91-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet wget libusb-1.0-0 libjpeg-dev libgbm-dev libgoogle-perftools-dev libui-gxmlcpp-dev libvirglrenderer-dev -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-2.91-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet wget libusb-1.0-0 libjpeg-dev libgbm-dev libgoogle-perftools-dev libvirglrenderer-dev -y
+#	libui-gxmlcpp-dev
 	if [ $? != 0 ]; then
 	$sudo apt install -f
 	fi
@@ -1052,7 +1041,8 @@ unable to find CPU model; ${YELLOW}cpu名字有误${RES}"
 	11) bash -c "$(curl -s https://cdn.jsdelivr.net/gh/chungyuhoi/script/Check_cpuids.sh)"
 	CONFIRM
 	QEMU_SYSTEM ;;
-	0) exit 0 ;;
+	0) trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
+	exit 0 ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
 	esac
 }
@@ -1271,6 +1261,21 @@ EOF
 	esac
 	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
 	read iso_name
+
+#S1 =>Standby. 即指说系统处于低电源供应状态,在 windows or BIOS 中可设定屏幕信号输出关闭、硬盘停止运转进入待机状态、电源灯处于闪烁状态.此时动一动鼠标、按键盘任一键均可叫醒电脑.是最耗电的睡眠模式。                #S2 =>Power Standby.和 S1 几乎是一样的.但是睡眠模式比S1更深 不再给CPU供电                                 #S3 =>Suspend to RAM.即是把 windows 当前存在内存中的所有资料保存不动,然后进入“假关机”.即待机模式         #S4 =>Suspend to Disk.                               #即是把 windows 内存中的资料完整的保存在硬盘中,等开机时就直接从保存这些资料的地方直接完整的读到内存中,不需要跑一堆应用程序.使用这种模式,硬盘一定要腾出一个完整的连续空间.WinME/2000/XP 在电源管理中休眠的作用就是这个 .                                                 #S5 =>Shutdown.有些部件仍然带电，可被键盘，时钟叫醒  #0关闭1开
+	case $QEMU_SYS in
+	qemu-system-i386)
+	set -- "${@}" "-global" "PIIX4_PM.disable_s3=1"
+	set -- "${@}" "-global" "PIIX4_PM.disable_s4=1" ;;
+	*)
+	set -- "${@}" "-global" "ICH9-LPC.disable_s3=1"
+	set -- "${@}" "-global" "ICH9-LPC.disable_s4=1" ;;
+	esac
+
+
+
+
+
 #内存
 	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)，以m为单位（1g=1024m，例如输512），自动分配请回车: "
         read mem
@@ -1298,8 +1303,11 @@ EOF
 	set -- "${@}" "-no-user-config"
 #	set -- "${@}" "-k" "en-us"
 #OHCI1.1 UHCI1.1 EHCI2.0 XHCI3.0
+#USB2.0
 #-device ich9-usb-ehci1,id=usb
 #-device ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on
+#USB3.0
+#-device nec-usb-xhci,id=usb -device usb-storage,bus=usb.0,drive=disk1 -drive if=none,format=raw,id=disk1,file=/sdcard/xinhao/windows/4g.qcow2
 #-device nec-usb-xhci
 #	set -- "${@}" "-usbdevice" "keyboard"
 	case $ARCH in
@@ -1762,6 +1770,7 @@ eof
         fi
 #amd
 ####################
+:<<\eof
 	case $(dpkg --print-architecture) in
 	i*86|x86*|amd64)
 #在KVM中内存允许过载使用，分配给客户机的内存总数可以大于实际可用的物理内存总数。客户机过载使用内存的上限是：宿主机可用物理内存空间和交换空间的大小之和。超过这个上限会使客户机因内存不足被强制关闭。		
@@ -1779,7 +1788,8 @@ eof
 		*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
 	esac ;;
 	esac
-:<<\eof
+
+
 echo -e "
 1) 创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}
 2) 加载${YELLOW}mem-prealloc${RES}参数(创建大页文件以指派内存占用，提高响应速度，${RED}测试无效，勿选${RES})
@@ -2428,7 +2438,8 @@ LOGIN_() {
 	*) sed -i "/utqemu/d" ${PREFIX}/etc/bash.bashrc ;;
 	esac
 	MAIN ;;
-	0) exit 0 ;;
+	0) trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
+	exit 0 ;;
 	*) INVALID_INPUT
 		MAIN ;;
 	esac
