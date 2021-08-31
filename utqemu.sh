@@ -3,13 +3,14 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/08/26"
+	UPDATE="2021/08/31"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
 	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	加入了看到与看不到的选项
 	增加另一种只读共享方式，可访问整个设备，部分文件显示类型有bug
 	做了些参数优化
+	\e[33m修改tb-size默认值\e[0m
 	修改了一些细节\n"
 }
 ###################
@@ -1407,6 +1408,32 @@ HV_X64_MSR_EOI
 HV_X64_MSR_ICR
 HV_X64_MSR_TPR
 hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic
+
+-smbios BIOS信息(Type 0)、系统信息(Type 1)、系统外围或底架(Type 3)、处理器信息(Type 4)、高速缓存信息(Type 7)、系统插槽(Type 9)、物理存储阵列(Type 16)、存储设备(Type 17)、存储阵列映射地址(Type 19)、系统引导信息(Type 32)
+Product Name ： 产品名称，苹果电脑型号。
+Family ： 家庭， 苹果电脑所属系列。
+Manufacturer ： 制造商名称，Apple Inc 即苹果公司。
+Bios Version：主板Bios 版本号。
+Bios Release Date ：主板Bios发布日期。
+Bios Vendor ：主板Bios提供商 。
+Chassis Manufacturer ： 机箱制造商
+Location In Chassis：机箱位置。
+Chassis Asset Tag：机箱资产标签。
+Chassis Type ： 机箱类型。
+Board Type ：主板类型。
+Board-ID：主板ID。
+Board Manufacturer ：主板制造商信息。
+Board Version ： 主板版本。
+Board Serial Number ： 主板序列号。
+Serial Number ：电脑序列号。
+Generate New ：随机获取新的序列号。
+SmUUID： 格式应为“00000000-0000-1000-8000-xxxxxxxxxx”其中“xxxxxxxxxxxx”为你的网卡MAC值。
+Mobile：移动。若为移动平台，请勾选。
+Trust ：托管。和内置自定义的smbios table相关，如果你的内存侦测存在问题请取消勾选试试。
+Firmware Features：固件特征。
+Firmware Features Mask：固件特征掩码。
+Platform Features ：平台功能。
+Version ：固件版本，
 eof
 		CPU_MODEL="core2duo,-lm,-syscall,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
 		unset _SMP
@@ -2085,7 +2112,7 @@ TCG="tcg,thread=multi"
 	if [ -n "$TB" ]; then
 	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=$TB" "${@}"
 	else
-	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=1024" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=$(( $mem_ / 2 ))" "${@}"
         fi
         else
 	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}"
