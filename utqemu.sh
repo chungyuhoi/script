@@ -3,14 +3,17 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/08/31"
+	UPDATE="2021/09/01"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
 	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	加入了看到与看不到的选项
 	增加另一种只读共享方式，可访问整个设备，部分文件显示类型有bug
 	做了些参数优化
-	\e[33m修改tb-size默认值\e[0m
+	\e[33m修改tb-size默认值
+	多次测试，建议指定tcg而非自动检测
+	强烈建议尝试大页内存代替手机运行内存，如内存设置大于默认值自动触发，或在进阶选项配置
+	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验\e[0m
 	修改了一些细节\n"
 }
 ###################
@@ -73,10 +76,27 @@ COMPILE(){
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils pulseaudio python libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev libusb-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-2.91-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev usbutils telnet wget libusb-1.0-0 libjpeg-dev libgbm-dev libgoogle-perftools-dev libvirglrenderer-dev -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils usbutils telnet wget libvirglrenderer-dev libusb-dev libusb-1.0-0 python pulseaudio -y
+#libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-2.91-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev libjpeg-dev libgbm-dev libgoogle-perftools-dev -y
 #	libui-gxmlcpp-dev
 	if [ $? != 0 ]; then
 	$sudo apt install -f
+	fi
+	if [ $? != 0 ]; then
+	if [ `whoami` == "root" ]; then
+	echo -e "依赖包是否正常安装
+1) 是
+2) 否，进行低级安装
+3) 忽略，继续编译
+9) 返回"
+	read -r -p "请选择: " input
+	case $input in
+		2)
+	apt install -y git; apt install -y libglib2.0-dev; apt install -y libfdt-dev; apt install -y libpixman-1-dev; apt install -y zlib1g-dev; apt install -y libsdl1.2-dev; apt install -y libsnappy-dev; apt install -y liblzo2-dev; apt install -y automake; apt install -y gcc; apt install -y python3; apt install -y python3-setuptools; apt install -y build-essential; apt install -y ninja-build; apt install -y libspice-server-dev; apt install -y libsdl2-dev; apt install -y libspice-protocol-dev; apt install -y meson; apt install -y libgtk-3-dev; apt install -y libaio-dev; apt install -y gettext; apt install -y samba; apt install -y xz-utils; apt install -y pulseaudio; apt install -y python; apt install -y libbluetooth-dev; apt install -y libbrlapi-dev; apt install -y libbz2-dev; apt install -y libcap-dev; apt install -y libcap-ng-dev; apt install -y libcurl4-gnutls-dev; apt install -y libibverbs-dev; apt install -y libncurses5-dev; apt install -y libnuma-dev; apt install -y librbd-dev; apt install -y librdmacm-dev; apt install -y libsasl2-dev; apt install -y libseccomp-dev; apt install -y libusb-dev; apt install -y flex; apt install -y bison; apt install -y git-email; apt install -y libssh2-1-dev; apt install -y libvde-dev; apt install -y libvdeplug-dev; apt install -y libvte-2.91-dev; apt install -y libxen-dev; apt install -y valgrind; apt install -y xfslibs-dev; apt install -y libnfs-dev; apt install -y libiscsi-dev; apt install -y usbutils; apt install -y telnet; apt install -y wget; apt install -y libusb-1.0-0; apt install -y libjpeg-dev; apt install -y libgbm-dev; apt install -y libgoogle-perftools-dev; apt install -y libvirglrenderer-dev ;;
+	9) ABOUT_UTQEMU ;;
+	*) ;;
+	esac
+	fi
 	fi
 	echo -e "${YELLOW}检测下载${RES}"
 	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..$RC\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
@@ -1446,6 +1466,13 @@ eof
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
+	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,+hypervisor,hv_spinlocks=0xFFFFFFFF,hv_relaxed,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm"
+		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8"
+		set -- "${@}" "-smbios" "type=0,vendor=Hewlett-Packard,version=J61 v03.69,date=03/25/2014,release=03.2014,uefi=on"
+		set -- "${@}" "-smbios" "type=1,manufacturer=Hewlett-Packard,product=HP Z620 Workstation,version=Not Specified,serial=6CR419WFHT,uuid=90065980-D287-11E3-B1B0-A0481CABDFB4,sku=G2F14UC#AB2,family=103C_53335X G=D"
+		set -- "${@}" "-smbios" "type=2,manufacturer=Hewlett-Packard,product=158A,version=0.00,serial=6CR419WFHT,asset=6CR419WFHT,location=Not Specified"
+                set -- "${@}" "-smbios" "type=3,manufacturer=Hewlett-Packard,version=Not Specified,serial=6CR419WFHT,asset=6CR419WFHT,sku=Not Specified"
+		set -- "${@}" "-smbios" "type=4,sock_pfx=CPU0,manufacturer=Intel,version=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,serial=Not Specified,asset=Not Specified,part=Not Specified,max-speed=3800,current-speed=2800" ;;
 	95) CPU_MODEL="Opteron_G5,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
 		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
 	96) CPU_MODEL="Penryn-v1,-lm,-syscall"
@@ -1667,18 +1694,20 @@ esac
 	read -r -p "1)是 2)否 " input
 	case $input in
         1)
-		echo -e "是否加载${YELLOW}共享文件夹${RES}(500m容量，只读)"
+		echo -e "是否加载${YELLOW}共享文件夹${RES}"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
-	1|"") SHARE=true ;;
-	*) ;;
-	esac
-	echo -e "是否加载${YELLOW}共享文件夹${RES}(mtp协议，可访问整个设备目录，显示部分文件有bug，只读，部分旧系统或精简系统需驱动)${RES}"
-	read -r -p "1)加载 2)不加载 " input
+		1) 
+			echo -e "\n1) 传统500m容量，只读"
+			echo -e "2) mtp协议，可访问整个设备目录，显示部分文件有bug，只读，部分旧系统或精简系统需驱动"
+			echo -e "9) 不加载"
+	read -r -p "请选择: " input
 	case $input in
-	1)
-	set -- "${@}" "-device" "ich9-usb-ehci1,id=ehci" "-device" "ich9-usb-uhci1,masterbus=ehci.0,multifunction=on" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
+	1) SHARE=true ;;
+	2) set -- "${@}" "-device" "ich9-usb-ehci1,id=ehci" "-device" "ich9-usb-uhci1,masterbus=ehci.0,multifunction=on" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
 	*) ;;
+	*) esac
+	echo "" ;;
 	esac
 #开全内存balloon功能，俗称内存气球
 	echo -e "是否开${YELLOW}全内存balloon${RES}功能(需安装virtio驱动)"
