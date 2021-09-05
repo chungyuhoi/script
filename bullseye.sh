@@ -10,6 +10,12 @@ rm rootfs.tar.xz
 echo -e "\e[33m系统已下载,文件夹名为bullseye\e[0m"
 sleep 2
 echo $(uname -a) | sed 's/Android/GNU\/Linux/' >bullseye/proc/version
+if [ ! -f "bullseye/usr/bin/perl" ]; then
+        cp bullseye/usr/bin/perl* bullseye/usr/bin/perl
+fi
+cat >bullseye/usr/bin/uptime<<-'eof'
+sed -n "/load average/s/#//;s@$(grep 'load average' /usr/bin/uptime | awk '{print $2}' | sed -n 1p)@$(date +%T)@"p /usr/bin/uptime
+eof
 sed -i "1i\export TZ='Asia/Shanghai'" bullseye/etc/profile
 sed -i "3i\rm -rf \/tmp\/.X\*" bullseye/etc/profile
 sed -i "/zh_CN.UTF/s/#//" bullseye/etc/locale.gen
@@ -95,6 +101,8 @@ eof
 
 echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
+sed -i \"/days/d\" bullseye/usr/bin/uptime
+sed -i \"1i \#\$(uptime)\" bullseye/usr/bin/uptime
 unset LD_PRELOAD
-proot --kill-on-exit -S bullseye --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b bullseye/proc/version:/proc/version -b bullseye/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-bullseye.sh && chmod +x start-bullseye.sh
+proot --kill-on-exit -S bullseye --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b bullseye/usr/bin/uptime:/proc/usr/bin/uptime -b bullseye/proc/version:/proc/version -b bullseye/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-bullseye.sh && chmod +x start-bullseye.sh
 echo -e "已创建root用户系统登录脚本,登录方式为\e[33m./start-bullseye.sh\e[0m"

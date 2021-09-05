@@ -295,7 +295,7 @@ SETTLE() {
 10) GitHub资源库(仅支持debian-bullseye)
 11) python3和pip应用
 12) 中文汉化
-13) 安装系统信息显示(neofetch,screenfetch)
+13) 安装系统信息显示(neofetch,screenfetch,conky)
 14) 用不了pkill，下载pkill恢复包\n"
 read -r -p "E(exit) M(main)请选择: " input
 
@@ -332,6 +332,8 @@ else
 		2|"") echo "" ;;
 	esac
 #	chmod +4755 /usr/bin/sudo ; chown root:root /usr/bin/sudo ; chmod +w /etc/sudoers
+#	chmod -v 4755 /usr/bin/sudo
+#	chmod -v 0440 /etc/sudoers
 			fi
 	if grep -q "$name" "/etc/sudoers"; then
 		echo ""
@@ -436,7 +438,8 @@ SETTLE ;;
 	11) INSTALL_PYTHON3 ;;
 	12) LANGUAGE_CHANGE ;;
 	13) echo -e "\n1)neofetch
-2)screenfetch\n"
+2)screenfetch
+3)conky(在图形界面下使用)\n"
 		read -r -p "E(exit) M(main)请选择: " input
 		case $input in
 			1) echo "安装neofetch"
@@ -447,6 +450,88 @@ SETTLE ;;
 			$sudo_t	apt install screenfetch
 				echo -e "${BLUE}done${RES}"
 				SETTLE ;;
+			3) echo "安装conky"
+				$sudo_t apt install conky
+cat >${HOME}/.conkyrc<<-'eof'
+conky.config = {
+    alignment = 'top_right',
+    background = false,
+    border_width = 1,
+    cpu_avg_samples = 2,
+    default_color = 'white',
+    default_outline_color = 'white',
+    default_shade_color = 'white',
+    double_buffer = true,
+    draw_borders = true,
+    draw_graph_borders = true,
+    draw_outline = false,
+    draw_shades = false,
+    extra_newline = false,
+    font = 'DejaVu Sans Mono:size=12',
+    gap_x = 10,
+    gap_y = 60,
+    minimum_height = 5,
+    minimum_width = 5,
+    net_avg_samples = 2,
+    no_buffers = true,
+    out_to_console = false,
+    out_to_ncurses = false,
+    out_to_stderr = false,
+    out_to_x = true,
+    own_window = true,
+    own_window_argb_visual = true,
+    own_window_class = 'Conky',
+    own_window_transparent = true,
+    own_window_type = 'desktop',
+    show_graph_range = false,
+    show_graph_scale = false,
+    stippled_borders = 0,
+    update_interval = 8.0,
+    uppercase = false,
+    use_spacer = 'none',
+    use_xft = true,
+}
+
+conky.text = [[
+${color white}Info:$color ${scroll 32 Good day $conky_version}
+$hr
+${color white}Frequency (in GHz):$color $freq_g
+${color white}CPU ${hr 1}
+Frequency: ${alignr}${freq dyn} MHz
+Processes: ${alignr}$processes ($running_processes running)
+${top name 1}$alignr${top cpu 1}
+${top name 2}$alignr${top cpu 2}
+${top name 3}$alignr${top cpu 3}
+${color white}RAM Usage:$color $mem/$memmax - $memperc% ${membar 4}
+${color white}Swap Usage:$color $swap/$swapmax - $swapperc% ${swapbar 4}
+$hr
+${color white}File systems:
+ / $color${fs_used /}/${fs_size /} ${fs_bar 6 /}
+$hr
+${color white}Name              PID     CPU%   MEM%
+${color white} ${top name 1} ${top pid 1} ${top cpu 1} ${top mem 1}
+${color white} ${top name 2} ${top pid 2} ${top cpu 2} ${top mem 2}
+${color white} ${top name 3} ${top pid 3} ${top cpu 3} ${top mem 3}
+${color white} ${top name 4} ${top pid 4} ${top cpu 4} ${top mem 4}
+${color white}SYSTEM ${hr 1}
+Hostname: $alignr$nodename
+Kernel: $alignr$kernel
+Machine:$alignr$machine
+Temp: ${alignr}${acpitemp} °C
+${color white}Date: 2021-09-02
+${color white}MEMORY ${hr 1}
+Ram ${alignr}$mem / $memmax ($memperc%)
+${membar 4}
+swap ${alignr}$swap / $swapmax ($swapperc%)
+${swapbar 4}
+Highest MEM $alignr MEM%
+${top_mem name 1}$alignr ${top_mem mem 1}
+${top_mem name 2}$alignr ${top_mem mem 2}
+${top_mem name 3}$alignr ${top_mem mem 3}
+]]
+eof
+			echo -e "${BLUE}done${RES}"
+			SETTLE ;;
 			[Ee]) echo "exit"
 				exit 0 ;;
 			[Mm]) echo "返回"
@@ -1796,10 +1881,15 @@ fi ;;
 		rm -rf start-$rootfs.sh
 	fi
 	echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$rootfs/proc/version
-		echo "killall -9 pulseaudio 2>/dev/null
+cat >$rootfs/usr/bin/uptime<<-'eof'
+sed -n "/load average/s/#//;s@$(grep 'load average' /usr/bin/uptime | awk '{print $2}' | sed -n 1p)@$(date +%T)@"p /usr/bin/uptime
+eof
+echo "killall -9 pulseaudio 2>/dev/null
+sed -i \"/days/d\" $rootfs/usr/bin/uptime
+sed -i \"1i \#\$(uptime)\" $rootfs/usr/bin/uptime
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -S $rootfs --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $rootfs/proc/version:/proc/version -b $rootfs/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" > start-$rootfs.sh && chmod +x start-$rootfs.sh
+proot --kill-on-exit -S $rootfs --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $rootfs/proc/stat:/proc/stat  -b $rootfs/proc/version:/proc/version -b $rootfs/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" > start-$rootfs.sh && chmod +x start-$rootfs.sh
 echo -e "\n是否加载外部sdcard"
 read -r -p "1)是 2)跳过 请选择: " input
 case $input in
@@ -2197,6 +2287,9 @@ SYSTEM_DOWN() {
                 sleep 2
                 echo "修改时区"
                 sed -i "1i\export TZ='Asia/Shanghai'" $bagname/etc/profile
+		if [ ! -f "$bagname/usr/bin/perl" ]; then
+        cp $bagname/usr/bin/perl* $bagname/usr/bin/perl
+	fi
 		cat >$bagname/root/firstrun<<-'eof'
 		printf "%b" "\e[33m正常进行首次运行配置\e[0m" && sleep 1 &&apt update
 		if ! grep -q https /etc/apt/sources.list ]; then
@@ -2215,7 +2308,7 @@ sleep 1
 if grep -q 'ubuntu' "$bagname/etc/os-release" ; then
         touch "$bagname/root/.hushlogin"
 fi
-echo "" >$bagname/proc/version
+echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$bagname/proc/version
 echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD

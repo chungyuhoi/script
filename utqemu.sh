@@ -3,17 +3,15 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/09/01"
+	UPDATE="2021/09/04"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	增加大页文件创建，相当于虚拟内存，降低设备ram占用率，触发选项是内存设置高于默认值，或者进入进阶选项
-	增加qemu6.0源地址下载，当选择支持qemu5.0以上版本容器安装qemu，会提示是否更新6.0还是继续使用5.2，也可以在维护更新系统安装
 	加入了看到与看不到的选项
-	增加另一种只读共享方式，可访问整个设备，部分文件显示类型有bug
 	做了些参数优化
-	\e[33m修改tb-size默认值
+	修改tb-size默认值
 	多次测试，建议指定tcg而非自动检测
 	强烈建议尝试大页内存代替手机运行内存，如内存设置大于默认值自动触发，或在进阶选项配置
-	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验\e[0m
+	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验
+	\e[33m修复安装容器报错\e[0m
 	修改了一些细节\n"
 }
 ###################
@@ -92,7 +90,7 @@ COMPILE(){
 	read -r -p "请选择: " input
 	case $input in
 		2)
-	apt install -y git; apt install -y libglib2.0-dev; apt install -y libfdt-dev; apt install -y libpixman-1-dev; apt install -y zlib1g-dev; apt install -y libsdl1.2-dev; apt install -y libsnappy-dev; apt install -y liblzo2-dev; apt install -y automake; apt install -y gcc; apt install -y python3; apt install -y python3-setuptools; apt install -y build-essential; apt install -y ninja-build; apt install -y libspice-server-dev; apt install -y libsdl2-dev; apt install -y libspice-protocol-dev; apt install -y meson; apt install -y libgtk-3-dev; apt install -y libaio-dev; apt install -y gettext; apt install -y samba; apt install -y xz-utils; apt install -y pulseaudio; apt install -y python; apt install -y libbluetooth-dev; apt install -y libbrlapi-dev; apt install -y libbz2-dev; apt install -y libcap-dev; apt install -y libcap-ng-dev; apt install -y libcurl4-gnutls-dev; apt install -y libibverbs-dev; apt install -y libncurses5-dev; apt install -y libnuma-dev; apt install -y librbd-dev; apt install -y librdmacm-dev; apt install -y libsasl2-dev; apt install -y libseccomp-dev; apt install -y libusb-dev; apt install -y flex; apt install -y bison; apt install -y git-email; apt install -y libssh2-1-dev; apt install -y libvde-dev; apt install -y libvdeplug-dev; apt install -y libvte-2.91-dev; apt install -y libxen-dev; apt install -y valgrind; apt install -y xfslibs-dev; apt install -y libnfs-dev; apt install -y libiscsi-dev; apt install -y usbutils; apt install -y telnet; apt install -y wget; apt install -y libusb-1.0-0; apt install -y libjpeg-dev; apt install -y libgbm-dev; apt install -y libgoogle-perftools-dev; apt install -y libvirglrenderer-dev ;;
+	apt install -y git; apt install -y libglib2.0-dev; apt install -y libfdt-dev; apt install -y libpixman-1-dev; apt install -y zlib1g-dev; apt install -y libsdl1.2-dev; apt install -y libsnappy-dev; apt install -y liblzo2-dev; apt install -y automake; apt install -y gcc; apt install -y python3; apt install -y python3-setuptools; apt install -y build-essential; apt install -y ninja-build; apt install -y libspice-server-dev; apt install -y libsdl2-dev; apt install -y libspice-protocol-dev; apt install -y meson; apt install -y libgtk-3-dev; apt install -y libaio-dev; apt install -y gettext; apt install -y samba; apt install -y xz-utils; apt install -y usbutils; apt install -y telnet; apt install -y wget; apt install -y libvirglrenderer-dev; apt install -y libusb-dev; apt install -y libusb-1.0-0; apt install -y python; apt install -y pulseaudio ;;
 	9) ABOUT_UTQEMU ;;
 	*) ;;
 	esac
@@ -471,6 +469,9 @@ EOF
 		cp utqemu.sh $sys_name/root/
 	fi
 	echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$sys_name/proc/version
+	if [ ! -f "$sys_name/usr/bin/perl" ]; then
+	cp $sys_name/usr/bin/perl* $sys_name/usr/bin/perl
+	fi
 	echo "bash utqemu.sh" >>$sys_name/root/.bashrc
 	echo "$UPDATE" >>$sys_name/root/.utqemu_
 	echo -e "${YELLOW}系统已下载，请登录系统继续完成qemu的安装${RES}"

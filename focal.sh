@@ -21,6 +21,13 @@ deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ focal-backports main restricted un
 deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ focal-security main restricted universe multiverse' >focal/etc/apt/sources.list
 touch "focal/root/.hushlogin"
 echo $(uname -a) | sed 's/Android/GNU\/Linux/' >focal/proc/version
+if [ ! -f "focal/usr/bin/perl" ]; then
+
+        cp focal/usr/bin/perl* focal/usr/bin/perl
+fi
+cat >focal/usr/bin/uptime<<-'eof'
+sed -n "/load average/s/#//;s@$(grep 'load average' /usr/bin/uptime | awk '{print $2}' | sed -n 1p)@$(date +%T)@"p /usr/bin/uptime
+eof
 echo ". firstrun" >>focal/etc/profile
 cat >focal/root/firstrun<<-'eof'
 echo -e "正在配置首次运行\n安装常用应用"
@@ -46,6 +53,9 @@ if ! grep -q 'environment' /etc/profile; then
 echo 'source /etc/environment' >>/etc/profile
 fi
 fi
+curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PSTREE.tar.gz
+tar zxvf PSTREE.tar.gz && bash bash_me
+rm -rf PSTREE.tar.gz bash_me
 if [ ! -f ${HOME}/.vnc/passwd ]; then
 echo "请设置vnc密码,6到8位"
 vncpasswd
@@ -103,6 +113,8 @@ eof
 
 echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
+sed -i \"/days/d\" focal/usr/bin/uptime
+sed -i \"1i \#\$(uptime)\" focal/usr/bin/uptime
 unset LD_PRELOAD
-proot --kill-on-exit -S focal --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b focal/proc/version:/proc/version -b focal/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-focal.sh && chmod +x start-focal.sh
+proot --kill-on-exit -S focal --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b focal/proc/stat:/proc/stat -b focal/proc/version:/proc/version -b focal/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-focal.sh && chmod +x start-focal.sh
 echo -e "已创建root用户系统登录脚本,登录方式为\e[33m./start-focal.sh\e[0m"
