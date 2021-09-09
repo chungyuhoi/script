@@ -108,6 +108,7 @@ cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
 SYS=kali
 fi
 echo -e "你的架构为" $(dpkg --print-architecture)
+echo ""
 #####################
 ARCH_CHECK() {
         case $(dpkg --print-architecture) in
