@@ -1952,7 +1952,7 @@ dpkg -X qemu.deb ./qemu_temp
 cp qemu_temp/usr/bin/qemu-x86_64-static $bagname/
 echo "删除临时文件"
 sleep 1
-rm -rf termux_tmp qemu.deb
+rm -rf qemu_temp qemu.deb
 echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
