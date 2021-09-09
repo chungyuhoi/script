@@ -18,12 +18,12 @@ fi
 clear
 #######################
 #COLOR
-YELLOW="\e[1;33m"
-GREEN="\e[1;32m"
-RED="\e[1;31m"
-BLUE="\e[1;34m"
-PINK="\e[0;35m"
-WHITE="\e[0;37m"
+YELLOW="\e[33m"
+GREEN="\e[32m"
+RED="\e[31m"
+BLUE="\e[34m"
+PINK="\e[35m"
+WHITE="\e[37m"
 RES="\e[0m"
 
 #SOURCE
@@ -77,7 +77,7 @@ TERMUX_CHECK() {
 #######################
 TERMUX_CHECK
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210726${RES}\n"
+${YELLOW}更新日期2021908${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -92,114 +92,19 @@ if [ ! -e "/etc/os-release" ]; then
 uname -a | grep 'Android' -q
 if [ $? -eq 0 ]; then
 	echo "你的系统是Android"
-fi
-	echo -e "${GREEN}"
-cat <<'EOF'
-
-          +hydNNNNdyh+
-        +mMMMMMMMMMMMMm+
-      `dMMm:NMMMMMMN:mMMd`
-      hMMMMMMMMMMMMMMMMMMh
-  ..  yyyyyyyyyyyyyyyyyyyy  ..
-.mMMm`MMMMMMMMMMMMMMMMMMMM`mMMm.
-:MMMM-MMMMMMMMMMMMMMMMMMMM-MMMM:
-:MMMM-MMMMMMMMMMMMMMMMMMMM-MMMM:
-:MMMM-MMMMMMMMMMMMMMMMMMMM-MMMM:
-:MMMM-MMMMMMMMMMMMMMMMMMMM-MMMM:
--MMMM-MMMMMMMMMMMMMMMMMMMM-MMMM-
- +yy+ MMMMMMMMMMMMMMMMMMMM +yy+
-      mMMMMMMMMMMMMMMMMMMm
-      `/++MMMMh++hMMMM++/`
-          MMMMo  oMMMM
-          MMMMo  oMMMM
-          oNMm-  -mMNs
-EOF
-echo -e "${RES}"
 SYS=android
+fi
 elif grep -q 'ID=debian' "/etc/os-release"; then
 	printf '你的系统是'
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
-echo -e "\e[0;31m"
-cat <<'EOF'
-
-       _,met$$$$$$gg.         
-    ,g$$$$$$$$$$$$$$$P.       
-  ,g$$P"        """Y$$.".        
- ,$$P'               `$$$.     
-',$$P       ,ggs.     `$$b:   
-`d$$'     ,$P"'   .    $$$    
- $$P      d$'     ,    $$P    
- $$:      $$.   -    ,d$$'    
- $$;      Y$b._   _,d$P'      
- Y$$.    `.`"Y$$$$P"'         
- `$$b      "-.__
-  `Y$$
-   `Y$$.
-     `$$b.
-       `Y$$b.
-          `"Y$b._
-              `"""
-
-EOF
-echo -e "${RES}"
 SYS=debian
 elif grep -q 'ID=ubuntu' "/etc/os-release"; then
 printf "你的系统是"
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
-	echo -e "${RED}"
-cat <<'EOF'
-
-	    .-/+oossssoo+/-.
-        `:+ssssssssssssssssss+:`
-      -+ssssssssssssssssssyyssss+-
-    .ossssssssssssssssssdMMMNysssso.
-   /ssssssssssshdmmNNmmyNMMMMhssssss/
-  +ssssssssshmydMMMMMMMNddddyssssssss+
- /sssssssshNMMMyhhyyyyhmNMMMNhssssssss/
-.ssssssssdMMMNhsssssssssshNMMMdssssssss.
-+sssshhhyNMMNyssssssssssssyNMMMysssssss+
-ossyNMMMNyMMhsssssssssssssshmmmhssssssso
-ossyNMMMNyMMhsssssssssssssshmmmhssssssso
-+sssshhhyNMMNyssssssssssssyNMMMysssssss+
-.ssssssssdMMMNhsssssssssshNMMMdssssssss.
- /sssssssshNMMMyhhyyyyhdNMMMNhssssssss/
-  +sssssssssdmydMMMMMMMMddddyssssssss+
-   /ssssssssssshdmNNNNmyNMMMMhssssss/
-    .ossssssssssssssssssdMMMNysssso.
-      -+sssssssssssssssssyyyssss+-
-        `:+ssssssssssssssssss+:`
-            .-/+oossssoo+/-.
-EOF
-echo -e "${RES}"
 SYS=ubuntu
 elif grep -q 'ID=kali' "/etc/os-release"; then
 	printf "你的系统是"
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
-        echo -e "${BLUE}"
-cat <<'EOF'
-..............
-            ..,;:ccc,.
-          ......''';lxO.
-.....''''..........,:ld;
-           .';;;:::;,,.x,
-      ..'''.            0Xxoc:,.  ...
-  ....                ,ONkc;,;cokOdc',.
- .                   OMo           ':ddo.
-                    dMc               :OO;
-                    0M.                 .:o.
-                    ;Wd
-                     ;XO,
-                       ,d0Odlc;,..
-                           ..',;:cdOOd::,.
-                                    .:d;.':;.
-                                       'd,  .'
-                                         ;l   ..
-                                          .o
-                                            c
-                                            .'
-                                             .
-EOF
-echo -e "${RES}"
 SYS=kali
 fi
 echo -e "你的架构为" $(dpkg --print-architecture)
@@ -1569,6 +1474,7 @@ DOSBOX() {
 		else
 		dosbox=`ls ${HOME}/.dosbox`
                 sed -i "/^\[autoexec/a\mount c $DIRECT/xinhao/DOS" ${HOME}/.dosbox/$dosbox
+		sed -i "/xinhao/a #挂载光盘\n#mount d $DIRECT/xinhao/DOS/光盘目录 -t cdrom" ${HOME}/.dosbox/$dosbox
 #		echo 'mount d $DIRECT/DOS/hospital -t cdrom' ${HOME}/.dosbox/$dosbox
 #		echo 'mount d $DIRECT/DOS/CDROM -t cdrom -label mdk' ${HOME}/.dosbox/$dosbox
 		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录xinhao/DOS文件夹里，打开dosbox输入c:即可看到运行文件夹${RES}"
@@ -2038,20 +1944,18 @@ ${SOURCES_ADD}debian-security buster/updates ${DEB_DEBIAN}" >$bagname/etc/apt/so
 sleep 2
 echo "配置qemu"
 sleep 2
-rm -rf termux_tmp && mkdir termux_tmp && cd termux_tmp
 CURL_T=`curl https://mirrors.bfsu.edu.cn/debian/pool/main/q/qemu/ | grep '\.deb' | grep 'qemu-user-static' | grep arm64 | tail -n 1 | cut -d '=' -f 3 | cut -d '"' -f 2`
 curl -o qemu.deb https://mirrors.bfsu.edu.cn/debian/pool/main/q/qemu/$CURL_T
-apt install binutils -y
-ar -vx qemu.deb
-tar xvf data.tar.xz
-cd && cp termux_tmp/usr/bin/qemu-x86_64-static $bagname/
+mkdir qemu_temp
+dpkg -X qemu.deb ./qemu_temp
+cp qemu_temp/usr/bin/qemu-x86_64-static $bagname/
 echo "删除临时文件"
 sleep 1
-rm -rf termux_tmp
+rm -rf termux_tmp qemu.deb
 echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -S $bagname --link2symlink -b $bagname/root:/dev/shm -b $DIRECT -q $bagname/qemu-x86_64-static -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 /bin/bash" >$bagname.sh
+proot --kill-on-exit -S $bagname --link2symlink -b $bagname/root:/dev/shm -b $DIRECT -q $bagname/qemu-x86_64-static -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color LANG=C.UTF-8 TZ=Asia/Shanghai /bin/bash" >$bagname.sh
 echo -e "现在可以用${YELLOW}./$bagname.sh${RES}登录系统"
 sleep 2
 TERMUX ;;
@@ -2292,12 +2196,13 @@ SYSTEM_DOWN() {
 	fi
 		cat >$bagname/root/firstrun<<-'eof'
 		printf "%b" "\e[33m正常进行首次运行配置\e[0m" && sleep 1 &&apt update
-		if ! grep -q https /etc/apt/sources.list ]; then
+		if ! grep -q https /etc/apt/sources.list ; then
 		apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && apt update
 		fi
-		apt install curl -y && sed -i "/firstrun/d" /etc/profile
+		apt install curl -y && sed -i "/firstrun/d" .bashrc
 		eof
-		echo 'bash firstrun' >>$bagname/etc/profile
+#		echo 'bash firstrun' >>$bagname/etc/profile
+		echo 'bash firstrun' >>$bagname/root/.bashrc
                 echo "配置dns"
 		rm $bagname/etc/resolv.conf 2>/dev/null
 		echo "nameserver 223.5.5.5
