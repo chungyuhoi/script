@@ -3,16 +3,9 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/09/04"
-	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	加入了看到与看不到的选项
-	做了些参数优化
-	修改tb-size默认值
-	多次测试，建议指定tcg而非自动检测
-	强烈建议尝试大页内存代替手机运行内存，如内存设置大于默认值自动触发，或在进阶选项配置
-	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验
-	\e[33m修复安装容器报错\e[0m
-	修改了一些细节\n"
+	UPDATE="2021/09/15"
+	printf "${YELLOW}更新日期$UPDATE更新内容${RES}
+	\n\e[32m即日起，不再更新，感谢支持\e[0m\n"
 }
 ###################
 NOTE() {
@@ -1199,8 +1192,8 @@ esac
 	*) INVALID_INPUT
 	QEMU_SYSTEM ;;
 	esac
-killall -9 qemu-system-x86 2>/dev/null
-killall -9 qemu-system-i38 2>/dev/null
+pkill -9 qemu-system-x86 2>/dev/null
+pkill -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 START="qemu-system-x86_64 -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 #-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
@@ -1254,8 +1247,8 @@ EOF
 		*) echo -e "\n${GREEN}请确认系统镜像已放入目录${STORAGE}里${RES}\n" ;;
 	esac
 	sleep 1
-	killall -9 qemu-system-x86 2>/dev/null
-	killall -9 qemu-system-i38 2>/dev/null
+	pkill -9 qemu-system-x86 2>/dev/null
+	pkill -9 qemu-system-i38 2>/dev/null
 	if [ ! -d "${DIRECT}${STORAGE}" ];then
 		echo -e "${RED}未获取到镜像目录，请确认已创建镜像目录${RES}\n"
 		CONFIRM
@@ -2194,8 +2187,8 @@ TCG="tcg,thread=multi"
 	case $display in
 		xsdl)
 cat >/usr/local/bin/$script_name <<-EOF
-killall -9 qemu-system-x86 2>/dev/null
-killall -9 qemu-system-i38 2>/dev/null
+pkill -9 qemu-system-x86 2>/dev/null
+pkill -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 export DISPLAY=127.0.0.1:0
 ${@}
@@ -2203,23 +2196,23 @@ EOF
 ;;
 		vnc|spice|spice_) 
 cat >/usr/local/bin/$script_name <<-EOF
-killall -9 qemu-system-x86 2>/dev/null
-killall -9 qemu-system-i38 2>/dev/null
+pkill -9 qemu-system-x86 2>/dev/null
+pkill -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 ${@}
 EOF
 ;;
 		gtk_)
 cat >/usr/local/bin/$script_name <<-EOF
-killall -9 qemu-system-x86 2>/dev/null
-killall -9 qemu-system-i38 2>/dev/null
+pkill -9 qemu-system-x86 2>/dev/null
+pkill -9 qemu-system-i38 2>/dev/null
 ${@}
 EOF
 ;;
 		amd)
 cat >${HOME}/xinhao/$script_name <<-EOF
-killall -9 qemu-system-x86 2>/dev/null
-killall -9 qemu-system-i38 2>/dev/null
+pkill -9 qemu-system-x86 2>/dev/null
+pkill -9 qemu-system-i38 2>/dev/null
 ${@}
 EOF
 	chmod +x ${HOME}/xinhao/$script_name
@@ -2370,8 +2363,8 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 		sleep 2
 		QEMU_SYSTEM
 	fi
-	killall -9 qemu-system-x86 2>/dev/null
-	killall -9 qemu-system-i38 2>/dev/null
+	pkill -9 qemu-system-x86 2>/dev/null
+	pkill -9 qemu-system-i38 2>/dev/null
 #	pkill -9 qemu-system-x86
 #	pkill -9 qemu-system-i38
 	if [ ! -e "${DIRECT}${STORAGE}fake.qcow2" ]; then
