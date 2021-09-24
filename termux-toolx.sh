@@ -77,7 +77,7 @@ TERMUX_CHECK() {
 #######################
 TERMUX_CHECK
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期2021908${RES}\n"
+${YELLOW}更新日期20210908${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
@@ -1326,7 +1326,7 @@ INSTALL_SOFTWARE
 read -r -p "E(exit) M(main)请选择: " input
 case $input in
 	1) echo -e "${YELLOW}安装fcitx输入法${RES}"
-	$sudo_t apt install fcitx*googlepinyin* fcitx-table-wubi
+	$sudo_t apt install fcitx*googlepinyin* fcitx-table-wubi fcitx-tools fcitx-config-gtk
 #fcitx fcitx-tools fcitx-config-gtk fcitx-googlepinyin
 if ! grep -q 'fcitx' /etc/environment; then
 echo 'export GTK_IM_MODULE=fcitx
@@ -1421,8 +1421,8 @@ esac
 	12) if [ ! $(command -v python3) ]; then
 		echo -e "\n检测到你未安装python,将先为你安装上"
 		sleep 2
-		$sudo_t apt install python3 python3-pip -y && mkdir -p /root/.config/pip && echo "[global] 
-index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.conf
+		$sudo_t apt install python3 python3-pip -y && mkdir -p ${HOME}/.config/pip && echo "[global] 
+index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >${HOME}/.config/pip/pip.conf
 	fi
 IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
@@ -1961,7 +1961,7 @@ echo -e "现在可以用${YELLOW}./$bagname.sh${RES}登录系统"
 sleep 2
 TERMUX ;;
 
-	[Kk][Aa][Ll][Ii]) echo -e "\n${YELLOW}欢迎进入隐藏选项，kali系统的下载安装!(≧∇≦)/\n${RES}"
+	[Kk][Aa][Ll][Ii]) echo -e "\n${YELLOW}欢迎进入kali系统的下载安装!(≧∇≦)/\n${RES}"
 echo -e "${BLUE}"
 cat <<'EOF'
 ..............                                     
