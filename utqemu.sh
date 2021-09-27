@@ -352,6 +352,7 @@ esac
 }
 #################
 LOGIN() {
+: <<\eof
 	if [[ ! -e "$DEBIAN-qemu/root/.utqemu_" ]]; then
 	echo $UPDATE >>$DEBIAN-qemu/root/.utqemu_
 	elif ! grep -q $UPDATE "$DEBIAN-qemu/root/.utqemu_" ; then
@@ -365,6 +366,7 @@ LOGIN() {
 	esac
 	sed -i "/$(date +"%Y")/d" $DEBIAN-qemu/root/.utqemu_ && echo "$UPDATE" >>$DEBIAN-qemu/root/.utqemu_
 	fi
+eof
 pulseaudio --start & 2>/dev/null
 echo "" &
 unset LD_PRELOAD
