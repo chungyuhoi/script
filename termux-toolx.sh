@@ -1238,7 +1238,8 @@ echo -e "1)  *安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)
 11) 游戏相关
 12) 让本终端成为局域网浏览器页面
 13) 新立得(类软件商店)
-14) linux版qq\n"
+14) linux版qq
+15) 安装默认版本java\n"
 read -r -p "E(exit) M(main)请选择: " input
 
 case $input in
@@ -1453,6 +1454,15 @@ IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	sleep 2
 	INSTALL_SOFTWARE
 	;;
+15) echo -e "${YELLOW}包括两个不同的Java软件包：Java Runtime Environment（JRE）和Java Development Kit（JDK）。 JRE包括Java虚拟机（JVM），允许您运行Java程序的类和二进制文件。 Java开发人员应安装JDK，其中包括JRE以及构建Java应用程序所需的开发/调试工具和库，本次安装为JDK。${RES}"
+	CONFIRM
+	apt install default-jdk
+: <<\eof
+	包括两个不同的Java软件包：Java Runtime Environment（JRE）和Java Development Kit（JDK）。 JRE包括Java虚拟机（JVM），允许您运行Java程序的类和二进制文件。 Java开发人员应安装JDK，其中包括JRE以及构建Java应用程序所需的开发/调试工具和库。
+apt install openjdk- -jdk中间空的选择你要装的版本。
+apt install openjdk-7-jdk
+eof
+;;
 *) INVALID_INPUT
 		INSTALL_SOFTWARE ;;
 esac
