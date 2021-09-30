@@ -3,9 +3,16 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/09/15"
-	printf "${YELLOW}更新日期$UPDATE更新内容${RES}
-	\n\e[32m即日起，不再更新，感谢支持\e[0m\n"
+	UPDATE="2021/09/04"
+	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	加入了看到与看不到的选项
+	做了些参数优化
+	修改tb-size默认值
+	多次测试，建议指定tcg而非自动检测
+	强烈建议尝试大页内存代替手机运行内存，如内存设置大于默认值自动触发，或在进阶选项配置
+	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验
+	\e[33m修复安装容器报错\e[0m
+	修改了一些细节\n"
 }
 ###################
 NOTE() {
@@ -352,7 +359,6 @@ esac
 }
 #################
 LOGIN() {
-: <<\eof
 	if [[ ! -e "$DEBIAN-qemu/root/.utqemu_" ]]; then
 	echo $UPDATE >>$DEBIAN-qemu/root/.utqemu_
 	elif ! grep -q $UPDATE "$DEBIAN-qemu/root/.utqemu_" ; then
@@ -366,7 +372,6 @@ LOGIN() {
 	esac
 	sed -i "/$(date +"%Y")/d" $DEBIAN-qemu/root/.utqemu_ && echo "$UPDATE" >>$DEBIAN-qemu/root/.utqemu_
 	fi
-eof
 pulseaudio --start & 2>/dev/null
 echo "" &
 unset LD_PRELOAD
@@ -484,18 +489,14 @@ SYSTEM_CHECK() {
 	fi
 	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep termux.org; then 
 		echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
-		1) 换国内源
-		9) termux版本太低，换不换源均无效(请尝试选择这个)
-		0) 不换"   
+		1) 换国内源    
+		2) 不换"   
 	read -r -p "是否换国内源: " input   
 	case $input in    
 		1|"") echo "换国内源" 
 	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
 	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
 	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update ;;
-		9) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://termux.net stable main@' $PREFIX/etc/apt/sources.list
-		sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/game.list
-		sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/science.list && pkg update ;;
 		*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;  
 	esac                                                    
 		fi
@@ -735,7 +736,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	CONFIRM
 	while ( [ "$SPI_URL" != '0' ] && [[ ! $SPI_URL_ =~ apk ]] )
 do
-	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 4 | cut -d '/' -f 6`
+	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 6 | cut -d '/' -f 6`
 SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desktop-clients/releases/tag/$SPI_URL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
 	if [[ ! $SPI_URL_ =~ apk ]]; then
 	read -r -p "获取失败，重试请回车，退出请输0 " input
@@ -2440,8 +2441,8 @@ LOGIN_() {
 	4) 换源(如果无法安装或登录请尝试此操作)
 	5) 在线脚本安装体验linux系统(debian)
 	6) 在线脚本安装体验linux系统(ubuntu)
-	7) 在线脚本安装体验x86_64架构linux系统(debian)
-	8) 下载新版termux
+	7) 下载新版termux
+
 	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
 	read -r -p "请选择: " input
@@ -2472,10 +2473,7 @@ LOGIN_() {
 	4) SOURCE ;;
 	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye.sh)" ;;
 	6) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/focal.sh)" ;;
-	7) echo -e "\n${YELLOW}仅通过架构模拟，图形桌面与vnc需自行安装${RES}"
-		sleep 2
-	bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye-amd64.sh)" ;;
-	8) echo -e "\n${YELLOW}检测最新版本${RES}"
+	7) echo -e "\n${YELLOW}检测最新版本${RES}"
         VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
         echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
         read -r -p "1)下载 9)返回 " input
