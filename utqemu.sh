@@ -65,7 +65,7 @@ COMPILE(){
 		3) VERSION=4 ;;
 		4) VERSION=5 ;;
 		5) VERSION=6 ;;
-		6) VERSION=6 RC=".*" ;;
+		6) VERSION=6 RC="rc" ;;
 		*) ABOUT_UTQEMU ;;
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
@@ -84,7 +84,7 @@ COMPILE(){
 	if [ `whoami` == "root" ]; then
 	echo -e "依赖包是否正常安装
 1) 是
-2) 否，进行低级安装
+2) 否，进行低级安装(很慢，不推荐)
 3) 忽略，继续编译
 9) 返回"
 	read -r -p "请选择: " input
@@ -97,7 +97,7 @@ COMPILE(){
 	fi
 	fi
 	echo -e "${YELLOW}检测下载${RES}"
-	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..\..$RC\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
+	VERSION=$(curl https://download.qemu.org | grep qemu-${VERSION}\..*.$RC.*\.tar.xz\" | tail -n 1 | awk -F 'href="' '{print $2}' | awk -F '.tar' '{print $1}')
 	if [ -z "$VERSION" ]; then
 	echo -e "${RED}获取失败，请重试${RES}"
 	CONFIRM
