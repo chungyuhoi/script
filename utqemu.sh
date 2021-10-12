@@ -1876,6 +1876,24 @@ eof
 	2) ;;
 	*) set -- "-device" "usb-tablet" "${@}" ;;
 	esac
+	
+	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [3] ]]; then
+	echo -e "是否锁定${YELLOW}缓存${RES}"
+	read -r -p "1)是 2)否 " input
+	case $input in
+	1) echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
+	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
+	read TB
+	if [ -n "$TB" ]; then
+	set -- "${@}" "-tb-size" "$TB"
+	else
+	set -- "${@}" "-tb-size" "$(( $mem_ / 2 ))"
+        fi ;;
+	*) ;;
+	esac
+	fi
+
+
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #driftfix=slew i386存在时间漂移
 	echo -e "请选择${YELLOW}系统时间${RES}标准"
