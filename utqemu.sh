@@ -3,13 +3,14 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/10/12"
+	UPDATE="2021/10/13"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	qemu3.1版本增加tb-size选项
 	多次测试，建议指定tcg而非自动检测
 	强烈建议尝试大页内存代替手机运行内存，如内存设置大于默认值自动触发，或在进阶选项配置
 	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验
-	\e[33m修复安装容器报错\e[0m
+	qemu3.1版本增加tb-size选项
+	增加仅模拟x86_64架构debian容器安装
+	取消默认参数'待机休眠管理'，改为进阶选项
 	修改了一些细节\n"
 }
 ###################
@@ -1282,19 +1283,6 @@ EOF
 	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
 	read iso_name
 
-#S1 =>Standby. 即指说系统处于低电源供应状态,在 windows or BIOS 中可设定屏幕信号输出关闭、硬盘停止运转进入待机状态、电源灯处于闪烁状态.此时动一动鼠标、按键盘任一键均可叫醒电脑.是最耗电的睡眠模式。                #S2 =>Power Standby.和 S1 几乎是一样的.但是睡眠模式比S1更深 不再给CPU供电                                 #S3 =>Suspend to RAM.即是把 windows 当前存在内存中的所有资料保存不动,然后进入“假关机”.即待机模式         #S4 =>Suspend to Disk.                               #即是把 windows 内存中的资料完整的保存在硬盘中,等开机时就直接从保存这些资料的地方直接完整的读到内存中,不需要跑一堆应用程序.使用这种模式,硬盘一定要腾出一个完整的连续空间.WinME/2000/XP 在电源管理中休眠的作用就是这个 .                                                 #S5 =>Shutdown.有些部件仍然带电，可被键盘，时钟叫醒  #0关闭1开
-	case $QEMU_SYS in
-	qemu-system-i386)
-	set -- "${@}" "-global" "PIIX4_PM.disable_s3=1"
-	set -- "${@}" "-global" "PIIX4_PM.disable_s4=1" ;;
-	*)
-	set -- "${@}" "-global" "ICH9-LPC.disable_s3=1"
-	set -- "${@}" "-global" "ICH9-LPC.disable_s4=1" ;;
-	esac
-
-
-
-
 
 #内存
 	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)，以m为单位（1g=1024m，例如输512），自动分配请回车: "
@@ -1868,6 +1856,30 @@ echo -e "
 	fi
 	fi
 eof
+
+#S1 =>Standby. 即指说系统处于低电源供应状态,在 windows or BIOS 中可设定屏幕信号输出关闭、硬盘停止运转进入待机状态、电源灯处于闪烁状态.此时动一动鼠标、按键盘任一键均可叫醒电脑.是最耗电的睡眠模式。
+#S2 =>Power Standby.和 S1 几乎是一样的.但是睡眠模式比S1更深 不再给CPU供电
+#S3 =>Suspend to RAM.即是把 windows 当前存在内存中的所有资料保存不动,然后进入“假关机”.即待机模式
+#S4 =>Suspend to Disk. 即是把 windows 内存中的资料完整的保存在硬盘中,等开机时就直接从保存这些资料的地方直接完整的读到内存中,不需要跑一堆应用程序.使用这种模式,硬盘一定要腾出一个完整的连续空间.WinME/2000/XP 在电源管理中休眠的作用就是这个 .
+#S5 =>Shutdown.有些部件仍然带电，可被键盘，时钟叫醒
+#0关闭1开
+	echo -e "待机休眠管理(如系统存在文件丢失，请尝试使用该功能，注意：可能降低模拟效率)"
+	read -r -p "1)加载 2)不加载 " input
+	case $input in
+	1)
+	case $QEMU_SYS in
+	qemu-system-i386)
+	set -- "${@}" "-global" "PIIX4_PM.disable_s3=1"
+	set -- "${@}" "-global" "PIIX4_PM.disable_s4=1" ;;
+	*)
+	set -- "${@}" "-global" "ICH9-LPC.disable_s3=1"
+	set -- "${@}" "-global" "ICH9-LPC.disable_s4=1" ;;
+	esac
+	;;
+	*) ;;
+	esac
+
+
 	echo -e "是否加载${YELLOW}usb鼠标${RES}(提高光标精准度),少部分系统可能不支持"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
@@ -2455,10 +2467,10 @@ LOGIN_() {
 	2) 支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3）支持qemu5.0以上版本容器(选项内容丰富)
 	4) 换源(如果无法安装或登录请尝试此操作)
-	5) 在线脚本安装体验linux系统(debian)
-	6) 在线脚本安装体验linux系统(ubuntu)
-	7) 下载新版termux
-
+	5) 在线安装体验linux系统(debian)
+	6) 在线安装体验linux系统(ubuntu)
+	7) 在线安装体验x86_64架构linux系统(debian，仅架构模拟)
+	8) 下载新版termux
 	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
 	read -r -p "请选择: " input
@@ -2489,7 +2501,8 @@ LOGIN_() {
 	4) SOURCE ;;
 	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye.sh)" ;;
 	6) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/focal.sh)" ;;
-	7) echo -e "\n${YELLOW}检测最新版本${RES}"
+	7) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye-amd64.sh)" ;;
+	8) echo -e "\n${YELLOW}检测最新版本${RES}"
         VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
         echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
         read -r -p "1)下载 9)返回 " input
