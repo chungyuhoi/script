@@ -11,6 +11,7 @@ INFO() {
 	qemu3.1版本增加tb-size选项
 	增加仅模拟x86_64架构debian容器安装
 	取消默认参数'待机休眠管理'，改为进阶选项
+	增加小白之家专用参数，在快速启动选项
 	修改了一些细节\n"
 }
 ###################
@@ -1176,7 +1177,7 @@ esac
 		printf "%-7s %s %s\n\n" 视频 vnc 127.0.0.1:0
 	mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1)
 	echo -e "${YELLOW}请选择拟模拟的系统${RES}"
-	read -r -p "1)winxp 2)win7 3)virtio驱动模式 9)返回 " input
+	read -r -p "1)winxp 2)win7 3)virtio驱动模式 4)小白之家专用参数(不定期更新) 9)返回 " input
 	case $input in
 	1) echo -e "\nqemu5.0以上版本模拟winxp开机比较慢\n"
 	LIST
@@ -1197,6 +1198,10 @@ esac
 		HDA_READ
 	MA=q35 VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
 	;;
+	4) echo -e "\n${GREEN}此选项参数是小白之家定制${RES}\n"
+	sleep 1
+	LIST
+	HDA_READ ;;
 	9) QEMU_SYSTEM ;;
 	*) INVALID_INPUT
 	QEMU_SYSTEM ;;
@@ -1204,7 +1209,18 @@ esac
 pkill -9 qemu-system-x86 2>/dev/null
 pkill -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
+	if [ -n "$START" ]; then
 START="qemu-system-x86_64 -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+	else
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
+	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
+	qemu-system-x86_64 -name 'Windows 7 x64' -machine pc,vmport='off',kernel-irqchip='off',dump-guest-core='off',mem-merge='off',usb='off' -m '2048M' --accel tcg,thread='multi',tb-size='2048' -boot menu='on',strict='off' -mem-prealloc -k en-us -audiodev alsa,id='alsa1',in.channels='2',in.frequency='44100',out.buffer-length='5124',in.format='s16' -device VGA,id='video0',vgamem_mb='512' -device intel-hda -device hda-duplex,audiodev='alsa1' -uuid '1f8e6f7e-5a70-4780-89c1-464dc0e7f308' -nodefaults -no-user-config -no-hpet -no-fd-bootchk -msg timestamp='off' -cpu Cascadelake-Server-v4,model_id='MediaTek Dimensity 1100 @ 2.60GHz',-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry -smp cpus='8',cores='8' -rtc base=localtime -display vnc='127.0.0.1:0',key-delay-ms='0',connections='15000',to='2',lossy='on',non-adaptive='off' -netdev user,id='n1',ipv4='on',ipv6='off' -device e1000,netdev='n1',mac='52:54:98:76:54:32' -smbios type=3,manufacturer='XBZJ' -smbios type=1,manufacturer='Xiaomi',product=' Note 10 Pro',version='2021.10' -smbios type=4,manufacturer='MediaTek',max-speed='5200',current-speed='3600' -smbios type=0,version='Intel-Xeon' -smbios type=2,manufacturer='Intel',version='2021.7',product='Intel ARM' -drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 >/dev/null 2>>${HOME}/.utqemu_log
+	if [ $? == 1 ]; then
+	FAIL
+	printf "%s${RED}启动意外中止，请查看日志${YELLOW}d(ŐдŐ๑)${RES}\n"
+	fi
+	exit 0
+	fi
 #-display vnc=127.0.0.1:0,key-delay-ms=0,connections=15000"
 
 cat <<-EOF
@@ -1456,6 +1472,8 @@ eof
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
+	93) CPU_MODEL="Cascadelake-Server-v4,model_id=MediaTek Dimensity 1100 @ 2.60GHz,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry"
+		SMP_="8,cores=8,threads=1,sockets=2,maxcpus=16" ;;
 	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,+hypervisor,hv_spinlocks=0xFFFFFFFF,hv_relaxed,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm"
 		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8"
 		set -- "${@}" "-smbios" "type=0,vendor=Hewlett-Packard,version=J61 v03.69,date=03/25/2014,release=03.2014,uefi=on"
@@ -2117,7 +2135,7 @@ eof
 	set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
 	fi
         fi
-#	;;
+	;;
 #       *) ;;
 #       esac ;;
 
@@ -2135,11 +2153,16 @@ eof
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
 #NUMA（Non Uniform Memory Access Architecture）技术可以使众多服务器像单一系统那样运转，同时保留小系统便于编程和管理的优点。
+	if echo "${@}" | grep -q usb 2>/dev/null; then
+		USB=on
+	else
+		USB=off
+	fi
 	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-4] ]]; then
 	unset HMAT
 	fi
 	echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
-MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off,usb=on"
+MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off,usb=$USB"
 #enforce-config-section=on
 TCG="tcg,thread=multi"
 	read -r -p "1)pc 2)q35 " input
@@ -2155,7 +2178,7 @@ TCG="tcg,thread=multi"
 	case $(dpkg --print-architecture) in
 	arm*|aarch64)
 	case $SYS in
-		QEMU_PRE) set -- "-machine" "$PC,usb=on" "--accel" "$TCG" "${@}" ;;
+		QEMU_PRE) set -- "-machine" "$PC,usb=$USB" "--accel" "$TCG" "${@}" ;;
 		*)
 #	set -- "-global" "migration.send-configuration=on" "${@}"
 	if [ $PC == pc-i440fx-3.1 ]; then
@@ -2183,14 +2206,14 @@ TCG="tcg,thread=multi"
 	fi ;;
         esac ;;
 	*)
-	set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,usb=on,dump-guest-core=on$HMAT" "${@}" ;;
+	set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,usb=$USB,dump-guest-core=on$HMAT" "${@}" ;;
 	esac
 ########################
 	if [ -n "$display" ]; then
 	case $display in
 		wlan_vnc) set -- "${@}" "-display" "vnc=$IP:0" ;;
 		vnc) 
-		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=on"
+		set -- "${@}" "-display" "vnc=127.0.0.1:0,key-delay-ms=0,connections=15000,lossy=on,non-adaptive=on"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		xsdl)
 			export DISPLAY=127.0.0.1:0
