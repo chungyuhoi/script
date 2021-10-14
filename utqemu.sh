@@ -1974,6 +1974,8 @@ eof
 	esac
 
 ################
+#单内存槽
+:<<\eof
 	if [ -n "$mem" ]; then
 	set -- "${@}" "-m" "$mem"
 	else
@@ -1983,7 +1985,76 @@ eof
 	set -- "${@}" "-m" "$mem_"
 	fi
 	fi
-
+eof
+#双内存槽
+	if [ -n "$mem" ]; then
+	set -- "${@}" "-m" "$mem"
+	else
+	set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
+	fi
+######
+#单内存分配
+	case $HUGEPAGE in
+                true)
+        if echo ${@} | egrep -qw "512|1024|2048"; then
+        if echo ${@} | grep -wq "512"; then
+        set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
+        set -- "${@}" "-numa" "node,memdev=mem"
+        HMAT=",hmat=on"
+        fi
+        if echo ${@} | egrep -wq "1024|2048"; then
+        set -- "${@}" "-object" "memory-backend-file,id=mem,size=1024m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
+	set -- "${@}" "-numa" "node,memdev=mem"
+        HMAT=",hmat=on"
+        fi
+        if echo ${@} | egrep -wq "2048"; then
+        set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=1024m,mem-path=${HOME}/hugepage1,prealloc=on,share=on"
+        if echo ${@} | egrep -wq "maxcpus"; then
+        set -- "${@}" "-numa" "node,memdev=pc.ram"
+        else
+        set -- "${@}" "-numa" "node,memdev=pc.ram,initiator=0"
+	fi
+	fi
+	else
+	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=${mem}m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
+	set -- "${@}" "-numa" "node,memdev=pc.ram"
+	HMAT=",hmat=on"
+	fi
+	;;
+#仅注释下面esac
+#	esac
+#双内存分配
+	*)
+	if echo ${@} | grep -q 'mem-prealloc'; then
+	echo ""
+	else
+	if echo ${@} | egrep -wq "512|1024|2048"; then
+	case $SYS in
+	QEMU_ADV)
+	echo -e ""
+	if echo ${@} | grep -wq "512"; then
+	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
+	set -- "${@}" "-numa" "node,memdev=mem"
+	HMAT=",hmat=on"
+	fi
+	if echo ${@} | egrep -wq "1024|2048"; then
+	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=1024m"
+        set -- "${@}" "-numa" "node,memdev=mem"
+        HMAT=",hmat=on"
+	fi
+	if echo ${@} | egrep -wq "2048"; then
+        set -- "${@}" "-object" "memory-backend-ram,id=mem0,size=1024m"
+	if echo ${@} | egrep -wq "maxcpus"; then
+        set -- "${@}" "-numa" "node,memdev=mem0"
+        else
+        set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
+        fi
+        fi
+        ;;
+	esac
+	fi
+        fi ;;
+        esac
 #################
 	if [ -n "$NET_MODEL0" ]; then
 		set -- "${@}" "-net" "user$SMB"
@@ -2113,78 +2184,6 @@ Memory Module Information 、存储模块信息(已废弃)(Type 6, Obsolete)
 系统插槽(Type9)
 OEM Strings (Type 11)
 从SMBIOS 2.3版本开始，兼容SMBIOS的实现必须包含以下10个数据表结构：BIOS信息(Type 0)、系统信息(Type 1)、系统外围或底架(Type 3)、处理器信息(Type 4)、高速缓存信息(Type 7)、系统插槽(Type 9)、物理存储阵列(Type 16)、存储设备(Type 17)、存储阵列映射地址(Type 19)、系统引导信息(Type 32)。
-eof
-	case $HUGEPAGE in
-		true)
-	if echo ${@} | egrep -qw "512|1024|2048"; then
-	if echo ${@} | grep -wq "512"; then
-	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
-	set -- "${@}" "-numa" "node,memdev=mem"
-	HMAT=",hmat=on"
-	fi
-	if echo ${@} | egrep -wq "1024|2048"; then
-	set -- "${@}" "-object" "memory-backend-file,id=mem,size=1024m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
-	set -- "${@}" "-numa" "node,memdev=mem"
-	HMAT=",hmat=on"
-	fi
-	if echo ${@} | egrep -wq "2048"; then
-	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=1024m,mem-path=${HOME}/hugepage1,prealloc=on,share=on"
-	if echo ${@} | egrep -wq "maxcpus"; then
-	set -- "${@}" "-numa" "node,memdev=pc.ram"
-	else
-	set -- "${@}" "-numa" "node,memdev=pc.ram,initiator=0"
-	fi
-	fi
-#       set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
-#       set -- "${@}" "-numa" "cpu,node-id=0,socket-id=0"
-#        set -- "${@}" "-numa" "cpu,node-id=0,socket-id=1"
-	else
-	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=${mem}m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
-        set -- "${@}" "-numa" "node,memdev=pc.ram"
-        HMAT=",hmat=on"
-        fi
-	;;
-
-
-esac
-:<<\eof
-	*)
-	if echo ${@} | grep -q 'mem-prealloc'; then
-		echo ""
-	else
-	if echo ${@} | egrep -wq "512|1024|2048"; then
-	case $SYS in
-	QEMU_ADV)
-	echo -e ""
-#        read -r -p "请回车 " input
-#        case $input in
-#        1)
-        if echo ${@} | grep -wq "512"; then
-	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
-	set -- "${@}" "-numa" "node,memdev=mem"
-	HMAT=",hmat=on"
-	fi
-	if echo ${@} | egrep -wq "1024|2048"; then
-	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=1024m"
-	set -- "${@}" "-numa" "node,memdev=mem"
-	HMAT=",hmat=on"
-	fi
-        if echo ${@} | egrep -wq "2048"; then                 
-	set -- "${@}" "-object" "memory-backend-ram,id=mem0,size=1024m"
-	if echo ${@} | egrep -wq "maxcpus"; then
-	set -- "${@}" "-numa" "node,memdev=mem0"
-	else
-	set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
-	fi
-        fi
-	;;
-#       *) ;;
-#       esac ;;
-
-        esac
-	fi
-	fi ;;
-	esac
 eof
 ####################
 #cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
