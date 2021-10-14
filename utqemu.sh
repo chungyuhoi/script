@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/10/14"
+	UPDATE="2021/10/15"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	多次测试，建议指定tcg而非自动检测
 	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验
@@ -1545,12 +1545,6 @@ axcpus=4" ;;
 		0) ;;
 		*) NET_MODEL="e1000,netdev=user0" ;;
 	esac
-	if [ -n "${NET_MODEL}" ]; then
-		set -- "${@}" "-device" "${NET_MODEL}"
-		set -- "${@}" "-netdev" "user,id=user0"
-	else
-		set -- "${@}" "-net" "none"
-	fi
 	else
 ##################
 #PROOT
@@ -1581,12 +1575,6 @@ axcpus=4" ;;
 		0) ;;
 		*) NET_MODEL0="nic,model=e1000" ;;
 	esac
-	if [ -n "${NET_MODEL0}" ]; then
-	set -- "${@}" "-net" "${NET_MODEL0}"
-#	set -- "${@}" "-net" "user,smb=${HOME}/share"
-	else
-	set -- "${@}" "-net" "none"
-	fi
 	case $display in
 		wlan_vnc) ;;
 		*)
@@ -1676,12 +1664,6 @@ else
 		0) ;;
 		*) NET_MODEL1="e1000,netdev=user0" ;;
 	esac
-	if [ -n "${NET_MODEL1}" ]; then
-		set -- "${@}" "-device" "${NET_MODEL1}"
-#		set -- "${@}" "-netdev" "user,id=user0,smb=${HOME}/share"
-	else
-		set -- "${@}" "-net" "none"
-	fi
 	case $display in
 		wlan_vnc) ;;
 		*)
@@ -1991,7 +1973,11 @@ eof
 	if [ -n "$mem" ]; then
 	set -- "${@}" "-m" "$mem"
 	else
+	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-4] ]]; then
+	set -- "${@}" "-m" "$mem_"
+	else
 	set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
+	fi
 	fi
 ######
 #单内存分配
@@ -2057,11 +2043,17 @@ eof
         fi ;;
         esac
 #################
-	if [ -n "$NET_MODEL0" ]; then
-		set -- "${@}" "-net" "user$SMB"
-	fi
-	if [ -n "$NET_MODEL1" ]; then
-		set -- "${@}" "-netdev" "user,id=user0$SMB"
+	if [ -n "${NET_MODEL}" ]; then
+	set -- "${@}" "-device" "${NET_MODEL}"
+	set -- "${@}" "-netdev" "user,id=user0"
+	elif [ -n "$NET_MODEL0" ]; then
+	set -- "${@}" "-net" "${NET_MODEL0}"
+	set -- "${@}" "-net" "user$SMB"
+	elif [ -n "$NET_MODEL1" ]; then
+	set -- "${@}" "-device" "${NET_MODEL1}"
+	set -- "${@}" "-netdev" "user,id=user0$SMB"
+	else
+	set -- "${@}" "-net" "none"
 	fi
 #################
 cat >/dev/null<<EOF
