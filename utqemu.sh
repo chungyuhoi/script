@@ -3,15 +3,16 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/10/13"
+	UPDATE="2021/10/14"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	多次测试，建议指定tcg而非自动检测
-	强烈建议尝试大页内存代替手机运行内存，如内存设置大于默认值自动触发，或在进阶选项配置
 	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验
 	qemu3.1版本增加tb-size选项
 	增加仅模拟x86_64架构debian容器安装
 	取消默认参数'待机休眠管理'，改为进阶选项
 	增加小白之家专用参数，在快速启动选项
+	取消默认本地网络共享参数，改为进阶选项
+	termux环境的源qemu已更新为6.1
 	修改了一些细节\n"
 }
 ###################
@@ -1115,7 +1116,9 @@ START_QEMU() {
 	grep '\-cpu' /usr/local/bin/$script_name
 	printf "%s\n${GREEN}启动模拟器\n"
 	fi
+	if echo "${@}" | grep -q "smb="; then
 	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
+	fi
 	if grep -q monitor ${HOME}/xinhao/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
 	elif grep -q monitor /usr/local/bin/$script_name 2>/dev/null; then
@@ -1316,12 +1319,7 @@ EOF
 			*) ;;
 		esac
 		fi
-		set -- "${@}" "-m" "$mem"
-	else
-#		set -- "${@}" "-m" "$mem_"
-		set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
 	fi
-
 
 #	set -- "${@}" "-full-screen"
 #不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件，通常模拟器默认加载串口，并口，软盘，光驱等。
@@ -1473,7 +1471,23 @@ eof
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
 	93) CPU_MODEL="Cascadelake-Server-v4,model_id=MediaTek Dimensity 1100 @ 2.60GHz,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry"
-		SMP_="8,cores=8,threads=1,sockets=2,maxcpus=16" ;;
+		SMP_="8,cores=8,threads=1,sockets=2,maxcpus=16"
+		set -- "${@}" "-mem-prealloc"
+		set -- "${@}" "-smbios" "type=0,version=Intel-Xeon"
+		case $ARCH in
+			tablet)
+		set -- "${@}" "-smbios" "type=1,manufacturer=Termux,product=ZeroTermux,version=2021.10" ;;
+		*) set -- "${@}" "-smbios" "type=1,manufacturer=Termux,product=ZeroTermux,version=2021.10" ;;
+		esac
+		set -- "${@}" "-smbios" "type=2,manufacturer=$(uname -a | awk '{print $NF}'),version=2021.7,product=$(uname -a | awk '{print $NF}') $(dpkg --print-architecture)"
+		case $ARCH in
+			tablet)
+		set -- "${@}" "-smbios" "type=3,manufacturer=tablet" ;;
+		*) set -- "${@}" "-smbios" "type=3,manufacturer=computer" ;;
+		esac
+		set -- "${@}" "-smbios" "type=4,manufacturer=MediaTek,max-speed=5200,current-speed=3600"
+		set -- "${@}" "-name" "${hda_name%.*}"
+		set -- "${@}" "-uuid" "1f8e6f7e-5a70-4780-89c1-464dc0e7f308" ;;
 	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,+hypervisor,hv_spinlocks=0xFFFFFFFF,hv_relaxed,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm"
 		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8"
 		set -- "${@}" "-smbios" "type=0,vendor=Hewlett-Packard,version=J61 v03.69,date=03/25/2014,release=03.2014,uefi=on"
@@ -1561,14 +1575,14 @@ axcpus=4" ;;
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 	case $input in
-		2) NET_MODEL="nic,model=rtl8139" ;;
-		3) NET_MODEL="nic,model=virtio" ;;
+		2) NET_MODEL0="nic,model=rtl8139" ;;
+		3) NET_MODEL0="nic,model=virtio" ;;
 		0) ;;
-		*) NET_MODEL="nic,model=e1000" ;;
+		*) NET_MODEL0="nic,model=e1000" ;;
 	esac
-	if [ -n "${NET_MODEL}" ]; then
-	set -- "${@}" "-net" "${NET_MODEL}"
-	set -- "${@}" "-net" "user,smb=${HOME}/share"
+	if [ -n "${NET_MODEL0}" ]; then
+	set -- "${@}" "-net" "${NET_MODEL0}"
+#	set -- "${@}" "-net" "user,smb=${HOME}/share"
 	else
 	set -- "${@}" "-net" "none"
 	fi
@@ -1656,14 +1670,14 @@ else
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 	case $input in
-		2) NET_MODEL="rtl8139,netdev=user0" ;;
-		3) NET_MODEL="virtio-net-pci,netdev=user0" ;;
+		2) NET_MODEL1="rtl8139,netdev=user0" ;;
+		3) NET_MODEL1="virtio-net-pci,netdev=user0" ;;
 		0) ;;
-		*) NET_MODEL="e1000,netdev=user0" ;;
+		*) NET_MODEL1="e1000,netdev=user0" ;;
 	esac
-	if [ -n "${NET_MODEL}" ]; then
-		set -- "${@}" "-device" "${NET_MODEL}"
-		set -- "${@}" "-netdev" "user,id=user0,smb=${HOME}/share"
+	if [ -n "${NET_MODEL1}" ]; then
+		set -- "${@}" "-device" "${NET_MODEL1}"
+#		set -- "${@}" "-netdev" "user,id=user0,smb=${HOME}/share"
 	else
 		set -- "${@}" "-net" "none"
 	fi
@@ -1708,11 +1722,17 @@ esac
 		1) 
 			echo -e "\n1) 传统500m容量，只读"
 			echo -e "2) mtp协议，可访问整个设备目录，显示部分文件有bug，只读，部分旧系统或精简系统需驱动"
+			uname -a | grep 'Android' -q
+			if [ $? == 1 ]; then
+			echo -e "3) 本地网共享"
+			fi
 			echo -e "9) 不加载"
 	read -r -p "请选择: " input
 	case $input in
 	1) SHARE=true ;;
 	2) set -- "${@}" "-device" "ich9-usb-ehci1,id=ehci" "-device" "ich9-usb-uhci1,masterbus=ehci.0,multifunction=on" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
+	3) SMB=",smb=${HOME}/share"
+		;;
 	*) ;;
 	*) esac
 	echo "" ;;
@@ -1877,7 +1897,9 @@ echo -e "
 	fi
 	fi
 eof
+##################
 
+##################
 #S1 =>Standby. 即指说系统处于低电源供应状态,在 windows or BIOS 中可设定屏幕信号输出关闭、硬盘停止运转进入待机状态、电源灯处于闪烁状态.此时动一动鼠标、按键盘任一键均可叫醒电脑.是最耗电的睡眠模式。
 #S2 =>Power Standby.和 S1 几乎是一样的.但是睡眠模式比S1更深 不再给CPU供电
 #S3 =>Suspend to RAM.即是把 windows 当前存在内存中的所有资料保存不动,然后进入“假关机”.即待机模式
@@ -1951,7 +1973,24 @@ eof
         ;;
 	esac
 
+################
+	if [ -n "$mem" ]; then
+	set -- "${@}" "-m" "$mem"
+	else
+	if echo ${@} | grep -q monitor; then
+	set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
+	else
+	set -- "${@}" "-m" "$mem_"
+	fi
+	fi
 
+#################
+	if [ -n "$NET_MODEL0" ]; then
+		set -- "${@}" "-net" "user$SMB"
+	fi
+	if [ -n "$NET_MODEL1" ]; then
+		set -- "${@}" "-netdev" "user,id=user0$SMB"
+	fi
 #################
 cat >/dev/null<<EOF
 if=INTERFACE：指定驱动器接口类型，可用的有：ide，scsi，sd，mtd，floopy，pflash，virtio等
@@ -2106,6 +2145,9 @@ eof
         fi
 	;;
 
+
+esac
+:<<\eof
 	*)
 	if echo ${@} | grep -q 'mem-prealloc'; then
 		echo ""
@@ -2143,6 +2185,7 @@ eof
 	fi
 	fi ;;
 	esac
+eof
 ####################
 #cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
 #kernel-irqchip=on|off|split中断控制器，如果可用，控制内核对irqchip的支持。仅kvm
@@ -2284,7 +2327,9 @@ cat <<-EOF
 ${@}
 EOF
 	echo -e "${GREEN}启动模拟器\n"
+	if echo "${@}" | grep -q "smb="; then
 	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
+	fi
 	echo -e "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
@@ -2321,7 +2366,9 @@ EOF
 	esac
 	uname -a | grep 'Android' -q
 	if [ $? != 0 ]; then
+		if echo "${@}" | grep -q "smb="; then
 	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
+		fi
 	fi
 	if echo "${@}" | grep -q monitor; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
@@ -2489,7 +2536,7 @@ sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/
 ###################
 LOGIN_() {
 	echo -e "\n\e[33m请选择qemu-system-x86的运行环境\e[0m\n
-	1) 直接运行，termux(utermux)目前版本为5.0以上，由于termux源的qemu编译的功能不全，强烈建议在容器上使用qemu，\e[33m其他系统的版本各不一样，一些功能参数可能没被编译进去${RES}
+	1) 直接运行，termux(utermux)目前版本为6.0以上，由于termux源的qemu编译的功能不全，强烈建议在容器上使用qemu，\e[33m其他系统的版本各不一样，一些功能参数可能没被编译进去${RES}
 	2) 支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3）支持qemu5.0以上版本容器(选项内容丰富)
 	4) 换源(如果无法安装或登录请尝试此操作)
