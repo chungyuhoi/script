@@ -1488,7 +1488,8 @@ eof
 		set -- "${@}" "-smbios" "type=4,manufacturer=MediaTek,max-speed=5200,current-speed=3600"
 		set -- "${@}" "-name" "${hda_name%.*}"
 		set -- "${@}" "-uuid" "1f8e6f7e-5a70-4780-89c1-464dc0e7f308" ;;
-	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,+hypervisor,hv_spinlocks=0xFFFFFFFF,hv_relaxed,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm"
+	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm"
+#+hypervisor,hv_spinlocks=0xFFFFFFFF,hv_relaxed,
 		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8"
 		set -- "${@}" "-smbios" "type=0,vendor=Hewlett-Packard,version=J61 v03.69,date=03/25/2014,release=03.2014,uefi=on"
 		set -- "${@}" "-smbios" "type=1,manufacturer=Hewlett-Packard,product=HP Z620 Workstation,version=Not Specified,serial=6CR419WFHT,uuid=90065980-D287-11E3-B1B0-A0481CABDFB4,sku=G2F14UC#AB2,family=103C_53335X G=D"
