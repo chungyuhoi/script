@@ -3,17 +3,14 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/10/15"
+	UPDATE="2021/10/16"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	多次测试，建议指定tcg而非自动检测
-	增加两个不可见cpu选项，测试专用，分别是94和99，smp核数建议为默认值，请自行体验
 	qemu3.1版本增加tb-size选项
 	增加仅模拟x86_64架构debian容器安装
 	取消默认参数'待机休眠管理'，改为进阶选项
 	增加小白之家专用参数，在快速启动选项
 	取消默认本地网络共享参数，改为进阶选项
-	termux环境的源qemu已更新为6.1
-	修改了一些细节\n"
+	termux环境的源qemu已更新为6.1\n"
 }
 ###################
 NOTE() {
@@ -935,7 +932,8 @@ QEMU_SYSTEM() {
 		$sudo apt install samba usbutils telnet -y
 	fi
 	fi
-	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE
+	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE NET_MODEL0 NET_MODEL1
+	HMAT=",hmat=off"
 	QEMU_VERSION
 	NOTE
 echo -e "
@@ -1150,7 +1148,7 @@ esac
 	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
 	case $SYS in
 		QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面(桌面环境) 5)局域网vnc 9)返回 0)退出 " input ;;
-	*) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(测试阶段) 9)返回 0)退出 " input
+	*) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(仅输镜像名) 9)返回 0)退出 " input
 	esac
 	case $input in
 		1|"") echo -e "\n${BLUE}vnc输出${RES}"
@@ -1190,16 +1188,17 @@ esac
 	else
 	mem_=512
 	fi
-	MA=pc-i440fx-3.1 VIDEO="-global migration.send-configuration=off -device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback";;
+#-global migration.send-configuration=on 对于旨在支持跨版本实时迁移兼容性的体系结构，每个发行版都将引入新的版本化机器类型。 例如，2.8.0版本针对x86_64 / i686架构引入了机器类型“pc-i440fx-2.8”和“pc-q35-2.8”。为了允许客户机从QEMU 2.8.0版热迁移到QEMU 2.9.0版，2.9.0版本必须支持“pc-i440fx-2.8”和“pc-q35-2.8”机器类型。 升级时为了允许用户跨几个版本实时迁移虚拟机，QEMU的新版本将支持许多先前版本的机器类型。MA="pc-i440fx-3.1"
+	QEMU_SYS=qemu-system-i386 MA="pc-i440fx-3.1" MIGRATION="-global migration.send-configuration=on" CPU_MODEL="n270" VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk" S4="-global PIIX4_PM.disable_s4=0 " S3="-global PIIX4_PM.disable_s3=0 " ;;
 	2) 	LIST
 	HDA_READ
-	MA=pc VIDEO="-device VGA" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	QEMU_SYS=qemu-system-x86_64 MA=pc VIDEO="-device VGA" CPU_MODEL="max,-hle,-rtm" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
 	3) echo -e "${GREEN}此选项参数是hda声卡，virtio网卡，qxl显卡，virtio磁盘接口(注意，模拟系统需已装驱动，否则启动不成功)${RES}"
 		sleep 1
 		LIST
 		HDA_READ
-	MA=q35 VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
+	QEMU_SYS=qemu-system-x86_64 MA=q35 CPU_MODEL="max,-hle,-rtm" VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
 	;;
 	4) echo -e "\n${GREEN}此选项参数是小白之家定制${RES}\n"
 	sleep 1
@@ -1212,12 +1211,13 @@ esac
 pkill -9 qemu-system-x86 2>/dev/null
 pkill -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
-	if [ -n "$START" ]; then
-START="qemu-system-x86_64 -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off --accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu max,-hle,-rtm -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+	if [ -n "$MA" ]; then
+START="$QEMU_SYS -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off $MIGRATION $S3$S4--accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu $CPU_MODEL -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 	else
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 	qemu-system-x86_64 -name 'Windows 7 x64' -machine pc,vmport='off',kernel-irqchip='off',dump-guest-core='off',mem-merge='off',usb='off' -m '2048M' --accel tcg,thread='multi',tb-size='2048' -boot menu='on',strict='off' -mem-prealloc -k en-us -audiodev alsa,id='alsa1',in.channels='2',in.frequency='44100',out.buffer-length='5124',in.format='s16' -device VGA,id='video0',vgamem_mb='512' -device intel-hda -device hda-duplex,audiodev='alsa1' -uuid '1f8e6f7e-5a70-4780-89c1-464dc0e7f308' -nodefaults -no-user-config -no-hpet -no-fd-bootchk -msg timestamp='off' -cpu Cascadelake-Server-v4,model_id='MediaTek Dimensity 1100 @ 2.60GHz',-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry -smp cpus='8',cores='8' -rtc base=localtime -display vnc='127.0.0.1:0',key-delay-ms='0',connections='15000',to='2',lossy='on',non-adaptive='off' -netdev user,id='n1',ipv4='on',ipv6='off' -device e1000,netdev='n1',mac='52:54:98:76:54:32' -smbios type=3,manufacturer='XBZJ' -smbios type=1,manufacturer='Xiaomi',product=' Note 10 Pro',version='2021.10' -smbios type=4,manufacturer='MediaTek',max-speed='5200',current-speed='3600' -smbios type=0,version='Intel-Xeon' -smbios type=2,manufacturer='Intel',version='2021.7',product='Intel ARM' -drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 >/dev/null 2>>${HOME}/.utqemu_log
+#-netdev user,id='n1',ipv4='on',ipv6='off' -device e1000,netdev='n1',mac='52:54:98:76:54:32'
 	if [ $? == 1 ]; then
 	FAIL
 	printf "%s${RED}启动意外中止，请查看日志${YELLOW}d(ŐдŐ๑)${RES}\n"
@@ -1490,7 +1490,7 @@ eof
 		set -- "${@}" "-uuid" "1f8e6f7e-5a70-4780-89c1-464dc0e7f308" ;;
 	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm"
 #+hypervisor,hv_spinlocks=0xFFFFFFFF,hv_relaxed,
-		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8"
+		SMP_="cpus=8,cores=8"
 		set -- "${@}" "-smbios" "type=0,vendor=Hewlett-Packard,version=J61 v03.69,date=03/25/2014,release=03.2014,uefi=on"
 		set -- "${@}" "-smbios" "type=1,manufacturer=Hewlett-Packard,product=HP Z620 Workstation,version=Not Specified,serial=6CR419WFHT,uuid=90065980-D287-11E3-B1B0-A0481CABDFB4,sku=G2F14UC#AB2,family=103C_53335X G=D"
 		set -- "${@}" "-smbios" "type=2,manufacturer=Hewlett-Packard,product=158A,version=0.00,serial=6CR419WFHT,asset=6CR419WFHT,location=Not Specified"
@@ -2205,7 +2205,7 @@ TCG="tcg,thread=multi"
 	2) PC=q35 ;;
 	3) case $SYS in                                                                  QEMU_PRE) PC=pc ;;
 	*) PC=pc-i440fx-3.1 
-	set -- "-global" "migration.send-configuration=off" "${@}"
+	set -- "-global" "migration.send-configuration=on" "${@}"
 	;;
 	esac ;;
 	*) PC=pc ;;
