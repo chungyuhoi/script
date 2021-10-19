@@ -11,7 +11,7 @@ INFO() {
 	增加小白之家专用参数，在快速启动选项
 	取消默认本地网络共享参数，改为进阶选项
 	termux环境的源qemu已更新为6.1
-	优化快速启动选项中的模拟xp参数，提高开机速度的频率\n"
+	优化快速启动选项中的模拟xp参数，提高qemu5.0以上版本模拟xp开机速度的概率\n"
 }
 ###################
 NOTE() {
@@ -1214,7 +1214,7 @@ pkill -9 qemu-system-x86 2>/dev/null
 pkill -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 	if [ -n "$MA" ]; then
-START="$QEMU_SYS -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off $MIGRATION$S3$S4--accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu $CPU_MODEL -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+START="$QEMU_SYS -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off $MIGRATION--accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu $CPU_MODEL -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 	else
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
