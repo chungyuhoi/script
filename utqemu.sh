@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/10/18"
+	UPDATE="2021/10/19"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	qemu3.1版本增加tb-size选项
 	增加仅模拟x86_64架构debian容器安装
@@ -11,7 +11,8 @@ INFO() {
 	增加小白之家专用参数，在快速启动选项
 	取消默认本地网络共享参数，改为进阶选项
 	termux环境的源qemu已更新为6.1
-	优化快速启动选项中的模拟xp参数，提高qemu5.0以上版本模拟xp开机速度的概率\n"
+	优化快速启动选项中的模拟xp参数，提高qemu5.0以上版本模拟xp开机速度的概率
+	qemu5.0以上版本的计算机类型，增加针对win7以下模拟开机速度的优化参数(注意，效率并不比qemu5.0以下的高)\n"
 }
 ###################
 NOTE() {
@@ -1190,7 +1191,7 @@ esac
 	mem_=512
 	fi
 #-global migration.send-configuration=on 对于旨在支持跨版本实时迁移兼容性的体系结构，每个发行版都将引入新的版本化机器类型。 例如，2.8.0版本针对x86_64 / i686架构引入了机器类型“pc-i440fx-2.8”和“pc-q35-2.8”。为了允许客户机从QEMU 2.8.0版热迁移到QEMU 2.9.0版，2.9.0版本必须支持“pc-i440fx-2.8”和“pc-q35-2.8”机器类型。 升级时为了允许用户跨几个版本实时迁移虚拟机，QEMU的新版本将支持许多先前版本的机器类型。MA="pc-i440fx-3.1"
-	QEMU_SYS=qemu-system-i386 MA="pc-i440fx-3.1" MIGRATION="-global migration.send-configuration=on " CPU_MODEL="n270" VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk" S4="-global PIIX4_PM.disable_s4=1 " S3="-global PIIX4_PM.disable_s3=1 " ;;
+	QEMU_SYS=qemu-system-i386 MA="pc-i440fx-3.1" MIGRATION="-global migration.send-configuration=on " CPU_MODEL="n270" VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,format=raw" S4="-global PIIX4_PM.disable_s4=1 " S3="-global PIIX4_PM.disable_s3=1 " ;;
 #-kvm-asyncpf-int,-kvm-poll-control,-kvm-pv-sched-yield,-rdrand
 	2) 	LIST
 	HDA_READ
@@ -1200,7 +1201,7 @@ esac
 		sleep 1
 		LIST
 		HDA_READ
-	QEMU_SYS=qemu-system-x86_64 MA=q35 CPU_MODEL="max,-hle,-rtm" VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
+	QEMU_SYS=qemu-system-x86_64 MA=q35 CPU_MODEL="max,-hle,-rtm" VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio,format=raw"
 	;;
 	4) echo -e "\n${GREEN}此选项参数是小白之家定制${RES}\n"
 	sleep 1
@@ -2077,7 +2078,7 @@ EOF
 	case $QEMU_MODE in
 		VIRTIO_MODE)
 		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide"
-		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=virtio"
+		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=virtio,format=raw"
 		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso_name" ;;
 		*)
 		echo -e "\n请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
@@ -2098,7 +2099,7 @@ EOF
 	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=2"
 	fi
 	case $SHARE in
-		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback" ;;
+		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback,format=raw" ;;
 		*) ;;
 	esac ;;
 	2)
@@ -2142,7 +2143,7 @@ EOF
 		fi
 	case $SHARE in
 		true)
-		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio"
+		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio,format=raw"
 ;;
 		*) ;;
 	esac ;;
@@ -2202,12 +2203,20 @@ eof
 MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off,usb=$USB"
 #enforce-config-section=on
 TCG="tcg,thread=multi"
+	case $SYS in
+		QEMU_PRE)
 	read -r -p "1)pc 2)q35 " input
+	;;
+		*)
+	read -r -p "1)pc 2)q35 3)pc(模拟win7以下) " input
+	;;
+	esac
 	case $input in
 	2) PC=q35 ;;
-	3) case $SYS in                                                                  QEMU_PRE) PC=pc ;;
-	*) PC=pc-i440fx-3.1 
-	set -- "-global" "migration.send-configuration=on" "${@}"
+	3) case $SYS in
+		QEMU_PRE) PC=pc ;;
+	*) echo -e "${GREEN}本选项只针对性做了些优化，效率并不比qemu5.0以下版本的高${RES}\n"
+		PC=pc-i440fx-3.1 
 	;;
 	esac ;;
 	*) PC=pc ;;
@@ -2217,9 +2226,8 @@ TCG="tcg,thread=multi"
 	case $SYS in
 		QEMU_PRE) set -- "-machine" "$PC,usb=$USB" "--accel" "$TCG" "${@}" ;;
 		*)
-#	set -- "-global" "migration.send-configuration=on" "${@}"
 	if [ $PC == pc-i440fx-3.1 ]; then
-	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}"
+	set -- "-machine" "$PC,$MA$HMAT" "-global" "migration.send-configuration=on" "--accel" "$TCG" "${@}"
 	else
         echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
@@ -2250,7 +2258,7 @@ TCG="tcg,thread=multi"
 	case $display in
 		wlan_vnc) set -- "${@}" "-display" "vnc=$IP:0" ;;
 		vnc) 
-		set -- "${@}" "-display" "vnc=127.0.0.1:0,key-delay-ms=0,connections=15000,lossy=on,non-adaptive=on"
+		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=on"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		xsdl)
 			export DISPLAY=127.0.0.1:0
