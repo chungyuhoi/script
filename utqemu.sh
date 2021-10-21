@@ -2087,19 +2087,19 @@ EOF
 ##################
 #IDE			
 		1)
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback"
+#		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback"
+set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk"
 	if [ -n "$hdb_name" ]; then
-		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk,aio=threads,cache=writeback"
+set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk"
 	fi
 	if [ -n "$iso1_name" ]; then
-#		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso1_name"
 	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=1"
 	fi
 	if [ -n "$iso_name" ]; then 
 	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=2"
 	fi
 	case $SHARE in
-		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,aio=threads,cache=writeback,format=raw" ;;
+		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,format=raw" ;;
 		*) ;;
 	esac ;;
 	2)
