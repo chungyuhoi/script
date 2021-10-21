@@ -2083,7 +2083,7 @@ eof
 	2) PC=q35 ;;
 	3) case $SYS in
 		QEMU_PRE) PC=pc ;;
-	*) echo -e "${GREEN}本选项只针对性做了提高开机的${YELLOW}概率${RES}，效率并不比qemu5.0以下版本的高(磁盘接口建议选ide)${RES}\n"
+	*) echo -e "${GREEN}本选项只针对性做了提高开机速度的${YELLOW}概率${RES}，效率并不比qemu5.0以下版本的高(磁盘接口建议选ide)${RES}\n"
                 PC=pc-i440fx-3.1
 	sleep 1
 	;;
