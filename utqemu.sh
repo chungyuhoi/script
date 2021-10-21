@@ -1191,7 +1191,7 @@ esac
 	mem_=512
 	fi
 #-global migration.send-configuration=on 对于旨在支持跨版本实时迁移兼容性的体系结构，每个发行版都将引入新的版本化机器类型。 例如，2.8.0版本针对x86_64 / i686架构引入了机器类型“pc-i440fx-2.8”和“pc-q35-2.8”。为了允许客户机从QEMU 2.8.0版热迁移到QEMU 2.9.0版，2.9.0版本必须支持“pc-i440fx-2.8”和“pc-q35-2.8”机器类型。 升级时为了允许用户跨几个版本实时迁移虚拟机，QEMU的新版本将支持许多先前版本的机器类型。MA="pc-i440fx-3.1"
-	QEMU_SYS=qemu-system-i386 MA="pc-i440fx-3.1" MIGRATION="-global migration.send-configuration=on " CPU_MODEL="n270" VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,format=raw" S4="-global PIIX4_PM.disable_s4=1 " S3="-global PIIX4_PM.disable_s3=1 " ;;
+	QEMU_SYS=qemu-system-i386 MA="pc-i440fx-3.1" MIGRATION="-global migration.send-configuration=on " CPU_MODEL="n270" VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,cache=off" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,format=raw,cache=off" S4="-global PIIX4_PM.disable_s4=1 " S3="-global PIIX4_PM.disable_s3=1 " ;;
 #-kvm-asyncpf-int,-kvm-poll-control,-kvm-pv-sched-yield,-rdrand
 	2) 	LIST
 	HDA_READ
@@ -2153,6 +2153,8 @@ EOF
 		1)
 	if [ $PC != pc-i440fx-3.1 ]; then
 	AIO=",aio=threads,cache=writeback"
+	else
+	AIO=",cache=off"
 	fi
 #		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback"
 set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk$AIO"
