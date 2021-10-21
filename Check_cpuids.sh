@@ -511,7 +511,7 @@ printf "%-17s %s %s\n" 运行内存: $(free -m | awk '{print $2}' | sed -n 2p | 
 fi
 echo -e "\e[33mcpu支持以下特性\e[0m"
 echo $(sort all_flags | uniq -u) | sed 'N;s/\n/ /g'
-echo -e "\e[33m本测试仅供参考\e[0m\n"
+echo -e "\e[33m由于qemu每个版本支持的特性不同，qemu1-3用的是版本3的特性参数，qemu4-6用的是版本5的特性参数\n本测试仅供参考\e[0m\n"
 fi
 pkill qemu-system-i38 2>/dev/null
 killall qemu-system-i38 2>/dev/null
