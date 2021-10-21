@@ -2085,10 +2085,42 @@ eof
 		QEMU_PRE) PC=pc ;;
 	*) echo -e "${GREEN}本选项只针对性做了些优化，效率并不比qemu5.0以下版本的高(磁盘接口建议选ide)${RES}\n"
                 PC=pc-i440fx-3.1
-	sleep 2
+	sleep 1
 	;;
 	esac ;;
 	*) PC=pc ;;
+	esac
+	case $(dpkg --print-architecture) in
+		arm*|aarch64)
+	case $SYS in
+		QEMU_PRE) set -- "-machine" "$PC,usb=$USB" "--accel" "$TCG" "${@}" ;;
+		*)
+	if [ $PC == pc-i440fx-3.1 ]; then
+		set -- "-machine" "$PC,$MA$HMAT" "-global" "migration.send-configuration=on" "--accel" "$TCG" "${@}"
+	else
+		echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
+	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
+	case $input in
+		1)
+		set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}" ;;
+		3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
+		echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
+		echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
+        read TB
+        if [ -n "$TB" ]; then
+		set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=$TB" "${@}"
+        else
+		set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=$(( $mem_ / 2 ))" "${@}"
+	fi
+	else
+		set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}"
+	fi ;;
+	*) set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,$MA$HMAT" "${@}" ;;
+	esac
+	fi ;;
+	esac ;;
+	*)
+		set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,usb=$USB,dump-guest-core=on$HMAT" "${@}" ;;
 	esac
 #################
 cat >/dev/null<<EOF
@@ -2113,7 +2145,7 @@ EOF
 		set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=virtio,format=raw"
 		set -- "${@}" "-cdrom" "${DIRECT}${STORAGE}$iso_name" ;;
 		*)
-		echo -e "\n请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
+		echo -e "请选择${YELLOW}磁盘接口${RES},因系统原因,sata可能导致启动不成功,virtio需系统已装驱动,回车为兼容方式"
 	read -r -p "1)ide 2)sata 3)virtio " input
 	case $input in
 ##################
@@ -2226,6 +2258,7 @@ eof
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
 #NUMA（Non Uniform Memory Access Architecture）技术可以使众多服务器像单一系统那样运转，同时保留小系统便于编程和管理的优点。
+:<<\eof
 	case $(dpkg --print-architecture) in
 	arm*|aarch64)
 	case $SYS in
@@ -2258,6 +2291,7 @@ eof
 	*)
 	set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,usb=$USB,dump-guest-core=on$HMAT" "${@}" ;;
 	esac
+eof
 ########################
 	if [ -n "$display" ]; then
 	case $display in
