@@ -502,7 +502,7 @@ eof
 esac
 cat .utqemu_log | grep does | awk -F '.' '{print $NF}' | awk '{print $1}' >> all_flags
 echo -e "\e[33m你的设备参数\e[0m"
-cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/null
+cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq >/dev/null 2>&1
 if [ $? == 0 ]; then
 printf "%-15s %s %s\n" cpu核数: $(cat -n /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | tail -n 1 | awk '{print $1}') 核
 printf "%-15s %s %s\n" cpu低频: $(cat -n /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | head -n 1 | awk '{printf ("%.2f", $2 / 1048576"G")}') G
