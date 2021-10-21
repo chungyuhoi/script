@@ -2059,6 +2059,38 @@ eof
 	set -- "${@}" "-net" "none"
 	fi
 #################
+	if echo "${@}" | grep -q usb 2>/dev/null; then
+		USB=on
+	else
+		USB=off
+	fi
+	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-4] ]]; then
+	unset HMAT
+	fi
+	echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
+	MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off,usb=$USB"
+#enforce-config-section=on
+	TCG="tcg,thread=multi"
+	case $SYS in
+		QEMU_PRE)
+	read -r -p "1)pc 2)q35 " input
+	;;
+	*)
+	read -r -p "1)pc 2)q35 3)pc(模拟win7以下) " input
+	;;
+	esac
+	case $input in
+	2) PC=q35 ;;
+	3) case $SYS in
+		QEMU_PRE) PC=pc ;;
+	*) echo -e "${GREEN}本选项只针对性做了些优化，效率并不比qemu5.0以下版本的高(磁盘接口建议选ide)${RES}\n"
+                PC=pc-i440fx-3.1
+	sleep 2
+	;;
+	esac ;;
+	*) PC=pc ;;
+	esac
+#################
 cat >/dev/null<<EOF
 if=INTERFACE：指定驱动器接口类型，可用的有：ide，scsi，sd，mtd，floopy，pflash，virtio等
 bus=BUS NUM，unit=UNIT NUM：设置驱动器在客户机中的总线编号和单元编号
@@ -2087,16 +2119,19 @@ EOF
 ##################
 #IDE			
 		1)
+	if [ $PC != pc-i440fx-3.1 ]; then
+	AIO=",aio=threads,cache=writeback"
+	fi
 #		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback"
-set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk"
+set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk$AIO"
 	if [ -n "$hdb_name" ]; then
-set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk"
+set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=disk$AIO"
 	fi
 	if [ -n "$iso1_name" ]; then
-	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=1"
+	set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso1_name,if=ide,media=cdrom,index=1$AIO"
 	fi
 	if [ -n "$iso_name" ]; then 
-	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=2"
+	       set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$iso_name,if=ide,media=cdrom,index=2$AIO"
 	fi
 	case $SHARE in
 		true) set -- "${@}" "-drive" "file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,format=raw" ;;
@@ -2191,36 +2226,6 @@ eof
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
 #NUMA（Non Uniform Memory Access Architecture）技术可以使众多服务器像单一系统那样运转，同时保留小系统便于编程和管理的优点。
-	if echo "${@}" | grep -q usb 2>/dev/null; then
-		USB=on
-	else
-		USB=off
-	fi
-	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-4] ]]; then
-	unset HMAT
-	fi
-	echo -e "请选择${YELLOW}计算机类型${RES}，默认pc，因系统原因，q35可能导致启动不成功"
-MA="vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off,usb=$USB"
-#enforce-config-section=on
-TCG="tcg,thread=multi"
-	case $SYS in
-		QEMU_PRE)
-	read -r -p "1)pc 2)q35 " input
-	;;
-		*)
-	read -r -p "1)pc 2)q35 3)pc(模拟win7以下) " input
-	;;
-	esac
-	case $input in
-	2) PC=q35 ;;
-	3) case $SYS in
-		QEMU_PRE) PC=pc ;;
-	*) echo -e "${GREEN}本选项只针对性做了些优化，效率并不比qemu5.0以下版本的高${RES}\n"
-		PC=pc-i440fx-3.1 
-	;;
-	esac ;;
-	*) PC=pc ;;
-	esac
 	case $(dpkg --print-architecture) in
 	arm*|aarch64)
 	case $SYS in
