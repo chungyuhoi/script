@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/10/20"
+	UPDATE="2021/10/21"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	qemu3.1版本增加tb-size选项
 	增加仅模拟x86_64架构debian容器安装
@@ -1191,7 +1191,7 @@ esac
 	mem_=512
 	fi
 #-global migration.send-configuration=on 对于旨在支持跨版本实时迁移兼容性的体系结构，每个发行版都将引入新的版本化机器类型。 例如，2.8.0版本针对x86_64 / i686架构引入了机器类型“pc-i440fx-2.8”和“pc-q35-2.8”。为了允许客户机从QEMU 2.8.0版热迁移到QEMU 2.9.0版，2.9.0版本必须支持“pc-i440fx-2.8”和“pc-q35-2.8”机器类型。 升级时为了允许用户跨几个版本实时迁移虚拟机，QEMU的新版本将支持许多先前版本的机器类型。MA="pc-i440fx-3.1"
-	QEMU_SYS=qemu-system-i386 MA="pc-i440fx-3.1" MIGRATION="-global migration.send-configuration=on " CPU_MODEL="n270" VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,cache=off" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk,format=raw,cache=off" S4="-global PIIX4_PM.disable_s4=1 " S3="-global PIIX4_PM.disable_s3=1 " ;;
+	QEMU_SYS=qemu-system-i386 MA="pc-i440fx-3.1" MIGRATION="-global migration.send-configuration=on " CPU_MODEL="n270" VIDEO="-device cirrus-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device AC97" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,if=ide,index=3,media=disk" S4="-global PIIX4_PM.disable_s4=1 " S3="-global PIIX4_PM.disable_s3=1 " ;;
 #-kvm-asyncpf-int,-kvm-poll-control,-kvm-pv-sched-yield,-rdrand
 	2) 	LIST
 	HDA_READ
@@ -1215,7 +1215,7 @@ pkill -9 qemu-system-x86 2>/dev/null
 pkill -9 qemu-system-i38 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 	if [ -n "$MA" ]; then
-START="$QEMU_SYS -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off $MIGRATION--accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu $CPU_MODEL -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
+START="$QEMU_SYS -machine $MA,hmat=off,usb=on,vmport=off,dump-guest-core=off,mem-merge=off,kernel-irqchip=off $S3$S4$MIGRATION--accel tcg,thread=multi -m $mem_ -nodefaults -no-user-config -msg timestamp=off -k en-us -cpu $CPU_MODEL -smp 2 $VIDEO $NET -audiodev alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124,out.period-length=1024 $AUDIO,audiodev=alsa1 -rtc base=localtime -boot order=cd,menu=on,strict=off -device usb-tablet $DRIVE $SHARE -display vnc=127.0.0.1:0,lossy=on,non-adaptive=off"
 	else
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
@@ -2096,7 +2096,7 @@ eof
 		QEMU_PRE) set -- "-machine" "$PC,usb=$USB" "--accel" "$TCG" "${@}" ;;
 		*)
 	if [ $PC == pc-i440fx-3.1 ]; then
-		set -- "-machine" "$PC,$MA$HMAT" "-global" "migration.send-configuration=on" "--accel" "$TCG" "${@}"
+		set -- "-machine" "$PC,$MA$HMAT" "-global" "PIIX4_PM.disable_s3=1" "-global" "PIIX4_PM.disable_s4=1" "-global" "migration.send-configuration=on" "--accel" "$TCG" "${@}"
 	else
 		echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
 	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
@@ -2153,8 +2153,6 @@ EOF
 		1)
 	if [ $PC != pc-i440fx-3.1 ]; then
 	AIO=",aio=threads,cache=writeback"
-	else
-	AIO=",cache=off"
 	fi
 #		set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk,aio=threads,cache=writeback"
 set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hda_name,if=ide,index=0,media=disk$AIO"
