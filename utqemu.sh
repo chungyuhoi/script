@@ -3,16 +3,14 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/10/21"
+	UPDATE="2021/10/24"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	qemu3.1版本增加tb-size选项
-	增加仅模拟x86_64架构debian容器安装
-	取消默认参数'待机休眠管理'，改为进阶选项
 	增加小白之家专用参数，在快速启动选项
 	取消默认本地网络共享参数，改为进阶选项
 	termux环境的源qemu已更新为6.1
-	优化快速启动选项中的模拟xp参数，仅提高qemu5.0以上版本模拟xp开机速度的'概率'
-	qemu5.0以上版本的计算机类型，增加针对win7以下模拟开机速度的优化参数(注意，效率并不比qemu5.0以下的高)\n"
+	qemu5.0以上版本的计算机类型，增加针对win7以下模拟开机速度的优化参数(注意，效率并不比qemu5.0以下的高)
+	修正termux旧版本安装问题(已知0.73以下)\n"
 }
 ###################
 NOTE() {
@@ -487,16 +485,22 @@ SYSTEM_CHECK() {
 	if [ ! -e ${HOME}/storage ]; then
 		termux-setup-storage
 	fi
-	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep termux.org; then 
+	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep termux.org >/dev/null 2>&1; then 
 		echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
-		1) 换国内源    
-		2) 不换"   
+		1) 换国内源
+		2) 不换
+		3) 我的是旧termux版本"
 	read -r -p "是否换国内源: " input   
 	case $input in    
 		1|"") echo "换国内源" 
 	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
 	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
 	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update ;;
+		3)
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://termux.org/packages/ stable main@' $PREFIX/etc/apt/sources.list
+	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/science.list
+	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/game.list && pkg update
+	;;
 		*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;  
 	esac                                                    
 		fi
@@ -1916,7 +1920,7 @@ eof
 	*) set -- "-device" "usb-tablet" "${@}" ;;
 	esac
 	
-	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [3] ]]; then
+	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [3-4] ]]; then
 	echo -e "是否锁定${YELLOW}缓存${RES}"
 	read -r -p "1)是 2)否 " input
 	case $input in

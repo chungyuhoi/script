@@ -187,6 +187,9 @@ if [ $? != 0 ]; then
 fi
 }
 #####################
+#echo 'deb [by-hash=force] https://d.store.deepinos.org.cn /' >/etc/apt/sources.list.d/sparkstore.list
+#curl -1sLf https://d.store.deepinos.org.cn//dcs-repo.gpg-key.asc | apt-key add -
+#####################
 SETTLE() {
 	echo -e "
 1)  遇到关于Sub-process /usr/bin/dpkg returned an error code (1)错误提示
@@ -735,7 +738,7 @@ case $input in
 		echo -e "${YELLOW}安装tightvncserver"
 	$sudo_t apt install tightvncserver -y
 	if [ ! -e "${HOME}/.vnc/passwd" ]; then       
-		echo "请设置vnc密码,6到8位"          
+		echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m" 
 	       	vncpasswd                           
 fi
 XSTARTUP
@@ -747,7 +750,7 @@ XSTARTUP
 	echo "安装tigervncserver"
 	$sudo_t apt install tigervnc-standalone-server tigervnc-viewer -y
 	if [ ! -e "${HOME}/.vnc/passwd" ]; then     
-		echo "请设置vnc密码,6到8位"        
+		echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m" 
 	       	vncpasswd                                
 fi
 XSTARTUP
@@ -759,7 +762,7 @@ XSTARTUP
 	echo "安装vnc4server"
 	$sudo_t apt install vnc4server -y
 	if [ ! -e "${HOME}/.vnc/passwd" ]; then    
-   		echo "请设置vnc密码,6到8位"      
+   		echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m" 
 	       	vncpasswd                         
 	fi
 	XSTARTUP
@@ -784,7 +787,7 @@ XSTARTUP
 	$sudo_t	apt install tigervnc-standalone-server tigervnc-viewer -y
 	fi
 	if [ ! -e "${HOME}/.vnc/passwd" ]; then
-		echo "请设置vnc密码,6到8位"
+		echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m"
 		vncpasswd
 	fi
 	echo -n "输入你手机分辨率,例如 2340x1080  resolution: "
