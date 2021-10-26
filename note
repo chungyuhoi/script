@@ -1,5 +1,59 @@
+sort file |uniq
+查找非重复行
+sort file |uniq -u
+查找重复行
+sort file |uniq -d
+统计
+sort file | uniq -c
+
+apt-cache madison 包名
+查询版本
+apt-cache policy 包名
+查询版本(详细)
+apt install 包名=版本
+安装指定版本
 
 
+################
+停止自动更新
+
+sudo echo "软件包名 hold" | sudo dpkg --set-selections
+
+比如我想给mysql-server锁定当前版本不更新，命令是：
+
+sudo echo "mysql-server hold" | sudo dpkg --set-selections
+
+查询当前系统内所有软件包的状态，命令为：
+
+sudo dpkg --get-selections | more
+
+查询当前系统被锁定不更新的软件包状态(hold)，命令为
+
+sudo dpkg --get-selections | grep hold
+
+
+################
+# 每个desktop文件都以这个标签开始，说明这是一个Desktop Entry 文件.
+[Desktop Entry]
+# 标明Desktop Entry的版本(可选).
+Version=1.0
+# desktop的类型(必选),常见值有“Application”和“Link”.
+Type=Application
+# 程序名称(必须)                 
+Name=MindMaster 
+# 程序描述(可选).                 
+GenericName=Mind Master
+# 程序描述(可选).     
+Comment=Mind mapping
+# 程序的启动命令(必选),可以带参数运行    
+Exec=/home/l/APP/mindmaster-6-amd64-cn/MindMaster-6-x86_64
+# 设置快捷方式的图标(可选).            
+Icon=/home/l/APP/mindmaster-6-amd64-cn/mindmaster.png
+# 是否在终端中运行(可选),当Type为Application,此项有效. 
+Terminal=false
+# 注明在菜单栏中显示的类别(可选)
+Categories=Application
+################
 
 
 https://github.com/chungyuhoi/script/blob/main/utqemu.sh
@@ -21,7 +75,22 @@ sed -i '/printf/s/^/#/' bcd
 
 diff -y --suppress-common-lines
 
+dpkg -i --ignore-depends=
 
+dpkg -e 解安装信息
+dpkg -X 解安装包
+dpkg-deb -b 打包
+DEBIAN/postinst
+DEBIAN/control
+Package: 中间不能有空格
+Version: 8.5.0
+Section: utils, net, mail, text, x11
+Priority: optional
+Architecture: arm64, i386, amd64, m68k, sparc, alpha, powerpc等
+Depends:
+Installed-Size:
+Maintainer: none
+Description: Electron package
 
 dpkg --add-architecture amd64
 dpkg --print-foreign-architectures
