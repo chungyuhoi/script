@@ -938,7 +938,7 @@ QEMU_SYSTEM() {
 		$sudo apt install samba usbutils telnet -y
 	fi
 	fi
-	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE NET_MODEL0 NET_MODEL1
+	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE NET_MODEL0 NET_MODEL1 NUM
 	HMAT=",hmat=off"
 	QEMU_VERSION
 	NOTE
@@ -1469,7 +1469,10 @@ eof
 		CPU_MODEL="core2duo,-lm,-syscall,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
 		unset _SMP
 		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
-	0) echo -e -n "请输入: "
+	0) NUM=`qemu-system-i386 --cpu help | awk '{print $2}' | cat -n | grep max | awk '{print $1}'`
+		qemu-system-i386 --cpu help | awk '{print $2}' | head -n $NUM | tail -n $(( $NUM - 1 ))
+		echo -e "$YELLOW已为你列出支持的cpu类型$RES"
+		echo -e -n "请输入: "
 		read CPU_MODEL
 		if echo $CPU_MODEL | grep max; then
 		unset _SMP
@@ -1540,7 +1543,8 @@ axcpus=4" ;;
 		*) VGA_MODEL=vmware-svga,vgamem_mb=256 ;;
 	esac ;;
 		4) VGA_MODEL=virtio-vga ;;
-		*) VGA_MODEL=VGA ;;
+		*) VGA_MODEL=VGA
+#-device 'VGA',id='video0',vgamem_mb='256',global-vmstate='false',qemu-extended-regs='off',rombar='1',xmax='1920',xres='1280',ymax='1080',yres='720'  ;;
         esac
 	set -- "${@}" "-device" "${VGA_MODEL}"
 
@@ -1660,7 +1664,7 @@ else
 		5) set -- "${@}" "-device" "qxl-vga,max_outputs=1"
 #			set -- "${@}" "-device" "virtio-keyboard-pci"
 ;;
-		*) set -- "${@}" "-device" "VGA,vgamem_mb=256" ;;
+		*) set -- "${@}" "-device" "VGA,vgamem_mb=256,global-vmstate=false,qemu-extended-regs=off,rombar=1" ;;
 	esac
 
 	echo -e "请选择${YELLOW}网卡${RES}"
@@ -2080,7 +2084,7 @@ eof
 	read -r -p "1)pc 2)q35 " input
 	;;
 	*)
-	read -r -p "1)pc 2)q35 3)pc(模拟win7以下) " input
+	read -r -p "1)pc 2)q35 " input
 	;;
 	esac
 	case $input in
