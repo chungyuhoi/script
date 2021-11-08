@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/10/24"
+	UPDATE="2021/11/19"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	qemu3.1版本增加tb-size选项
 	增加小白之家专用参数，在快速启动选项
@@ -343,6 +343,8 @@ SHARE_="516.06"
 PORT="Address already"
 CPU="CPU model"
 GTK="gtk initialization"
+SDL="SDL support is disabled"
+SDL_="Could not initialize SDL"
 echo -e "\n"
 LOG=$(cat ${HOME}/.utqemu_log | tail -n 1)
 	echo $LOG
@@ -351,7 +353,9 @@ LOG=$(cat ${HOME}/.utqemu_log | tail -n 1)
 	*$SHARE_*) echo -e "${YELLOW}错误：共享文件超过516.06 MB${RES}" ;;
 	*$PORT*) echo -e "${YELLOW}\n错误：视频输出端口占用${RES}" ;;
 	*$CPU*) echo -e "${YELLOW}\n错误：cpu名字有误${RES}" ;;
-	*$GTK*) echo -e "${YELLOW}\n错误：图形界面错误${RES}" ;;
+	*$GTK*) echo -e "${YELLOW}\n错误：图形输出错误${RES}" ;;
+	*$SDL*) echo -e "${YELLOW}\n错误：未集成SDL模块${RES}" ;;
+	*$SDL_*) echo -e "${YELLOW}\n错误：请先打开xsdl${RES}" ;;
 	*)  ;;
 esac
 }
@@ -557,7 +561,8 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >/root/.config/pip/pip.con
 ##################
 QEMU_ETC() {
 
-echo -e "\n1)  创建空磁盘(目前支持qcow2,vmdk)
+echo -e "
+1)  创建空磁盘(目前支持qcow2,vmdk)
 2)  转换镜像磁盘格式(仅支持qcow2,vmdk,其他格式未验证)
 3)  修改设备标识(手机、平板、电脑)
 4)  修改源(只适用本脚本下载的系统)
@@ -1017,7 +1022,8 @@ echo -e "7)  查看日志
         CONFIRM
         QEMU_SYSTEM
 	else
-	echo -e "\n1) 创建镜像目录
+	echo -e "
+1) 创建镜像目录
 2) 拷贝${DIRECT}${STORAGE}文件进本地共享目录share
 3) 拷贝本地共享目录share里的文件到手机存储目录${DIRECT}${STORAGE}"
 	read -r -p "请选择: " input
@@ -1160,8 +1166,16 @@ esac
 		1|"") echo -e "\n${BLUE}vnc输出${RES}"
 			display=vnc
 			;;
-		2) echo -e "${BLUE}sdl信号输出，需先打开xsdl再继续此操作${RES}"
-			display=xsdl
+		2) display=xsdl
+		read -r -p "1)信号输出(通用) 2)sdl模块输出(通常源安装未包括sdl模块) " input
+		case $input in
+		2)
+		echo -e "${BLUE}请确认qemu已编译sdl模块，否则出现'-sdl: SDL support is disabled'提示${RES}"
+		set -- "${@}" "-sdl"
+		set -- "${@}" "-full-screen" ;;
+		*)
+		echo -e "${BLUE}sdl信号输出，需先打开xsdl再继续此操作${RES}" ;;
+	esac
 			;;
 		3) echo -e "${BLUE}spice输出${RES}"
 	read -r -p "1)常规使用 2)spice传输协议使用(需virtio驱动) " input
@@ -1328,7 +1342,6 @@ EOF
 		fi
 	fi
 
-#	set -- "${@}" "-full-screen"
 #不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件，通常模拟器默认加载串口，并口，软盘，光驱等。
 	set -- "${@}" "-nodefaults"
 #不加载用户自定义的配置文件。
@@ -2266,40 +2279,6 @@ eof
 #aes-key-wrap=on|off在s390-ccw主机上 启用或禁用AES密钥包装支持。此功能控制是否将创建AES包装密钥以允许执行AES加密功能。默认为开。
 #dea-key-wrap=on|off在s390-ccw主机上 启用或禁用DEA密钥包装支持。此功能是否DEA控制，默认开
 #NUMA（Non Uniform Memory Access Architecture）技术可以使众多服务器像单一系统那样运转，同时保留小系统便于编程和管理的优点。
-:<<\eof
-	case $(dpkg --print-architecture) in
-	arm*|aarch64)
-	case $SYS in
-		QEMU_PRE) set -- "-machine" "$PC,usb=$USB" "--accel" "$TCG" "${@}" ;;
-		*)
-	if [ $PC == pc-i440fx-3.1 ]; then
-	set -- "-machine" "$PC,$MA$HMAT" "-global" "migration.send-configuration=on" "--accel" "$TCG" "${@}"
-	else
-        echo -e "\n请选择${YELLOW}加速${RES}方式(理论上差不多，但貌似指定tcg更流畅点，请自行体验)"
-	read -r -p "1)tcg 2)自动检测 3)锁定tcg缓存 " input
-	case $input in
-		1)
-	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}" ;;
-	3) if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [4-9] ]]; then
-	echo -e "${RED}注意！设置tcg的缓存可以提高模拟效率，以m为单位，跟手机闪存ram也有关系(调高了会出现后台杀)，请谨慎设置${RES}"
-	echo -n -e "请输入拟缓存的数值(以m为单位，例如1800)，回车为默认值，请输入: "
-	read TB
-	if [ -n "$TB" ]; then
-	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=$TB" "${@}"
-	else
-	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG,tb-size=$(( $mem_ / 2 ))" "${@}"
-        fi
-        else
-	set -- "-machine" "$PC,$MA$HMAT" "--accel" "$TCG" "${@}"
-	fi ;;
-        *) set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,$MA$HMAT" "${@}" ;;
-        esac
-	fi ;;
-        esac ;;
-	*)
-	set -- "-machine" "$PC,accel=kvm:xen:hax:tcg,usb=$USB,dump-guest-core=on$HMAT" "${@}" ;;
-	esac
-eof
 ########################
 	if [ -n "$display" ]; then
 	case $display in
@@ -2307,7 +2286,7 @@ eof
 		vnc) 
 		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=on"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
-		xsdl)
+		xsdl) 
 			export DISPLAY=127.0.0.1:0
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing=on,seamless-migration=off"
