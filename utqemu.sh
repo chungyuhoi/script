@@ -3,14 +3,15 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/11/19"
+	UPDATE="2021/11/7"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	qemu3.1版本增加tb-size选项
 	增加小白之家专用参数，在快速启动选项
 	取消默认本地网络共享参数，改为进阶选项
 	termux环境的源qemu已更新为6.1
 	qemu5.0以上版本的计算机类型，增加针对win7以下模拟开机速度的优化参数(注意，效率并不比qemu5.0以下的高)
-	修正termux旧版本安装问题(已知0.73以下)\n"
+	修正termux旧版本安装问题(已知0.73以下)
+	修复本脚本容器qemu6.0更新的选项\n"
 }
 ###################
 NOTE() {
@@ -989,7 +990,7 @@ echo -e "7)  查看日志
 	sudo_
 	if grep -q 'bullseye' "/etc/os-release"; then
 		echo -e "\n${YELLOW}debian-sid源地址已有qemu6.0可供安装，是否更新版本？(非本脚本安装的容器慎选)${RES}"
-		read -r -p "1)继续使用qemu5.2系统 2)更新为qemu6.0系统 "
+		read -r -p "1)继续使用qemu5.2系统 2)更新为qemu6.0系统 " input
 		case $input in
 			2) echo 'deb http://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && apt update ;;
 			*) ;;
