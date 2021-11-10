@@ -10,7 +10,8 @@ INFO() {
 	termux环境的源qemu已更新为6.1
 	修正termux旧版本安装问题(已知0.73以下)
 	修复本脚本容器qemu6.0更新的选项
-	修改内存配置，降低极少数可能出现的异常\n"
+	修改内存配置，降低极少数可能出现的异常
+	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)\n"
 }
 ###################
 NOTE() {
@@ -1570,6 +1571,19 @@ axcpus=4" ;;
 		0) ;;
 		*) NET_MODEL="e1000,netdev=user0" ;;
 	esac
+	echo -e "请选择${YELLOW}声卡${RES}(强烈不建议)"
+	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
+	case $input in
+		1) SOUND_MODEL=AC97 ;;
+		2) SOUND_MODEL=sb16 ;;
+		3) SOUND_MODEL=ES1370 ;;
+		4) set -- "${@}" "-device" "intel-hda"
+		SOUND_MODEL=hda-duplex ;;                                                            0) ;;
+		esac
+		if [ -n "${SOUND_MODEL}" ]; then
+		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.latency=5300,out.latency=5300,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=10248"
+		set -- "${@}" "-device" "$SOUND_MODEL,audiodev=pa1"
+		fi
 	else
 ##################
 #PROOT
