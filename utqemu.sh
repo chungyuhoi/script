@@ -3,15 +3,14 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/11/7"
+	UPDATE="2021/11/9"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	qemu3.1版本增加tb-size选项
 	增加小白之家专用参数，在快速启动选项
-	取消默认本地网络共享参数，改为进阶选项
 	termux环境的源qemu已更新为6.1
-	qemu5.0以上版本的计算机类型，增加针对win7以下模拟开机速度的优化参数(注意，效率并不比qemu5.0以下的高)
 	修正termux旧版本安装问题(已知0.73以下)
-	修复本脚本容器qemu6.0更新的选项\n"
+	修复本脚本容器qemu6.0更新的选项
+	修改内存配置，降低极少数可能出现的异常\n"
 }
 ###################
 NOTE() {
@@ -322,7 +321,7 @@ HDA_READ() {
 		echo -e "\n${RED}未匹配到镜像，请重试${RES}"
 		sleep 1
 	fi
-	echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（例如andows.img），退出请输${YELLOW}0${RES}，请输入: "
+	echo -n -e "${RES}\n请输入${YELLOW}系统镜像${RES}全名（不能有空格，例如andows.img），退出请输${YELLOW}0${RES}，请输入: "
 	read  hda_name
 	done
 	if [ $hda_name == '0' ]; then
@@ -1161,7 +1160,8 @@ esac
 	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
 	case $SYS in
 		QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面(桌面环境) 5)局域网vnc 9)返回 0)退出 " input ;;
-	*) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(仅输镜像名) 9)返回 0)退出 " input
+	*) 
+	read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(仅输镜像名) 9)返回 0)退出 " input
 	esac
 	case $input in
 		1|"") echo -e "\n${BLUE}vnc输出${RES}"
@@ -2004,10 +2004,20 @@ eof
 	set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
 	fi
 	fi
+	case $HUGEPAGE in
+		true)
 ######
 #单内存分配
-	case $HUGEPAGE in
-                true)
+	if [ -n "$mem" ]; then
+	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=${mem}m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
+	else
+	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=${mem_}m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
+	fi
+		set -- "${@}" "-numa" "node,memdev=pc.ram"
+		HMAT=",hmat=on"
+
+	esac
+:<<\eof
         if echo ${@} | egrep -qw "512|1024|2048"; then
         if echo ${@} | grep -wq "512"; then
         set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
@@ -2067,6 +2077,7 @@ eof
 	fi
         fi ;;
         esac
+eof
 #################
 	if [ -n "${NET_MODEL}" ]; then
 	set -- "${@}" "-device" "${NET_MODEL}"
