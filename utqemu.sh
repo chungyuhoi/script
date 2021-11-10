@@ -3,15 +3,16 @@ cd $(dirname $0)
 ####################
 INFO() {
 	clear
-	UPDATE="2021/11/9"
+	UPDATE="2021/11/10"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	qemu3.1版本增加tb-size选项
 	增加小白之家专用参数，在快速启动选项
-	termux环境的源qemu已更新为6.1
 	修正termux旧版本安装问题(已知0.73以下)
 	修复本脚本容器qemu6.0更新的选项
 	修改内存配置，降低极少数可能出现的异常
-	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)\n"
+	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
+${GREEN}ps:	termux环境的源qemu已更新为6.1
+	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
 }
 ###################
 NOTE() {
