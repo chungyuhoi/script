@@ -11,6 +11,7 @@ INFO() {
 	修复本脚本容器qemu6.0更新的选项
 	修改内存配置，降低极少数可能出现的异常
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
+	修改一些细节
 ${GREEN}ps:	termux环境的源qemu已更新为6.1
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
 }
@@ -286,18 +287,6 @@ ARCH_CHECK() {
 	fi
 }
 ####################
-SELECT_EMU_MODE() {
-	 echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
-	 1) qemu-system-x86_64 (64位操作系统)
-	 2) qemu-system-i386   (32位操作系统)\n"
-	 read -r -p "请选择: " input
-	 case $input in
-		 1) QEMU_SYS=qemu-system-x86_64 ;;
-		 2) QEMU_SYS=qemu-system-i386 ;;
-		 *) INVALID_INPUT
-			 SELECT_EMU_MODE ;;
-	 esac
-}
 ####################
 QEMU_VERSION(){
 	uname -a | grep 'Android' -q
@@ -956,14 +945,13 @@ case $ARCH in
 	*)
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
-	echo -e "2)  创建windows镜像目录"
+		echo -e "2)  创建windows镜像目录(已执行选项1可跳过)"
 else
-	echo -e "2)  创建windows镜像目录及本地共享文件目录share拷贝"
+	echo -e "2)  创建windows镜像目录及本地共享文件目录share拷贝(已执行选项1可跳过)"
 	fi ;;
 esac
 echo -e "3)  启动qemu-system-x86_64模拟器
-4)  让termux成为网页服务器
-    (使模拟系统可以通过浏览器访问本机内容)
+4)  让termux成为网页服务器(使模拟系统可以通过浏览器访问本机内容)
 5)  virtio驱动相关"
 	case $SYS in
 	ANDROID) ;;
@@ -1290,8 +1278,17 @@ EOF
 	esac
 	fi
 ##################
+	echo -e "\n\e[1;33m如果不确定选什么，请直接回车${RES}\n"
+	CONFIRM
+	echo -e "\n请选择启动哪个${YELLOW}模拟器架构${RES}\n
+	1) qemu-system-x86_64 (64位操作系统)
+	2) qemu-system-i386   (32位操作系统)\n"
+	read -r -p "请选择: " input
+	case $input in
+		2) QEMU_SYS=qemu-system-i386 ;;
+		*) QEMU_SYS=qemu-system-x86_64 ;;
+ 	esac
 ###################
-	SELECT_EMU_MODE
 
 	case $DIRECT in
 		\/sdcard)
