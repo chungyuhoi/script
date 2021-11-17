@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 cd $(dirname $0)
 ####################
+#sync && echo 3 >/proc/sys/vm/drop_caches
 INFO() {
 	clear
-	UPDATE="2021/11/10"
+	UPDATE="2021/11/16"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	qemu3.1版本增加tb-size选项
 	增加小白之家专用参数，在快速启动选项
 	修正termux旧版本安装问题(已知0.73以下)
-	修复本脚本容器qemu6.0更新的选项
 	修改内存配置，降低极少数可能出现的异常
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
 	修改一些细节
@@ -189,7 +188,14 @@ PINK="\e[35m"
 WHITE="\e[37m"
 RES="\e[0m"
 ####################
-IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
+#IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
+	if [ $(ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | grep ^192 | cut -d '.' -f 1) 2>/dev/null == 192 ]; then
+	IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | grep ^192`
+	elif [ $(ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | grep ^172 | cut -d '.' -f 1) 2>/dev/null == 172 ]; then
+	IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | grep ^172`
+	else
+	IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | grep ^10`
+	fi
 ####################
 sudo_() {
 	date_t=`date +"%D"`
@@ -1088,6 +1094,7 @@ START_QEMU() {
 		echo -e "\n${RED}未检测到你的镜像目录，请确认已赋予手机存储权限并创建镜像目录${RES}"
 		CONFIRM
 	fi
+	sync
 	uname -a | grep 'Android' -q 
 	if [ $? == 0 ]; then
 		echo -e "\n${YELLOW}vncviewer地址为127.0.0.1:0${RES}"     
@@ -1408,8 +1415,13 @@ EOF
 	echo -e "请选择${YELLOW}cpu${RES}"
 	case $SYS in
 	QEMU_ADV|ANDROID)
-		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)max(推荐) 9)(慎选) 0)自己输 " input ;;
-QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 9)max 0)自己输 " input ;;
+		case $ARCH in
+		computer)
+			read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)max(推荐) 9)host(推荐) 0)自己输 " input ;;
+		*)
+		read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 8)max(推荐) 9)Cascadelake-Server-v4 0)自己输 " input ;;
+		esac ;;
+		QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 9)max 0)自己输 " input ;;
 	esac
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
 #部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。syscal 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大约300个系统调用。rdrand -使用 CPU 内部的热噪声生成随机数。
@@ -1433,10 +1445,17 @@ QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBR
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 		*) CPU_MODEL=max
 			unset _SMP
-			SMP_=4,maxcpus=5
+			SMP_=4
+			MAXCPUS="4,maxcpus=5"
 			;;
 	esac ;;
-	9) 
+	9) case $ARCH in
+		computer) CPU_MODEL=host
+			unset _SMP
+			SMP_=4
+			MAXCPUS="4,maxcpus=5"
+			;;
+		*)
 : <<\eof
 hv_spinlocks=0xffff：GuestOS执行spinlock期间，其实是可以转让CPU给其他vCPU调度的。短时间的spinlock可以节省vCPU调度开销，长时间的spinlock会浪费CPU资源。为此，参数用于让guest重试"hv-spinlocks=number"次无果后通告hypervisor，主动转让CPU。
 hv-spinlocks=0 表示不尝试(一旦guest调用spinlock，立刻退出到hypervisor转让CPU)
@@ -1479,9 +1498,12 @@ Firmware Features Mask：固件特征掩码。
 Platform Features ：平台功能。
 Version ：固件版本，
 eof
-		CPU_MODEL="core2duo,-lm,-syscall,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
+		CPU_MODEL="Cascadelake-Server-v4,model_id='Intel(R) Xeno(TM) E7-8891 v2 @ 3.60GHz',l3-cache=true,vmware-cpuid-freq=false,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry"
+#"core2duo,-lm,-syscall,-hle,-rtm,hv_spinlocks=0xFFFFFFFF,hv_relaxed,hv_time,hv_vapic,hv-frequencies"
 		unset _SMP
-		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
+		SMP_="8,cores=8,threads=1,sockets=1"
+		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16" ;;
+		esac ;;
 	0) NUM=`qemu-system-i386 --cpu help | awk '{print $2}' | cat -n | grep max | awk '{print $1}'`
 		qemu-system-i386 --cpu help | awk '{print $2}' | head -n $NUM | tail -n $(( $NUM - 1 ))
 		echo -e "$YELLOW已为你列出支持的cpu类型$RES"
@@ -1489,13 +1511,15 @@ eof
 		read CPU_MODEL
 		if echo $CPU_MODEL | grep max; then
 		unset _SMP
-		SMP_="4,maxcpus=5"
+		SMP_="4"
+		MAXCPUS="4,maxcpus=5"
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
 	93) CPU_MODEL="Cascadelake-Server-v4,model_id=MediaTek Dimensity 1100 @ 2.60GHz,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry"
-		SMP_="8,cores=8,threads=1,sockets=2,maxcpus=16"
-		set -- "${@}" "-mem-prealloc"
+		SMP_="8,cores=8,threads=1,sockets=1"
+		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"
+#		set -- "${@}" "-mem-prealloc"
 		set -- "${@}" "-smbios" "type=0,version=Intel-Xeon"
 		case $ARCH in
 			tablet)
@@ -1520,28 +1544,25 @@ eof
                 set -- "${@}" "-smbios" "type=3,manufacturer=Hewlett-Packard,version=Not Specified,serial=6CR419WFHT,asset=6CR419WFHT,sku=Not Specified"
 		set -- "${@}" "-smbios" "type=4,sock_pfx=CPU0,manufacturer=Intel,version=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,serial=Not Specified,asset=Not Specified,part=Not Specified,max-speed=3800,current-speed=2800" ;;
 	95) CPU_MODEL="Opteron_G5,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
-		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
+		SMP_="2,cores=2,threads=1,sockets=1"
+		MAXCPUS="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
 	96) CPU_MODEL="Penryn-v1,-lm,-syscall"
 		SMP_="2,cores=2,threads=1,sockets=2,m
 axcpus=4" ;;
 	97) CPU_MODEL="EPYC-v2,-fma,-avx,-f16c,-avx2,-rdseed,-sha-ni,-syscall,-fxsr-opt,-lm,-misalignsse,-3dnowprefetch,-osvw,-topoext,-ibpb,-nrip-save,-xsavec"
-		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
+		SMP_="4,cores=4,threads=1,sockets=1"
+		MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
 	98) CPU_MODEL="Cascadelake-Server-v4,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-syscall,-lm"
-		SMP_="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
+		SMP_="8,cores=8,threads=1,sockets=1"
+		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
 	99) CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-lm"
-		SMP_="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
+		SMP_="4,cores=4,threads=1,sockets=1"
+		MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
         *)      CPU_MODEL=max
 		unset _SMP
-		SMP_="4,maxcpus=5" ;;
+		SMP_="4"
+		MAXCPUS="4,maxcpus=5" ;;
 	esac
-	set -- "${@}" "-cpu" "${CPU_MODEL}"
-	if [ -n "$_SMP" ]; then
-		set -- "${@}" "-smp" "${_SMP}"
-	elif [ -n "$CPU" ]; then
-		set -- "${@}" "-smp" "${CPU}"
-	else
-		set -- "${@}" "-smp" "${SMP_}"
-	fi
 #####################
 #TERMUX
 	uname -a | grep 'Android' -q 
@@ -1579,6 +1600,7 @@ axcpus=4" ;;
 		SOUND_MODEL=hda-duplex ;;                                                            0) ;;
 		esac
 		if [ -n "${SOUND_MODEL}" ]; then
+		pulseaudio --start &
 		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.latency=5300,out.latency=5300,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=10248"
 		set -- "${@}" "-device" "$SOUND_MODEL,audiodev=pa1"
 		fi
@@ -1711,7 +1733,7 @@ else
 		2) set -- "${@}" "-device" "sb16" ;;
 		3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
                 0) ;;
-		5)
+		4)
 #adc in dac out				
 #alsa参数			       	
 #延迟timer-period=10000
@@ -1719,12 +1741,12 @@ else
 #缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
 #周期长度out.period-length=1020
 #pa参数
-		set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
+		set -- "${@}" "-device" "AC97" ;;
 		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
 		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
 		7) set -- "${@}" "-device" "usb-audio" ;;
-		*) set -- "${@}" "-device" "AC97" ;;
+		*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
+		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
 	esac	;;
 esac
 	fi
@@ -1872,52 +1894,6 @@ eof
         *) ;;
         esac
         fi
-#amd
-####################
-:<<\eof
-	case $(dpkg --print-architecture) in
-	i*86|x86*|amd64)
-#在KVM中内存允许过载使用，分配给客户机的内存总数可以大于实际可用的物理内存总数。客户机过载使用内存的上限是：宿主机可用物理内存空间和交换空间的大小之和。超过这个上限会使客户机因内存不足被强制关闭。		
-	echo -e "${YELLOW}过量内存使用${RES}(默认关闭)"
-	read -r -p "1)开启 2)关闭 " input
-	case $input in
-		1) set -- "${@}" "-overcommit" "mem-lock=on" ;;
-		*) set -- "${@}" "-overcommit" "mem-lock=off" ;;
-	esac
-#KVM允许客户机过载使用（over-commit）CPU资源，即让一个或多个客户机使用vCPU的总数量超过宿主机实际拥有的物理CPU数量。但不建议单个客户机的CPU数量多于物理宿主机的CPU数量。
-	echo -e "${YELLOW}过量cpu控制${RES}(默认关闭)"
-	read -r -p "1) 开启 2)关闭 " input
-	case $input in
-		1) set -- "${@}" "-overcommit" "cpu-pm=on" ;;
-		*) set -- "${@}" "-overcommit" "cpu-pm=off" ;;
-	esac ;;
-	esac
-
-
-echo -e "
-1) 创建${YELLOW}大页文件${RES}代替设备ram，可降低ram使用率，响应速度略降低)${RES}
-2) 加载${YELLOW}mem-prealloc${RES}参数(创建大页文件以指派内存占用，提高响应速度，${RED}测试无效，勿选${RES})
-0) 跳过"
-	read -r -p "请选择: " input
-	case $input in
-		1) HUGEPAGE=true ;;
-		2)
-#让meminfo文件中HugePages_Free数量的减少和分配给客户机的内存保持一致。getconf  PAGESIZE
-	rm ${HOME}/hugepage* 2>/dev/null
-		echo -n -e "请输入大页拟使用的占用数值(以m为单位，例如1800)，回车为默认值，请输入: "
-        read mem_m
-        if [ -n "$mem_m" ]; then
-                set -- "${@}" "-mem-path" "${HOME}/hugepage,share=on,size=${mem_m}m"
-        else
-#		set -- "${@}" "-mem-path" "${HOME}/hugepage,share=yes,size=$(($mem_ * 1048576))"
-		set -- "${@}" "-mem-path" "${HOME}/hugepage,share=on,size=${mem_}m"
-	fi
-	set -- "${@}" "-mem-prealloc" ;;
-	*) ;; esac
-	fi
-	fi
-eof
-##################
 
 ##################
 #S1 =>Standby. 即指说系统处于低电源供应状态,在 windows or BIOS 中可设定屏幕信号输出关闭、硬盘停止运转进入待机状态、电源灯处于闪烁状态.此时动一动鼠标、按键盘任一键均可叫醒电脑.是最耗电的睡眠模式。
@@ -1994,6 +1970,18 @@ eof
 	esac
 
 ################
+	set -- "${@}" "-cpu" "${CPU_MODEL}"
+	if [ -n "$_SMP" ]; then
+		set -- "${@}" "-smp" "${_SMP}"
+	elif [ -n "$CPU" ]; then
+		set -- "${@}" "-smp" "${CPU}"
+	else
+		if echo "${@}" | grep -q monitor; then
+		set -- "${@}" "-smp" "${MAXCPUS}"
+	else
+		set -- "${@}" "-smp" "${SMP_}"
+		fi
+	fi
 #单内存槽
 :<<\eof
 	if [ -n "$mem" ]; then
@@ -2013,7 +2001,11 @@ eof
 	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-4] ]]; then
 	set -- "${@}" "-m" "$mem_"
 	else
+	if echo "${@}" | grep -q monitor; then
 	set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
+	else
+	set -- "${@}" "-m" "$mem_"
+	fi
 	fi
 	fi
 	case $HUGEPAGE in
@@ -2027,7 +2019,8 @@ eof
 	fi
 		set -- "${@}" "-numa" "node,memdev=pc.ram"
 		HMAT=",hmat=on"
-
+	;;
+		*) set -- "${@}" "-mem-prealloc" ;;
 	esac
 :<<\eof
         if echo ${@} | egrep -qw "512|1024|2048"; then
@@ -2092,14 +2085,14 @@ eof
 eof
 #################
 	if [ -n "${NET_MODEL}" ]; then
-	set -- "${@}" "-device" "${NET_MODEL}"
-	set -- "${@}" "-netdev" "user,id=user0"
+	set -- "${@}" "-device" "${NET_MODEL},mac=52:54:98:76:54:32"
+	set -- "${@}" "-netdev" "user,id=user0,ipv6=off"
 	elif [ -n "$NET_MODEL0" ]; then
 	set -- "${@}" "-net" "${NET_MODEL0}"
 	set -- "${@}" "-net" "user$SMB"
 	elif [ -n "$NET_MODEL1" ]; then
-	set -- "${@}" "-device" "${NET_MODEL1}"
-	set -- "${@}" "-netdev" "user,id=user0$SMB"
+	set -- "${@}" "-device" "${NET_MODEL1},mac=52:54:98:76:54:32"
+	set -- "${@}" "-netdev" "user,ipv6=off,id=user0$SMB"
 	else
 	set -- "${@}" "-net" "none"
 	fi
@@ -2525,8 +2518,6 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 	fi
 	pkill -9 qemu-system-x86 2>/dev/null
 	pkill -9 qemu-system-i38 2>/dev/null
-#	pkill -9 qemu-system-x86
-#	pkill -9 qemu-system-i38
 	if [ ! -e "${DIRECT}${STORAGE}fake.qcow2" ]; then
 	echo -e "\n将为你创建一个新的磁盘镜像，用于搜索virtio驱动\n"
 	sleep 2
