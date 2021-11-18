@@ -4,13 +4,14 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 INFO() {
 	clear
-	UPDATE="2021/11/16"
+	UPDATE="2021/11/17"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	修正termux旧版本安装问题(已知0.73以下)
 	修改内存配置，降低极少数可能出现的异常
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
 	修改一些细节
+	优化virtio显卡在vnc中的显示(不建议，仅体验显卡驱动的安装，成功会有gl_version 45 - core profile enabled提示)
 ${GREEN}ps:	termux环境的源qemu已更新为6.1
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
 }
@@ -163,7 +164,7 @@ ${YELLOW}virtio驱动的安装${RES}
 	需下载好virtio驱动光盘，virtio磁盘接口安装程序比较多，其他驱动与普通的硬件驱动一样安装，本脚本已加入qxl显卡，virtio显卡，virtio网卡，virtio磁盘选项。
 
 ${YELLOW}关于virtio显卡3D加速${RES}
-	virtio显卡因参数问题，未发挥其特性功能。3D模式需在gtk或sdl下才能开启，sdl模块在系统源默认是未编译。gtk则可在图形界面中启动。经过多次测试，作出的参数配置如下。当你选择virtio显卡中的3D模式时，vnc，sdl，spice输出端口不再有效，但仍会按你的上述选择作出以下配置。sdl将以-display sdl,gl=on输出（因系统的qemu源默认未编译sdl内容，所以选项未得到测试验证）。而spice则以wiki上的标准参数-display gtk,gl=on输出，但virtio显卡并不被识别。vnc除了spice上的参数外，我还加入了-vga qxl来兼容virtio显卡输出（我成功在图形界面中开启gl，但存在bug）。这个3D模式应该是在linux系统下加载，而非windows系统。
+	virtio显卡因参数问题，未发挥其特性功能。3D模式需在gtk或sdl下才能开启，sdl模块在系统源默认是未编译。gtk则可在图形界面中启动。经过多次测试，作出的参数配置如下。当你选择virtio显卡中的3D模式时，sdl，spice输出端口不再有效，但仍会按你的上述选择作出以下配置。sdl将以-display sdl,gl=on输出（因系统的qemu源默认未编译sdl内容，所以选项未得到测试验证）。而spice则以wiki上的标准参数-display gtk,gl=on输出，但virtio显卡并不被识别。vnc除了spice上的参数外，我还加入了-vga qxl来兼容virtio显卡输出（我成功在图形界面中开启gl，但存在bug）。这个3D模式应该是在linux系统下加载，而非windows系统。
 
 ${YELLOW}系统镜像的磁盘驱动安装介绍：${RES}
 	1)先创建一个新的磁盘镜像，用于搜索virtio驱动，参数如下
@@ -831,7 +832,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	exit 0
 	QEMU_ETC ;;
 	9) echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list && $sudo apt update
-	$sudo apt install qemu-system-x86 -y
+	$sudo apt install qemu-system-x86 tigervnc-standalone-server tigervnc-viewer -y
 	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 6 ]]; then
 	echo -e "更新成功"
 	else
@@ -994,11 +995,11 @@ echo -e "7)  查看日志
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet -y
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
-	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer -y
 	fi
 	PA
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
@@ -1424,9 +1425,9 @@ EOF
 		QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 9)max 0)自己输 " input ;;
 	esac
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
-#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。syscal 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大约300个系统调用。rdrand -使用 CPU 内部的热噪声生成随机数。
-        case $input in
-        1) CPU_MODEL=n270
+#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于 精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状 态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64 位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问 ，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级 矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。syscal 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入 内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大 约300个系统调用。rdrand -使用 CPU 内部的热噪声生成随机数。
+	case $input in
+	1) CPU_MODEL=n270
 		SMP_="2,cores=1,threads=2,sockets=1" ;;
         2) CPU_MODEL=athlon
 		SMP_="2,cores=2,threads=1,sockets=1" ;;
@@ -1683,24 +1684,32 @@ else
 		1|"") set -- "${@}" "-device" "vmware-svga" ;;
 		*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=256" ;;
 	esac ;;
-		4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在图形界面打开(需32位色彩，否则出现花屏)。${RES}"
+		4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在vnc或图形界面打开(需32位色彩，否则出现花屏)\n目前测试需win8以上系统。\n系统已装virtio的gpu驱动，如果没有请去virtio相关下载${RES}"
 	read -r -p "1)不设置3D参数 2)设置3D参数 " input
 	case $input in
 		1|"")
 		set -- "${@}" "-device" "virtio-vga"
 #		set -- "${@}" "-device" "virtio-vga,virgl=on"
 ;;
-		2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在图形界面(桌面)显示${RES}"
+		2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在vnc或图形界面(桌面)显示\n${RES}"
 	CONFIRM
 	case $display in
-		xsdl) set -- "${@}" "-device" "virtio-vga" "-display" "sdl,gl=on" ;;
+		xsdl) set -- "${@}" "-device" "virtio-vga" "-display" "sdl,gl=on"
+		unset display ;;
 		vnc|wlan_vnc)
-		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
+			if [ ! $(command -v tigervncserver) ]; then
+			echo -e "${YELLOW}检测所需vnc包${RES}"
+			sleep 1
+			apt install tigervnc-standalone-server tigervnc-viewer -y
+			fi
+#		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
+		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci"
+		display=vnc_3d
 #		set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
 ;;
-		spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" ;;
+		spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on"
+		unset display	;;
 	esac
-	unset display
 	case $ARCH in
 		computer) ;;
 		*) env | grep 'PULSE_SERVER' -q
@@ -1727,7 +1736,11 @@ else
 		wlan_vnc) ;;
 		*)
 	echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-	read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)ac97(修改参数，优化声音卡顿，不适合spice) 6)hda(修改参数，优化声音卡顿，不适合spice) 7)usb-audio 0)不加载 " input
+	case $display in                                                      spice|spice_)
+		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 0)不加载 " input ;;
+		*)
+		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 57)usb-audio 6)ac97(修改参数，优化声音卡顿，不适合spice) 7)hda(修改参数，优化声音卡顿，不适合spice) 0)不加载 " input ;;
+	esac
 	case $input in
 		1) set -- "${@}" "-device" "ES1370" ;;
 		2) set -- "${@}" "-device" "sb16" ;;
@@ -1742,11 +1755,18 @@ else
 #周期长度out.period-length=1020
 #pa参数
 		set -- "${@}" "-device" "AC97" ;;
-		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
-		7) set -- "${@}" "-device" "usb-audio" ;;
+		5) set -- "${@}" "-device" "usb-audio" ;;
+		6) case $display in
+			spice|spice_) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
 		*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
+		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
+		esac ;;
+		*) case $display in
+			spice|spice_) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
+			*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
+		set -- "${@}" "-device" "AC97,audiodev=alsa1" 
+		;;
+esac ;;
 	esac	;;
 esac
 	fi
@@ -2325,6 +2345,24 @@ eof
 	if [ $? != 0 ]; then
 		case $display in
 		wlan_vnc) ;;
+		vnc_3d)
+	printf "%s\n"
+cat <<-EOF
+${@}
+EOF
+printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n本次操作将退出脚本，请留意shell提示\n显卡驱动装上后在开机过程中shell会有${YELLOW}gl_version 45 - core profile enabled${GREEN}提示，请及时在显示界面左上角窗口(View)切换为virtio-gpu-pci，否则启动失败"
+	echo -e "${RES}"
+	sleep 2
+vncserver -kill $DISPLAY 2>/dev/null
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
+export PULSE_SERVER=tcp:127.0.0.1:4713
+export DISPLAY=:0
+Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 768x1024 -once -depth 32 -deferglyphs 16 -SecurityTypes None :0 &
+"${@}"
+	exit 0 ;;
 		*)
 	echo -e "创建本次参数的${YELLOW}快捷脚本${RES}"
 	read -r -p "1)是 2)否 " input
@@ -2394,7 +2432,8 @@ EOF
 	chmod +x /usr/local/bin/$script_name 2>/dev/null
 	echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
 	sleep 2 ;;
-		*) ;;
+		*)
+	;;
 	esac ;;
 	esac
 	fi
