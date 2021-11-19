@@ -4,7 +4,7 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 INFO() {
 	clear
-	UPDATE="2021/11/17"
+	UPDATE="2021/11/19"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	修正termux旧版本安装问题(已知0.73以下)
@@ -294,6 +294,31 @@ ARCH_CHECK() {
 	fi
 }
 ####################
+XVNC(){
+	read -r -p "是否使用vncviewer密码 1)密码(建议) 2)免密 3)修改密码 :" input
+	case $input in
+		1) if [ ! -f ${HOME}/.vnc/passwd ]; then
+			mkdir -p ${HOME}/.vnc
+			vncpasswd
+		fi
+		PASS="-rfbauth ${HOME}/.vnc/passwd" ;;
+		3) if [ ! -f ${HOME}/.vnc/passwd ]; then
+			mkdir -p ${HOME}/.vnc
+		fi
+		vncpasswd
+		PASS="-rfbauth ${HOME}/.vnc/passwd" ;;
+		*)
+		PASS="-SecurityTypes None" ;;
+	esac
+vncserver -kill $DISPLAY 2>/dev/null
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
+#export PULSE_SERVER=tcp:127.0.0.1:4713
+export DISPLAY=:0
+Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 768x1024 -once -depth 32 -deferglyphs 16 $PASS &
+}
 ####################
 QEMU_VERSION(){
 	uname -a | grep 'Android' -q
@@ -1261,6 +1286,13 @@ EOF
 	exit 0 ;;
 	esac
 			;;
+		7) 
+		if [ ! $(command -v tigervncserver) ]; then
+                        echo -e "${YELLOW}检测所需vnc包${RES}"
+                        sleep 1
+                        $sudo apt install tigervnc-standalone-server tigervnc-viewer --no-install-recommends -y
+                        fi
+		display=xvnc ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 0 ;;
 		*) INVALID_INPUT
@@ -1697,13 +1729,15 @@ else
 		xsdl) set -- "${@}" "-device" "virtio-vga" "-display" "sdl,gl=on"
 		unset display ;;
 		vnc|wlan_vnc)
+		export PULSE_SERVER=tcp:127.0.0.1:4713
 			if [ ! $(command -v tigervncserver) ]; then
 			echo -e "${YELLOW}检测所需vnc包${RES}"
 			sleep 1
-			apt install tigervnc-standalone-server tigervnc-viewer -y
+			$sudo apt install tigervnc-standalone-server tigervnc-viewer --no-install-recommends -y
 			fi
+			dpkg -l libegl1 >/dev/null 2>&1; if [ $? != 0 ]; then $sudo apt install libegl1 libgdk-pixbuf2.0-0 -y; fi
 #		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
-		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci"
+		set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci"
 		display=vnc_3d
 #		set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
 ;;
@@ -1739,7 +1773,7 @@ else
 	case $display in                                                      spice|spice_)
 		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 0)不加载 " input ;;
 		*)
-		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 57)usb-audio 6)ac97(修改参数，优化声音卡顿，不适合spice) 7)hda(修改参数，优化声音卡顿，不适合spice) 0)不加载 " input ;;
+		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 6)ac97(修改参数，优化声音卡顿，不适合spice) 7)hda(修改参数，优化声音卡顿，不适合spice) 0)不加载 " input ;;
 	esac
 	case $input in
 		1) set -- "${@}" "-device" "ES1370" ;;
@@ -1758,17 +1792,16 @@ else
 		5) set -- "${@}" "-device" "usb-audio" ;;
 		6) case $display in
 			spice|spice_) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
-		*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
+			*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
+			set -- "${@}" "-device" "AC97,audiodev=alsa1"                 ;;
 		esac ;;
 		*) case $display in
 			spice|spice_) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
-			*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-		set -- "${@}" "-device" "AC97,audiodev=alsa1" 
-		;;
-esac ;;
+		*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
+		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
+		esac ;;
 	esac	;;
-esac
+	esac
 	fi
 	fi
 ####################
@@ -2323,6 +2356,9 @@ eof
 		vnc) 
 		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=on"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
+		xvnc)
+		export PULSE_SERVER=tcp:127.0.0.1:4713 
+		set -- "${@}" "-display" "gtk,gl=off" ;;
 		xsdl) 
 			export DISPLAY=127.0.0.1:0
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
@@ -2352,7 +2388,16 @@ ${@}
 EOF
 printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n本次操作将退出脚本，请留意shell提示\n显卡驱动装上后在开机过程中shell会有${YELLOW}gl_version 45 - core profile enabled${GREEN}提示，请及时在显示界面左上角窗口(View)切换为virtio-gpu-pci，否则启动失败"
 	echo -e "${RES}"
+	if echo "${@}" | grep -q monitor; then
+		echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
+	else
+        trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
+	if echo "${@}" | grep -q hugepage 2>/dev/null; then
+	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
+	fi
+	fi
 	sleep 2
+:<<\eof
 vncserver -kill $DISPLAY 2>/dev/null
 killall -9 Xtightvnc 2>/dev/null
 killall -9 Xtigertvnc 2>/dev/null
@@ -2361,6 +2406,8 @@ killall -9 vncsession 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 export DISPLAY=:0
 Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 768x1024 -once -depth 32 -deferglyphs 16 -SecurityTypes None :0 &
+eof
+XVNC
 "${@}"
 	exit 0 ;;
 		*)
@@ -2464,6 +2511,9 @@ EOF
 	fi
 	echo -e  "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
+	if [ "$display" == xvnc ]; then
+		XVNC
+	fi
 	"${@}" >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
 		FAIL
