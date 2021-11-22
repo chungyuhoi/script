@@ -2396,7 +2396,6 @@ EOF
 #	if echo "${@}" | grep -q hugepage 2>/dev/null; then
 	echo -e "${GREEN}注意！你使用了大页内存，不会因为qemu退出而自动删除大页文件，请退出后输rm ${HOME}/hugepage*自行删除${RES}${RES}"
 	fi
-	fi
 	sleep 2
 	if [ "$NOVNC" == novnc ]; then
 echo -e "本地vncviewer地址 \e[33m127.0.0.1:0\e[0m"
