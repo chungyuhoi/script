@@ -4,7 +4,7 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 INFO() {
 	clear
-	UPDATE="2021/11/19"
+	UPDATE="2021/11/20"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	修正termux旧版本安装问题(已知0.73以下)
@@ -12,6 +12,7 @@ INFO() {
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
 	修改一些细节
 	优化virtio显卡在vnc中的显示(不建议，仅体验显卡驱动的安装，成功会有gl_version 45 - core profile enabled提示)
+	增加vnc多渠道选项(可同时使用本地vnc，局域网vnc，浏览器进行显示操作)
 ${GREEN}ps:	termux环境的源qemu已更新为6.1
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
 }
@@ -1184,7 +1185,7 @@ esac
 	case $SYS in
 		QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面(桌面环境) 5)局域网vnc 9)返回 0)退出 " input ;;
 	*) 
-	read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(仅输镜像名) 9)返回 0)退出 " input
+	read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(仅输镜像名) 7)vnc多渠道显示(本地vnc、局域网vnc、浏览器，测试阶段) 9)返回 0)退出 " input
 	esac
 	case $input in
 		1|"") echo -e "\n${BLUE}vnc输出${RES}"
@@ -1290,9 +1291,10 @@ EOF
 		if [ ! $(command -v tigervncserver) ]; then
                         echo -e "${YELLOW}检测所需vnc包${RES}"
                         sleep 1
-                        $sudo apt install tigervnc-standalone-server tigervnc-viewer --no-install-recommends -y
+                        $sudo apt install tigervnc-standalone-server tigervnc-viewer novnc --no-install-recommends -y
                         fi
-		display=xvnc ;;
+			NOVNC=novnc
+			display=xvnc ;;
 		9) QEMU_SYSTEM ;;
 		0) exit 0 ;;
 		*) INVALID_INPUT
@@ -1738,7 +1740,7 @@ else
 			dpkg -l libegl1 >/dev/null 2>&1; if [ $? != 0 ]; then $sudo apt install libegl1 libgdk-pixbuf2.0-0 -y; fi
 #		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
 		set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci"
-		display=vnc_3d
+		display=xvnc
 #		set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
 ;;
 		spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on"
@@ -2381,34 +2383,35 @@ eof
 	if [ $? != 0 ]; then
 		case $display in
 		wlan_vnc) ;;
-		vnc_3d)
+		xvnc)
 	printf "%s\n"
 cat <<-EOF
 ${@}
 EOF
-printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n本次操作将退出脚本，请留意shell提示\n显卡驱动装上后在开机过程中shell会有${YELLOW}gl_version 45 - core profile enabled${GREEN}提示，请及时在显示界面左上角窗口(View)切换为virtio-gpu-pci，否则启动失败"
 	echo -e "${RES}"
 	if echo "${@}" | grep -q monitor; then
 		echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	else
         trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
-	if echo "${@}" | grep -q hugepage 2>/dev/null; then
-	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
+#	if echo "${@}" | grep -q hugepage 2>/dev/null; then
+	echo -e "${GREEN}注意！你使用了大页内存，不会因为qemu退出而自动删除大页文件，请退出后输rm ${HOME}/hugepage*自行删除${RES}${RES}"
 	fi
 	fi
 	sleep 2
-:<<\eof
-vncserver -kill $DISPLAY 2>/dev/null
-killall -9 Xtightvnc 2>/dev/null
-killall -9 Xtigertvnc 2>/dev/null
-killall -9 Xvnc 2>/dev/null
-killall -9 vncsession 2>/dev/null
-export PULSE_SERVER=tcp:127.0.0.1:4713
-export DISPLAY=:0
-Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 768x1024 -once -depth 32 -deferglyphs 16 -SecurityTypes None :0 &
-eof
-XVNC
-"${@}"
+	if [ "$NOVNC" == novnc ]; then
+echo -e "本地vncviewer地址 \e[33m127.0.0.1:0\e[0m"
+echo -e "局域网vncviewer地址 \e[33m$IP:0\e[0m"
+echo -e "浏览器输 \e[33mhttp://localhost:6080/vnc.html\e[0m\n(浏览器适合没vnc，大平板，点击触屏，)"
+echo -e  "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
+	sleep 1
+	XVNC
+	"${@}" &
+	bash /usr/share/novnc/utils/launch.sh --vnc localhost:5900 --listen 6080 2>/dev/null
+	else
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n本次操作将退出脚本，请留意shell提示\n显卡驱动装上后在开机过程中shell会有${YELLOW}gl_version 45 - core profile enabled${GREEN}提示，请及时在显示界面左上角窗口(View)切换为virtio-gpu-pci，否则启动失败${RES}"
+	XVNC
+	"${@}" &
+	fi
 	exit 0 ;;
 		*)
 	echo -e "创建本次参数的${YELLOW}快捷脚本${RES}"
