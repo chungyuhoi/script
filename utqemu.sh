@@ -4,16 +4,17 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 INFO() {
 	clear
-	UPDATE="2021/11/20"
+	UPDATE="2021/11/21"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
-	修正termux旧版本安装问题(已知0.73以下)
-	修改内存配置，降低极少数可能出现的异常
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
 	修改一些细节
 	优化virtio显卡在vnc中的显示(不建议，仅体验显卡驱动的安装，成功会有gl_version 45 - core profile enabled提示)
 	增加vnc多渠道选项(可同时使用本地vnc，局域网vnc，浏览器进行显示操作)
-${GREEN}ps:	termux环境的源qemu已更新为6.1
+	修改qemu5.0以上声卡默认驱动，提高声音流畅度
+
+${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
+	termux环境的源qemu已更新为6.1
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
 }
 ###################
@@ -21,13 +22,12 @@ NOTE() {
 	clear
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
-	qemu5.0前后版本选项参数区别不大，主要在于新版本比旧版多了些旧版本没有的参数。
+	通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	xp玩经典游戏(如星际争霸，帝国时代)需使用cirrus显卡才能运行
-	模拟效率，因手机而异，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl，win8听歌流畅。
+	模拟效率，因手机而异，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功。
-	声音输出（不支持termux与utermux环境，pc建议ac97，q35建议hda）。
 	sdl输出显示，源地址并未编译qemu的sdl，这里只是通过信号输出，需先开启xsdl(不支持termux与utermux环境）。
-	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好。
+	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好，qemu6.0似乎恢复对旧windows系统的支持
 	大页文件虽然可以分担设备ram，但同时会提高设备cpu负担，且创建大容量文件，请审慎使用
 	最近新增的内容比较多，如不能正常加载，请选择1重新安装qemu\n"
 	if [ $(command -v qemu-system-x86_64) ]; then
@@ -312,10 +312,10 @@ XVNC(){
 		PASS="-SecurityTypes None" ;;
 	esac
 vncserver -kill $DISPLAY 2>/dev/null
-killall -9 Xtightvnc 2>/dev/null
-killall -9 Xtigertvnc 2>/dev/null
-killall -9 Xvnc 2>/dev/null
-killall -9 vncsession 2>/dev/null
+pkill -9 Xtightvnc 2>/dev/null
+pkill -9 Xtigertvnc 2>/dev/null
+pkill -9 Xvnc 2>/dev/null
+pkill -9 vncsession 2>/dev/null
 #export PULSE_SERVER=tcp:127.0.0.1:4713
 export DISPLAY=:0
 Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 768x1024 -once -depth 32 -deferglyphs 16 $PASS &
@@ -858,8 +858,9 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	exit 0
 	QEMU_ETC ;;
 	9) echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list && $sudo apt update
-	$sudo apt install qemu-system-x86 tigervnc-standalone-server tigervnc-viewer -y
+	$sudo apt install qemu-system-x86 tigervnc-standalone-server tigervnc-viewer novnc -y
 	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 6 ]]; then
+	sed -i '/Fail/{n;s/^/#/}' /usr/share/novnc/utils/launch.sh
 	echo -e "更新成功"
 	else
 	echo -e "更新失败"
@@ -991,7 +992,7 @@ echo -e "3)  启动qemu-system-x86_64模拟器
 	*) echo -e "6)  应用维护" ;;
 	esac
 echo -e "7)  查看日志
-8)  更新内容
+8)  更新内容${YELLOW}(2021.11.21)${RES}
 9)  关于utqemu
 10) 在线termux-toolx脚本体验维护linux系统(debian)
 11) 在线测试本机cpu支持模拟的特性
@@ -1021,12 +1022,13 @@ echo -e "7)  查看日志
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer -y
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer novnc -y
 	if [ ! $(command -v qemu-system-x86) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
-	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer novnc -y
 	fi
+	sed -i '/Fail/{n;s/^/#/}' /usr/share/novnc/utils/launch.sh
 	PA
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
 	fi
@@ -1292,6 +1294,7 @@ EOF
                         echo -e "${YELLOW}检测所需vnc包${RES}"
                         sleep 1
                         $sudo apt install tigervnc-standalone-server tigervnc-viewer novnc --no-install-recommends -y
+			sed -i '/Fail/{n;s/^/#/}' /usr/share/novnc/utils/launch.sh
                         fi
 			NOVNC=novnc
 			display=xvnc ;;
@@ -1459,7 +1462,87 @@ EOF
 		QEMU_PRE) read -r -p "1)n270 2)athlon 3)pentium2 4)core2duo 5)Skylake-Server-IBRS 6)Nehalem-IBRS 7)Opteron_G5 9)max 0)自己输 " input ;;
 	esac
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
-#部分cpu id flags：fpu –板载FPU，vme –虚拟模式扩展，de –调试扩展，pse –页面大小扩展，tsc –时间戳计数器，操作系统通常可以得到更为精准的时间度量，msr –特定于模型的寄存器，pae –物理地址扩展，cx8 – CMPXCHG8指令，apic–板载APIC，sep– SYSENTER/SYSEXIT，mtrr –存储器类型范围寄存器，pge – Page Global Enable，mca –Machine Check Architecture，cmov – CMOV instructions（附加FCMOVcc，带有FPU的FCOMI），pat –页面属性表，pse36 – 36位PSE，clflush – CLFLUSH指令，dts –调试存储，acpi –ACPI via MSR，mmx –多媒体扩展，fxsr – FXSAVE/FXRSTOR, CR4.OSFXSR，sse – SSE，sse2 – SSE2，ss – CPU自侦听，ht –超线程，tm –自动时钟控制，ia64 – IA-64处理器，pbe –等待中断启用，mmxext – AMD MMX扩展，fxsr_opt – FXSAVE / FXRSTOR优化，rdtscp – RDTSCP，lm –长模式（x86-64），3dnowext – AMD 3DNow扩展，k8 –皓龙，速龙64，k7 –速龙，pebs –基于 精确事件的采样，bts –分支跟踪存储，nonstop_tsc – TSC不会在C状 态下停止，PNI – SSE-3，pclmulqdq – PCLMULQDQ指令，dtes64 – 64 位调试存储，监控器–监控/等待支持，ds_cpl – CPL Qual.调试存储，vmx –英特尔虚拟化技术(VT技术)，smx –更安全的模式，est –增强的SpeedStep，tm2 –温度监控器2，ssse3 –补充SSE-3，cid –上下文ID，cx16 – CMPXCHG16B，xptr –发送任务优先级消息，dca –直接缓存访问 ，sse4_1 – SSE-4.1，sse4_2 – SSE-4.2，x2apic – x2APIC，aes – AES指令集，xsave – XSAVE / XRSTOR / XSETBV / XGETBV，avx –高级 矢量扩展，hypervisor–在hypervisor上运行，svm –AMD的虚拟化技术(AMD-V)，extapic –扩展的APIC空间，cr8legacy – 32位模式下的CR8，abm –高级bit操作，ibs –基于Sampling的采样，sse5 – SSE-5，wdt –看门狗定时器，硬件锁定清除功能（HLE），受限事务存储（RTM）功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。syscal 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入 内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大 约300个系统调用。rdrand -使用 CPU 内部的热噪声生成随机数。
+:<<\eof
+flags各项含义：
+abm: 高级bit操作
+acc：Automatic Clock Control 自动时钟控制
+3dnowext: AMD 3DNow扩展
+acpi： ACPI via MSR 高级配置和电源管理接口(ProcessorDutyCycleControl)
+aes: AES指令集是一种针对加密计算的CPU测试。AES加密技术被广泛应用于WIFI加密，光盘加密等领域。
+apic： Onboard Advanced Programmable Interrupt Controller 板载APIC
+avx: 高级 矢量扩展
+bts: 分支跟踪存储
+fpu： Onboard (x87) Floating Point Unit 板载FPU浮点运算(常用于kernel)
+cid: 上下文ID
+cr8legacy: 扩展的APIC空间，cr8legacy – 32位模式下的CR8
+cx8： CMPXCHG8 instruction CMPXCHG8指令
+cx16: CMPXCHG16B
+vme： Virtual Mode Extension 虚拟模式扩展
+de： Debugging Extensions 调试扩展
+dca: 直接缓存访问
+ds_cpl: CPL Qual.调试存储
+dts: 调试存储
+dtes： Debug Trace Store
+dtes64: 64 位调试存储，监控器–监控/等待支持
+syscal: 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入 内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大 约300个系统调用
+rdrand: 使用 CPU 内部的热噪声生成随机数。
+est： “Enhanced SpeedStep” 增强的SpeedStep
+extapic: 扩展的APIC空
+xptr: 发送任务优先级消息
+xsave: XSAVE / XRSTOR / XSETBV / XGETBV 常用于kernel
+xsaveopt: 是xsave的优化版,常用于kernel在进程切换的时候保存进程使用fpu寄存器现场
+wdt: 看门狗定时器，硬件锁定清除功能
+功
+hle: 硬件锁定清除功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或>单线程处理数据。
+rtm: 受限事务存储功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
+pse： Page Size Extensions 页面大小扩展
+k8: 皓龙，速龙64
+k7: 速龙
+pebs: 基于 精确事件的采样
+tsc： Time Stamp Counter: support for RDTSC and WRTSC instructions 时间戳计数器，操作系统通常可以得到更为精准的时间度量
+msr： Model-Specific Registers 特定于模型的寄存器
+nonstop_tsc: TSC不会在C状 态下停止
+pae： Physical Address Extensions: ability to access 64GB of memory; only 4GB can be accessed at a time though 物理地址扩展
+ibs: 基于Sampling的采样
+sep： Sysenter/Sysexit Instructions; SYSENTER is used for jumps to kernel memory during system calls, and SYSEXIT is used for jumps： back to the user code
+smx: 更安全的模式
+mtrr： Memory Type Range Registers 存储器类型范围寄存器
+pge： Page Global Enable
+mca： Machine Check Architecture 架构检查
+mce： Machine Check Exception 当处理器探测mca到机器内部错误或者总线错误的时候，就会发送该中断。
+npt: 模拟器二级地址翻译
+cmov： CMOV instruction instructions（附加FCMOVcc，带有FPU的FCOMI）
+pat： Page Attribute Table 页面属性表
+pclmulqdq: PCLMULQDQ指令，无进位乘法指令 与aes可将虚拟电缆调制解调器终端系统 (vCMTS) 数据平面的性能提高
+pse36： 36-bit Page Size Extensions: allows to map 4 MB pages into the first 64GB RAM, used with PSE.
+ssse3: 补充SSE-3
+pn： Processor Serial-Number; only available on Pentium 3
+pcommit: 把所有落在持久化内存区域的store持久化(已被intel弃用)
+clflush： CLFLUSH instruction clflush CLFLUSH指令，（Cache Line Flush，缓存行刷回）能够把指定缓存行（Cache Line）从所有级缓存中淘汰，若该缓存行中的数据被修改过，则将该数据写入主存；支持现状：目前主流处理器均支持该指令。
+clflushopt:（Optimized CLFLUSH，优化的缓存行刷回）作用与 CLFLUSH 相似，但其之间的指令级并行度更高，比如在访问不同 CacheLine 时，CLFLUHOPT 可以乱序执行。支持现状
+clwb: （Cache Line Write Back，缓存行写回）作用与 CLFLUSHOPT 相似，但在将缓存行中的数据写回之后，该缓存行仍将呈现为未被修改过的状态；支持现状
+mmx： MultiMedia Extension –多媒体扩展
+pbe: 等待中断启用
+mmxext: AMD MMX扩展
+fxsr： FXSAVE and FXSTOR instructions
+fxsr-opt: FXSAVE / FXRSTOR优化
+sse： Streaming SIMD Extensions. Single instruction multiple data. Lets you do a bunch of the same operation on different pieces of input： in a single clock tick.
+sse2： Streaming SIMD Extensions-2. More of the same.
+selfsnoop： CPU self snoop
+ia64： IA-64 processor Itanium. IA-64处理器
+ht： HyperThreading. Introduces an imaginary second processor that doesn’t do much but lets you run threads in the same process a bit quicker. 超线程
+hypervisor: 在hypervisor上运行
+nx： No Execute bit. Prevents arbitrary code running via buffer overflows.
+pni： Prescott New Instructions aka. SSE3
+vmx： Intel Vanderpool hardware virtualization technology 英特尔虚拟化技术(VT技术)
+svm： AMD “Pacifica” hardware virtualization technology AMD的虚拟化技术(AMD-V)
+lm： “Long Mode,” which means the chip supports the AMD64 instruction set 长模式（芯片支持x86-64指令）
+lahf-lm: 
+tm： “Thermal Monitor” Thermal throttling with IDLE instructions. Usually hardware controlled in response to CPU temperature. 自动时钟控制
+tm2： “Thermal Monitor 2″ Decrease speed by reducing multipler and vcore. 温度监控器2
+ss – CPU自侦听，堆栈段寄存器，是在程序运行时动态分配使用，当一个程序要执行时，就要决定程序代码、数据和堆栈各要用到内存的哪些位置，通过设定段寄存器 CS，DS，SS 来指向这些起始位置。
+eof
+
 	case $input in
 	1) CPU_MODEL=n270
 		SMP_="2,cores=1,threads=2,sockets=1" ;;
@@ -1570,7 +1653,7 @@ eof
 		set -- "${@}" "-smbios" "type=4,manufacturer=MediaTek,max-speed=5200,current-speed=3600"
 		set -- "${@}" "-name" "${hda_name%.*}"
 		set -- "${@}" "-uuid" "1f8e6f7e-5a70-4780-89c1-464dc0e7f308" ;;
-	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm"
+	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm,+pdpe1gb"
 #+hypervisor,hv_spinlocks=0xFFFFFFFF,hv_relaxed,
 		SMP_="cpus=8,cores=8"
 		set -- "${@}" "-smbios" "type=0,vendor=Hewlett-Packard,version=J61 v03.69,date=03/25/2014,release=03.2014,uefi=on"
@@ -1590,7 +1673,9 @@ axcpus=4" ;;
 	98) CPU_MODEL="Cascadelake-Server-v4,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-syscall,-lm"
 		SMP_="8,cores=8,threads=1,sockets=1"
 		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
-	99) CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-lm"
+	99) 
+#AMD Phenom(tm) 9550 Quad-Core Processor
+		CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-lm,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,-de"
 		SMP_="4,cores=4,threads=1,sockets=1"
 		MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
         *)      CPU_MODEL=max
@@ -1757,7 +1842,9 @@ else
 		5) set -- "${@}" "-device" "qxl-vga,max_outputs=1"
 #			set -- "${@}" "-device" "virtio-keyboard-pci"
 ;;
-		*) set -- "${@}" "-device" "VGA,vgamem_mb=256,global-vmstate=false,qemu-extended-regs=off,rombar=1" ;;
+		*) set -- "${@}" "-device" "VGA,vgamem_mb=256" ;;
+#EDID是一种VESA标准数据格式，它包含监视器和自身性能的基本信息。基本信息主要有输出分辨率、最大图像尺寸、颜色特征、出厂事先设置时间、频率范围限制和监视器名称等
+#global-vmstate=flase: With this in place you don't get a vmstate section naming conflict any more when adding multiple pci vga devices to your vm.此参数可兼容多个pci显卡
 	esac
 
 	echo -e "请选择${YELLOW}网卡${RES}"
@@ -1778,9 +1865,12 @@ else
 		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 6)ac97(修改参数，优化声音卡顿，不适合spice) 7)hda(修改参数，优化声音卡顿，不适合spice) 0)不加载 " input ;;
 	esac
 	case $input in
-		1) set -- "${@}" "-device" "ES1370" ;;
-		2) set -- "${@}" "-device" "sb16" ;;
-		3) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
+		1) set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
+			set -- "${@}" "-device" "ES1370,audiodev=pa1" ;;
+		2) set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
+			set -- "${@}" "-device" "sb16,audiodev=pa1" ;;
+		3) set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
+			set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=pa1" ;;
                 0) ;;
 		4)
 #adc in dac out				
@@ -1790,8 +1880,10 @@ else
 #缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
 #周期长度out.period-length=1020
 #pa参数
-		set -- "${@}" "-device" "AC97" ;;
-		5) set -- "${@}" "-device" "usb-audio" ;;
+		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
+		set -- "${@}" "-device" "AC97,audiodev=pa1" ;;
+		5) set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
+			set -- "${@}" "-device" "usb-audio,audiodev=pa1" ;;
 		6) case $display in
 			spice|spice_) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
 			*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
@@ -2269,7 +2361,7 @@ set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=d
 	set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none"
 	set -- "${@}" "-device" "ahci,id=ahci"
 	set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
-
+	set -- "${@}" "-global" "ide-hd.physical_block_size=4096"
 	if [ -n "$hdb_name" ]; then
 	set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none"
 	set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
@@ -2384,6 +2476,7 @@ eof
 		case $display in
 		wlan_vnc) ;;
 		xvnc)
+	trap "pkill Xtightvnc; pkill Xtigervnc; pkill Xvnc; pkill websockify 2>/dev/null;exit" SIGINT EXIT
 	printf "%s\n"
 cat <<-EOF
 ${@}
@@ -2391,10 +2484,10 @@ EOF
 	echo -e "${RES}"
 	if echo "${@}" | grep -q monitor; then
 		echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
-	else
-        trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
-#	if echo "${@}" | grep -q hugepage 2>/dev/null; then
-	echo -e "${GREEN}注意！你使用了大页内存，不会因为qemu退出而自动删除大页文件，请退出后输rm ${HOME}/hugepage*自行删除${RES}${RES}"
+	fi
+	if echo "${@}" | grep -q hugepage 2>/dev/null; then
+	echo -e "${GREEN}注意！你使用了大页内存，脚本会qemu退出而自动删除大页文件，如未删除请退出后输rm ${HOME}/hugepage*自行删除${RES}${RES}"
+	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	fi
 	sleep 2
 	if [ "$NOVNC" == novnc ]; then
