@@ -2063,20 +2063,20 @@ eof
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #driftfix=slew i386存在时间漂移
 	echo -e "请选择${YELLOW}系统时间${RES}标准"
-	read -r -p "1)utc 2)localtime " input
+	read -r -p "1)utc(世界时间) 2)localtime(本机时间,推荐) " input
 	case $input in
 	1) case $QEMU_SYS in
-		qemu-system-i386) set -- "${@}" "-rtc" "base=utc,clock=host,driftfix=slew" ;;
-		*) set -- "${@}" "-rtc" "base=utc,clock=host" ;;
+		qemu-system-i386) set -- "${@}" "-rtc" "base=utc,driftfix=slew" ;;
+		*) set -- "${@}" "-rtc" "base=utc" ;;
 	esac ;;
-	*) set -- "${@}" "-rtc" "base=localtime" ;;
+	*) set -- "${@}" "-rtc" "base=localtime,clock=vm" ;;
 #       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
 	esac
 #strict=on|off 是否受宿主机网络控制
 	echo -e "请选择${YELLOW}启动顺序${RES}"
 	read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
 	case $input in
-	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
+	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=on" ;;
 	*) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
 	esac ;;
 	*)
@@ -2137,7 +2137,7 @@ eof
 		set -- "${@}" "-numa" "node,memdev=pc.ram"
 		HMAT=",hmat=on"
 	;;
-		*) set -- "${@}" "-mem-prealloc" ;;
+#		*) set -- "${@}" "-mem-prealloc" ;;
 	esac
 :<<\eof
         if echo ${@} | egrep -qw "512|1024|2048"; then
