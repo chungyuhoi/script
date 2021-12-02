@@ -2,9 +2,10 @@
 cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
+#am start -n x.org.server/x.org.server.MainActivity
 INFO() {
 	clear
-	UPDATE="2021/11/21"
+	UPDATE="2021/11/30"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
@@ -12,6 +13,7 @@ INFO() {
 	优化virtio显卡在vnc中的显示(不建议，仅体验显卡驱动的安装，成功会有gl_version 45 - core profile enabled提示)
 	增加vnc多渠道选项(可同时使用本地vnc，局域网vnc，浏览器进行显示操作)
 	修改qemu5.0以上声卡默认驱动，提高声音流畅度
+	优化参数，稍微提高点模拟效率
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -1387,51 +1389,6 @@ EOF
 		fi
 	fi
 
-#不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件，通常模拟器默认加载串口，并口，软盘，光驱等。
-	set -- "${@}" "-nodefaults"
-#不加载用户自定义的配置文件。
-	set -- "${@}" "-no-user-config"
-#	set -- "${@}" "-k" "en-us"
-#OHCI1.1 UHCI1.1 EHCI2.0 XHCI3.0
-#USB2.0
-#-device ich9-usb-ehci1,id=usb
-#-device ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on
-#USB3.0
-#-device nec-usb-xhci,id=usb -device usb-storage,bus=usb.0,drive=disk1 -drive if=none,format=raw,id=disk1,file=/sdcard/xinhao/windows/4g.qcow2
-#-device nec-usb-xhci
-#	set -- "${@}" "-usbdevice" "keyboard"
-	case $ARCH in
-		tablet)
-#重定向虚拟串口到主机设备
-#	set -- "${@}" "-serial" "none"
-#重定向虚拟并口到主机设备
-#	set -- "${@}" "-parallel" "none"
-#控制台，一种类似于shell的交互方式
-#	set -- "${@}" "-monitor" "none"
-;;
-		*) ;;
-	esac
-#qemu monitor protocol协议，对qemu虚拟机进行交互
-#	set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
-#使用bios配置
-#	set -- "${@}" "-L" "${DIRECT}${STORAGE}"
-#使用bzImage内核镜像
-#	set -- "${@}" "-kernel" "bzImage"
-#使用cmdline作为内核命令行
-#	set -- "${@}" "-append" "cmdline"
-	case $QEMU_SYS in
-		qemu-system-i386)
-#取消高精度定时器
-	set -- "${@}" "-no-hpet"
-#取消软盘启动检测
-	set -- "${@}" "-no-fd-bootchk"
-#取消高级配置与电源管理
-#        set -- "${@}" "-no-acpi"
-;;
-		*) ;;
-	esac
-#更改消息的格式，时间戳
-	set -- "${@}" "-msg" "timestamp=off"
 #GenuineIntel AuthenticAMD
 	echo -e "是否自定义${YELLOW}逻辑cpu${RES}数量"
 	read -r -p "1)默认配置 2)自定义 " input
@@ -1464,83 +1421,92 @@ EOF
 #max 对本机cpu的特性加载到虚拟机 host 直接迁移本机cpu到虚拟机(适用于kvm)
 :<<\eof
 flags各项含义：
+所谓指令集，就是CPU中用来计算和控制计算机系统的一套指令的集合，而每一种新型的CPU在设计时就规定了一系列与其他硬件电路相配合的指令系统。而指令集的先进与否，也关系到CPU的性能发挥，它也是CPU性能体现的一个重要标志。
+输入用的寄存器为EAX（有时也会用到ECX作为扩展输入），用于指定CPUID的功能。在执行CPUID指令前需要往EAX寄存器写入相应的值。
+输出用的寄存器为EAX、EBX、ECX、EDX共四个。在CPUID指令执行后可以从这四个寄存器中获取到所需要的信息。
 abm: 高级bit操作
-acc：Automatic Clock Control 自动时钟控制
+acc: Automatic Clock Control 自动时钟控制
 3dnowext: AMD 3DNow扩展
-acpi： ACPI via MSR 高级配置和电源管理接口(ProcessorDutyCycleControl)
+acpi:  ACPI via MSR 高级配置和电源管理接口(ProcessorDutyCycleControl)
 aes: AES指令集是一种针对加密计算的CPU测试。AES加密技术被广泛应用于WIFI加密，光盘加密等领域。
-apic： Onboard Advanced Programmable Interrupt Controller 板载APIC
+apic: Onboard Advanced Programmable Interrupt Controller 板载APIC
 avx: 高级 矢量扩展
 bts: 分支跟踪存储
-fpu： Onboard (x87) Floating Point Unit 板载FPU浮点运算(常用于kernel)
+fpu:  Onboard (x87) Floating Point Unit 板载FPU浮点运算(常用于kernel)
 cid: 上下文ID
 cr8legacy: 扩展的APIC空间，cr8legacy – 32位模式下的CR8
-cx8： CMPXCHG8 instruction CMPXCHG8指令
+cx8:  CMPXCHG8 instruction CMPXCHG8指令 CPU内部，多个核心之间有一条环形总线，当有某一个核心需要锁住cache的时候，这个总线会通知所有的核心，所以只要有某个核心使用了cmpxchg，那么其它的核肯定都会停下来，不会出现并发的情况。
 cx16: CMPXCHG16B
-vme： Virtual Mode Extension 虚拟模式扩展
-de： Debugging Extensions 调试扩展
+vme:  Virtual Mode Extension 虚拟模式扩展
+de: Debugging Extensions 调试扩展
 dca: 直接缓存访问
 ds_cpl: CPL Qual.调试存储
 dts: 调试存储
-dtes： Debug Trace Store
+dtes: Debug Trace Store
 dtes64: 64 位调试存储，监控器–监控/等待支持
+smap: (Supervisor Mode Access Prevention，管理模式访问保护)
+smep: (Supervisor Mode Execution Prevention，管理模式执行保护)
 syscal: 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入 内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大 约300个系统调用
 rdrand: 使用 CPU 内部的热噪声生成随机数。
-est： “Enhanced SpeedStep” 增强的SpeedStep
+est: “Enhanced SpeedStep” 增强的SpeedStep
 extapic: 扩展的APIC空
+bmi1: 新cpu模拟旧cpu向下兼容特性，不兼容旧特性会出现 #UD (UnDefined)
+bmi2: 新cpu模拟旧cpu向下兼容特性，新cpu模拟旧cpu向下兼容特性，不兼容旧特性会出现 #UD (UnDefined)
 xptr: 发送任务优先级消息
 xsave: XSAVE / XRSTOR / XSETBV / XGETBV 常用于kernel
 xsaveopt: 是xsave的优化版,常用于kernel在进程切换的时候保存进程使用fpu寄存器现场
+xgetbv: 程序通过访问寄存器XCR0（eXterned Control Register）可以得到操作系统对SIMD扩展的支持信息。该寄存器通过XSETBV进行设置，通过XGETBV进行读取。
 wdt: 看门狗定时器，硬件锁定清除功能
 功
-hle: 硬件锁定清除功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或>单线程处理数据。
+hle: 硬件锁定清除功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
 rtm: 受限事务存储功能，HLE与RTM为TSX指令集，决定服务器cpu多线程或单线程处理数据。
-pse： Page Size Extensions 页面大小扩展
+pku: Protection Keys for User-Mode Pages
+pse: Page Size Extensions 页面大小扩展
 k8: 皓龙，速龙64
 k7: 速龙
 pebs: 基于 精确事件的采样
-tsc： Time Stamp Counter: support for RDTSC and WRTSC instructions 时间戳计数器，操作系统通常可以得到更为精准的时间度量
-msr： Model-Specific Registers 特定于模型的寄存器
+tsc: Time Stamp Counter: support for RDTSC and WRTSC instructions 时间戳计数器，操作系统通常可以得到更为精准的时间度量
+msr: Model-Specific Registers 特定于模型的寄存器
 nonstop_tsc: TSC不会在C状 态下停止
-pae： Physical Address Extensions: ability to access 64GB of memory; only 4GB can be accessed at a time though 物理地址扩展
+pae: Physical Address Extensions: ability to access 64GB of memory; only 4GB can be accessed at a time though 物理地址扩展
 ibs: 基于Sampling的采样
-sep： Sysenter/Sysexit Instructions; SYSENTER is used for jumps to kernel memory during system calls, and SYSEXIT is used for jumps： back to the user code
+sep: Sysenter/Sysexit Instructions; SYSENTER is used for jumps to kernel memory during system calls, and SYSEXIT is used for jumps： back to the user code
 smx: 更安全的模式
-mtrr： Memory Type Range Registers 存储器类型范围寄存器
-pge： Page Global Enable
-mca： Machine Check Architecture 架构检查
-mce： Machine Check Exception 当处理器探测mca到机器内部错误或者总线错误的时候，就会发送该中断。
+mtrr: Memory Type Range Registers 存储器类型范围寄存器
+pge: Page Global Enable
+mca: Machine Check Architecture 架构检查
+mce: Machine Check Exception 当处理器探测mca到机器内部错误或者总线错误的时候，就会发送该中断。
 npt: 模拟器二级地址翻译
-cmov： CMOV instruction instructions（附加FCMOVcc，带有FPU的FCOMI）
-pat： Page Attribute Table 页面属性表
+cmov: CMOV instruction instructions（附加FCMOVcc，带有FPU的FCOMI）
+pat: Page Attribute Table 页面属性表
 pclmulqdq: PCLMULQDQ指令，无进位乘法指令 与aes可将虚拟电缆调制解调器终端系统 (vCMTS) 数据平面的性能提高
-pse36： 36-bit Page Size Extensions: allows to map 4 MB pages into the first 64GB RAM, used with PSE.
+pse36: 36-bit Page Size Extensions: allows to map 4 MB pages into the first 64GB RAM, used with PSE.
 ssse3: 补充SSE-3
-pn： Processor Serial-Number; only available on Pentium 3
+pn: Processor Serial-Number; only available on Pentium 3
 pcommit: 把所有落在持久化内存区域的store持久化(已被intel弃用)
-clflush： CLFLUSH instruction clflush CLFLUSH指令，（Cache Line Flush，缓存行刷回）能够把指定缓存行（Cache Line）从所有级缓存中淘汰，若该缓存行中的数据被修改过，则将该数据写入主存；支持现状：目前主流处理器均支持该指令。
+clflush: CLFLUSH instruction clflush CLFLUSH指令，（Cache Line Flush，缓存行刷回）能够把指定缓存行（Cache Line）从所有级缓存中淘汰，若该缓存行中的数据被修改过，则将该数据写入主存；支持现状：目前主流处理器均支持该指令。
 clflushopt:（Optimized CLFLUSH，优化的缓存行刷回）作用与 CLFLUSH 相似，但其之间的指令级并行度更高，比如在访问不同 CacheLine 时，CLFLUHOPT 可以乱序执行。支持现状
 clwb: （Cache Line Write Back，缓存行写回）作用与 CLFLUSHOPT 相似，但在将缓存行中的数据写回之后，该缓存行仍将呈现为未被修改过的状态；支持现状
-mmx： MultiMedia Extension –多媒体扩展
+mmx: MultiMedia Extension –多媒体扩展
 pbe: 等待中断启用
 mmxext: AMD MMX扩展
-fxsr： FXSAVE and FXSTOR instructions
-fxsr-opt: FXSAVE / FXRSTOR优化
-sse： Streaming SIMD Extensions. Single instruction multiple data. Lets you do a bunch of the same operation on different pieces of input： in a single clock tick.
-sse2： Streaming SIMD Extensions-2. More of the same.
+fxsr: FXSAVE and FXSTOR instructions (Fast floating-point save and restore)
+fxsr-opt: FXSAVE / FXRSTOR (Fast floating-point save and restore)优化
+sse: Streaming SIMD Extensions. Single instruction multiple data. Lets you do a bunch of the same operation on different pieces of input in a single clock tick.
+sse2: Streaming SIMD Extensions-2. More of the same.
 selfsnoop： CPU self snoop
-ia64： IA-64 processor Itanium. IA-64处理器
-ht： HyperThreading. Introduces an imaginary second processor that doesn’t do much but lets you run threads in the same process a bit quicker. 超线程
+ia64: IA-64 processor Itanium. IA-64处理器
+ht: HyperThreading. Introduces an imaginary second processor that doesn’t do much but lets you run threads in the same process a bit quicker. 超线程
 hypervisor: 在hypervisor上运行
-nx： No Execute bit. Prevents arbitrary code running via buffer overflows.
-pni： Prescott New Instructions aka. SSE3
-vmx： Intel Vanderpool hardware virtualization technology 英特尔虚拟化技术(VT技术)
-svm： AMD “Pacifica” hardware virtualization technology AMD的虚拟化技术(AMD-V)
-lm： “Long Mode,” which means the chip supports the AMD64 instruction set 长模式（芯片支持x86-64指令）
+nx: No Execute bit. Prevents arbitrary code running via buffer overflows.
+pni: Prescott New Instructions aka. SSE3
+vmx: Intel Vanderpool hardware virtualization technology 英特尔虚拟化技术(VT技术)
+svm: AMD “Pacifica” hardware virtualization technology AMD的虚拟化技术(AMD-V)
+lm: “Long Mode,” which means the chip supports the AMD64 instruction set 长模式（芯片支持x86-64指令）
 lahf-lm: 
-tm： “Thermal Monitor” Thermal throttling with IDLE instructions. Usually hardware controlled in response to CPU temperature. 自动时钟控制
-tm2： “Thermal Monitor 2″ Decrease speed by reducing multipler and vcore. 温度监控器2
-ss – CPU自侦听，堆栈段寄存器，是在程序运行时动态分配使用，当一个程序要执行时，就要决定程序代码、数据和堆栈各要用到内存的哪些位置，通过设定段寄存器 CS，DS，SS 来指向这些起始位置。
+tm: “Thermal Monitor” Thermal throttling with IDLE instructions. Usually hardware controlled in response to CPU temperature. 自动时钟控制
+tm2: “Thermal Monitor 2″ Decrease speed by reducing multipler and vcore. 温度监控器2
+ss: CPU自侦听，堆栈段寄存器，是在程序运行时动态分配使用，当一个程序要执行时，就要决定程序代码、数据和堆栈各要用到内存的哪些位置，通过设定段寄存器 CS，DS，SS 来指向这些起始位置。
 eof
 
 	case $input in
@@ -1670,18 +1636,20 @@ axcpus=4" ;;
 	97) CPU_MODEL="EPYC-v2,-fma,-avx,-f16c,-avx2,-rdseed,-sha-ni,-syscall,-fxsr-opt,-lm,-misalignsse,-3dnowprefetch,-osvw,-topoext,-ibpb,-nrip-save,-xsavec"
 		SMP_="4,cores=4,threads=1,sockets=1"
 		MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
-	98) CPU_MODEL="Cascadelake-Server-v4,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-syscall,-lm"
+	98) 
+		CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,l3-cache=true,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-rdseed,-avx512cd,-avx512bw,-avx512vl,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-syscall,-lm,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-mds-no,+pdpe1gb"
 		SMP_="8,cores=8,threads=1,sockets=1"
 		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
-	99) 
+	*) 
 #AMD Phenom(tm) 9550 Quad-Core Processor
-		CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-lm,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,-de"
+		CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt"
+#		CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,-xsave,-xsaveopt,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1"
 		SMP_="4,cores=4,threads=1,sockets=1"
 		MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
-        *)      CPU_MODEL=max
-		unset _SMP
-		SMP_="4"
-		MAXCPUS="4,maxcpus=5" ;;
+#        *)      CPU_MODEL=max
+#		unset _SMP
+#		SMP_="4"
+#		MAXCPUS="4,maxcpus=5" ;;
 	esac
 #####################
 #TERMUX
@@ -1839,12 +1807,14 @@ else
 		fi ;;
 	esac ;;
 	esac ;;
-		5) set -- "${@}" "-device" "qxl-vga,max_outputs=1"
+		5) set -- "${@}" "-device" "qxl-vga,vgamem_mb=256,max_outputs=1"
 #			set -- "${@}" "-device" "virtio-keyboard-pci"
 ;;
-		*) set -- "${@}" "-device" "VGA,vgamem_mb=256" ;;
+		*) set -- "${@}" "-device" "VGA,vgamem_mb=256,x-pcie-extcap-init=on,x-pcie-lnksta-dllla=off" ;;
 #EDID是一种VESA标准数据格式，它包含监视器和自身性能的基本信息。基本信息主要有输出分辨率、最大图像尺寸、颜色特征、出厂事先设置时间、频率范围限制和监视器名称等
 #global-vmstate=flase: With this in place you don't get a vmstate section naming conflict any more when adding multiple pci vga devices to your vm.此参数可兼容多个pci显卡
+#edid=true Extended Display Identification Data(扩展显示标识数据) 为了能让PC或其他的图像输出设备更好的识别显示器属性
+#lnksta为显卡当前实际的传输速率，extcap外部采用
 	esac
 
 	echo -e "请选择${YELLOW}网卡${RES}"
@@ -2232,17 +2202,65 @@ eof
 eof
 #################
 	if [ -n "${NET_MODEL}" ]; then
-	set -- "${@}" "-device" "${NET_MODEL},mac=52:54:98:76:54:32"
+	set -- "${@}" "-device" "${NET_MODEL}"
 	set -- "${@}" "-netdev" "user,id=user0,ipv6=off"
 	elif [ -n "$NET_MODEL0" ]; then
 	set -- "${@}" "-net" "${NET_MODEL0}"
 	set -- "${@}" "-net" "user$SMB"
 	elif [ -n "$NET_MODEL1" ]; then
-	set -- "${@}" "-device" "${NET_MODEL1},mac=52:54:98:76:54:32"
+	set -- "${@}" "-device" "${NET_MODEL1}"
 	set -- "${@}" "-netdev" "user,ipv6=off,id=user0$SMB"
 	else
 	set -- "${@}" "-net" "none"
 	fi
+#################
+
+#不加载默认的配置文件。默认会加载/use/local/share/qemu下的文件，通常模拟器默认加载串口，并口，软盘，光驱等。
+	set -- "${@}" "-nodefaults"
+#不加载用户自定义的配置文件。
+	set -- "${@}" "-no-user-config"
+#       set -- "${@}" "-k" "en-us"
+#OHCI1.1 UHCI1.1 EHCI2.0 XHCI3.0
+#USB2.0
+#-device ich9-usb-ehci1,id=usb
+#-device ich9-usb-uhci1,masterbus=usb.0,firstport=0,multifunction=on
+#USB3.0
+#-device nec-usb-xhci,id=usb -device usb-storage,bus=usb.0,drive=disk1 -drive if=none,format=raw,id=disk1,file=/sdcard/xinhao/windows/4g.qcow2
+#-device nec-usb-xhci
+#       set -- "${@}" "-usbdevice" "keyboard"
+	case $ARCH in
+		tablet)
+#重定向虚拟串口到主机设备
+#       set -- "${@}" "-serial" "none"
+#重定向虚拟并口到主机设备
+#       set -- "${@}" "-parallel" "none"
+#控制台，一种类似于shell的交互方式
+#       set -- "${@}" "-monitor" "none"
+;;
+		*) ;;
+	esac
+#qemu monitor protocol协议，对qemu虚拟机进行交互
+#       set -- "${@}" "-qmp" "tcp:127.0.0.1:4444,server,nowait" "-monitor" "none"
+#使用bios配置
+#       set -- "${@}" "-L" "${DIRECT}${STORAGE}"
+#使用bzImage内核镜像
+#       set -- "${@}" "-kernel" "bzImage"
+#使用cmdline作为内核命令行
+#       set -- "${@}" "-append" "cmdline"
+	case $QEMU_SYS in
+		qemu-system-i386)
+#取消高精度定时器
+	set -- "${@}" "-no-hpet"
+#取消软盘启动检测
+	set -- "${@}" "-no-fd-bootchk"
+#取消高级配置与电源管理
+#        set -- "${@}" "-no-acpi"
+	;;
+		*) ;;
+	esac
+#更改消息的格式，时间戳
+	set -- "${@}" "-msg" "timestamp=off"
+
 #################
 	if echo "${@}" | grep -q usb 2>/dev/null; then
 		USB=on
@@ -2452,7 +2470,8 @@ eof
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		xvnc)
 		export PULSE_SERVER=tcp:127.0.0.1:4713 
-		set -- "${@}" "-display" "gtk,gl=off" ;;
+		set -- "${@}" "-display" "gtk,gl=off"
+		;;
 		xsdl) 
 			export DISPLAY=127.0.0.1:0
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
