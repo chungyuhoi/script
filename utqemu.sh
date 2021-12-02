@@ -3,9 +3,9 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
+UPDATE="2021/11/30"
 INFO() {
 	clear
-	UPDATE="2021/11/30"
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
@@ -994,7 +994,7 @@ echo -e "3)  启动qemu-system-x86_64模拟器
 	*) echo -e "6)  应用维护" ;;
 	esac
 echo -e "7)  查看日志
-8)  更新内容${YELLOW}(2021.11.21)${RES}
+8)  更新内容${YELLOW}${UPDATE}${RES}
 9)  关于utqemu
 10) 在线termux-toolx脚本体验维护linux系统(debian)
 11) 在线测试本机cpu支持模拟的特性
