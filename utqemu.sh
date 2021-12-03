@@ -3,17 +3,16 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
-UPDATE="2021/11/30"
+UPDATE="2021/12/1"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
-	修改一些细节
-	优化virtio显卡在vnc中的显示(不建议，仅体验显卡驱动的安装，成功会有gl_version 45 - core profile enabled提示)
 	增加vnc多渠道选项(可同时使用本地vnc，局域网vnc，浏览器进行显示操作)
 	修改qemu5.0以上声卡默认驱动，提高声音流畅度
 	优化参数，稍微提高点模拟效率
+	修复小bug
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -1640,7 +1639,14 @@ axcpus=4" ;;
 		CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,l3-cache=true,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-rdseed,-avx512cd,-avx512bw,-avx512vl,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-syscall,-lm,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-mds-no,+pdpe1gb"
 		SMP_="8,cores=8,threads=1,sockets=1"
 		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
-	*) 
+	99) CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,monitor=off,l3-cache=on,vmware-cpuid-freq=false,mds-no=off,fma=off,pcid=off,hle=off,x2apic=off,rtm=off,tsc-deadline=off,f16c=off,invpcid=off,rdseed=off,spec-ctrl=off,ssbd=off,3dnowprefetch=off,xsavec=off,rdctl-no=off,ibrs-all=off,skip-l1dfl-vmentry=off,vmx-eptp-switching=off,arch-capabilities=off,avx512-4fmaps=off,avx512-4vnniw=off,avx512-bf16=off,avx512-vp2intersect=off,avx512-vpopcntdq=off,avx512bitalg=off,avx512ifma=off,avx512pf=off,avx512vbmi2=off,avx512vbmi=off,avx=off,avx2=off,avx512f=off,avx512dq=off,avx512cd=off,avx512bw=off,avx512vl=off,avx512vnni=off,rdtscp=off,3dnow=on,3dnowext=on,check"
+		SMP_="8,cores=8,threads=1,sockets=1"
+		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"      ;;
+	*) case $SYS in
+		QEMU_PRE) CPU_MODEL="n270"
+		SMP_="2,cores=1,threads=2,sockets=1"
+		;;
+	*)
 #AMD Phenom(tm) 9550 Quad-Core Processor
 		CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt"
 #		CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,-xsave,-xsaveopt,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1"
@@ -1650,6 +1656,7 @@ axcpus=4" ;;
 #		unset _SMP
 #		SMP_="4"
 #		MAXCPUS="4,maxcpus=5" ;;
+	esac ;;
 	esac
 #####################
 #TERMUX
