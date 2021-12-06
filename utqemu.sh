@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
-UPDATE="2021/12/1"
+UPDATE="2021/12/3"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
@@ -1005,7 +1005,7 @@ echo -e "7)  查看日志
 	uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
 	pkg update -y && apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
-	if [ ! $(command -v qemu-system-x86) ]; then
+	if [ ! $(command -v qemu-system-x86_64) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
 	apt --fix-broken install -y && apt install qemu-system-x86-64-headless qemu-system-i386-headless curl -y
@@ -1024,7 +1024,7 @@ echo -e "7)  查看日志
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
        	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer novnc -y
-	if [ ! $(command -v qemu-system-x86) ]; then
+	if [ ! $(command -v qemu-system-x86_64) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
 	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer novnc -y
@@ -1156,9 +1156,9 @@ START_QEMU() {
 	if echo "${@}" | grep -q "smb="; then
 	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 	fi
-	if grep -q monitor ${HOME}/xinhao/$script_name 2>/dev/null; then
+	if grep -q daemonize ${HOME}/xinhao/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
-	elif grep -q monitor /usr/local/bin/$script_name 2>/dev/null; then
+	elif grep -q daemonize /usr/local/bin/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
 	else
 	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
@@ -1523,15 +1523,10 @@ eof
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 	7) CPU_MODEL=Opteron_G5
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
-	8) case $SYS in
-		QEMU_ADV|ANDROID) CPU_MODEL="max,-hle,-rtm"
-		SMP_="8,cores=8,threads=1,sockets=1" ;;
-		*) CPU_MODEL=max
-			unset _SMP
-			SMP_=4
-			MAXCPUS="4,maxcpus=5"
-			;;
-	esac ;;
+	8) CPU_MODEL="max,-hle,-rtm"
+		unset _SMP
+		SMP_=4
+		MAXCPUS="4,maxcpus=5" ;;
 	9) case $ARCH in
 		computer) CPU_MODEL=host
 			unset _SMP
@@ -1699,7 +1694,7 @@ axcpus=4" ;;
 		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.latency=5300,out.latency=5300,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=10248"
 		set -- "${@}" "-device" "$SOUND_MODEL,audiodev=pa1"
 		fi
-	else
+	fi
 ##################
 #PROOT
 #####################
@@ -1723,52 +1718,105 @@ axcpus=4" ;;
 
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
+	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 4 ]]; then
+	case $input in
+		2) NET_MODEL="rtl8139,netdev=user0" ;;
+		3) NET_MODEL="virtio-net-pci,netdev=user0" ;;
+		0) ;;
+		*) NET_MODEL="e1000,netdev=user0" ;;
+	esac
+	else
 	case $input in
 		2) NET_MODEL0="nic,model=rtl8139" ;;
 		3) NET_MODEL0="nic,model=virtio" ;;
 		0) ;;
 		*) NET_MODEL0="nic,model=e1000" ;;
 	esac
+	fi
 	case $display in
 		wlan_vnc) ;;
 		*)
 		echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
 	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 4 ]]; then
-	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 5)ac97(修改参数，优化声音卡顿，不适合spice) 6)hda(修改参数，优化声卡卡顿，不适合spice) 0)不加载 " input
+	case $display in
+            spice|spice_)
+		    read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 0)不加载 " input ;;
+		    *)
+			read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 6)ac97(修改参数，优化声音卡顿，不适合spice) 7)hda(修改参数，优化声音卡顿，不适合spice) 0)不加载 " input ;;
+		esac
+	case $display in
+		spice|spice_)
+	case $input in
+		1) SOUND_MODEL=ES1370 ;;
+		2) SOUND_MODEL=sb16 ;;
+		4) SOUND_MODEL=AC97 ;;
+		5) SOUND_MODEL=usb-audio ;;
+		0) ;;
+		*) SOUND_MODEL=intel-hda
+			set -- "${@}" "-device" "hda-duplex" ;;
+	esac
+	if [ -n "${SOUND_MODEL}" ]; then
+		set -- "${@}" "-device" "${SOUND_MODEL}"
+	fi ;;
+	*)
+		case $input in
+		1) AUDIODEV=PA
+			SOUND_MODEL=ES1370
+			audiodev=pa1 ;;
+		2) AUDIODEV=PA
+			SOUND_MODEL=sb16
+			audiodev=pa1 ;;
+		3) AUDIODEV=PA
+			set -- "${@}" "-device" "intel-hda"
+			SOUND_MODEL=hda-duplex
+			audiodev=pa1 ;;
+		0) ;;
+		4)
+                AUDIODEV=PA
+                SOUND_MODEL=AC97
+                audiodev=pa1 ;;
+                5) AUDIODEV=PA
+                        SOUND_MODEL=usb-audio
+                        audiodev=pa1 ;;
+                6) AUDIODEV=ALSA
+                        SOUND_MODEL=AC97
+			audiodev=alsa1                 ;;
+                *) AUDIODEV=ALSA
+                set -- "${@}" "-device" "intel-hda"
+		SOUND_MODEL=hda-duplex
+		audiodev=alsa1 ;;
+                esac
+		if [ -n "${SOUND_MODEL}" ]; then
+			set -- "${@}" "-device" "${SOUND_MODEL},audiodev=${audiodev}"
+			case ${AUDIODEV} in
+				PA)
+        set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1" ;;
+        *)
+        set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124" ;;
+        esac
+        fi ;;
+        esac
+	else
+	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
 	case $input in
 		1|"") SOUND_MODEL=ac97 ;;
 		2) SOUND_MODEL=sb16 ;;
 		0) ;;
-                3) SOUND_MODEL=es1370 ;;
+		3) SOUND_MODEL=es1370 ;;
 		4) SOUND_MODEL=hda ;;
-		5) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-		set -- "${@}" "-device" "AC97,audiodev=alsa1" ;;
-		6) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
 		*) SOUND_MODEL=all ;;
 	esac
-
-else
-
-
-	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
-	case $input in
-                1|"") SOUND_MODEL=ac97 ;;
-                2) SOUND_MODEL=sb16 ;;
-                0) ;;
-                3) SOUND_MODEL=es1370 ;;
-		4) SOUND_MODEL=hda ;;
-		*) SOUND_MODEL=all ;;
+	if [ -n "${SOUND_MODEL}" ]; then
+		set -- "${@}" "-soundhw" "${SOUND_MODEL}"
+	fi
+	fi
 	esac
 	fi
-	if [ -n "${SOUND_MODEL}" ]; then
-	set -- "${@}" "-soundhw" "${SOUND_MODEL}"
-	fi ;;
-	esac
-        else
 ####################
 #5.0
 ####################
+	[[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-4] ]] || uname -a | grep 'Android' -q
+	if [ $? != 0 ]; then
 	echo -e "请选择${YELLOW}显卡${RES}"
 	read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 	case $input in
@@ -1841,13 +1889,32 @@ else
 		*)
 		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 6)ac97(修改参数，优化声音卡顿，不适合spice) 7)hda(修改参数，优化声音卡顿，不适合spice) 0)不加载 " input ;;
 	esac
+	case $display in
+		spice|spice_)
 	case $input in
-		1) set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
-			set -- "${@}" "-device" "ES1370,audiodev=pa1" ;;
-		2) set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
-			set -- "${@}" "-device" "sb16,audiodev=pa1" ;;
-		3) set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
-			set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=pa1" ;;
+		1) SOUND_MODEL=ES1370 ;;
+		2) SOUND_MODEL=sb16 ;;
+		4) SOUND_MODEL=AC97 ;;
+		5) SOUND_MODEL=usb-audio ;;
+		0) ;;
+		*) SOUND_MODEL=intel-hda
+			set -- "${@}" "-device" "hda-duplex" ;;
+	esac
+	if [ -n "${SOUND_MODEL}" ]; then
+	set -- "${@}" "-device" "${SOUND_MODEL}"
+	fi ;;
+	*)
+	case $input in
+		1) AUDIODEV=PA
+			SOUND_MODEL=ES1370
+			audiodev=pa1 ;;
+		2) AUDIODEV=PA
+			SOUND_MODEL=sb16
+			audiodev=pa1 ;;
+		3) AUDIODEV=PA
+			set -- "${@}" "-device" "intel-hda" 
+			SOUND_MODEL=hda-duplex
+			audiodev=pa1 ;;
                 0) ;;
 		4)
 #adc in dac out				
@@ -1857,23 +1924,33 @@ else
 #缓冲长度(理论上应为周期长度的倍数)out.buffer-length=10000
 #周期长度out.period-length=1020
 #pa参数
-		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
-		set -- "${@}" "-device" "AC97,audiodev=pa1" ;;
-		5) set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1"
-			set -- "${@}" "-device" "usb-audio,audiodev=pa1" ;;
-		6) case $display in
-			spice|spice_) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
-			*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-			set -- "${@}" "-device" "AC97,audiodev=alsa1"                 ;;
-		esac ;;
-		*) case $display in
-			spice|spice_) set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex" ;;
-		*) set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124"
-		set -- "${@}" "-device" "intel-hda" "-device" "hda-duplex,audiodev=alsa1" ;;
-		esac ;;
-	esac	;;
+		AUDIODEV=PA
+		SOUND_MODEL=AC97
+		audiodev=pa1 ;;
+		5) AUDIODEV=PA
+			SOUND_MODEL=usb-audio
+			audiodev=pa1 ;;
+		6) AUDIODEV=ALSA
+			SOUND_MODEL=AC97
+			audiodev=alsa1                 ;;
+		*) AUDIODEV=ALSA
+		set -- "${@}" "-device" "intel-hda"
+		SOUND_MODEL=hda-duplex
+		audiodev=alsa1 ;;
+		esac
+	if [ -n "${SOUND_MODEL}" ]; then
+	set -- "${@}" "-device" "${SOUND_MODEL},audiodev=${audiodev}"
+	case ${AUDIODEV} in
+		PA)
+	set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1" ;;
+	*)
+	set -- "${@}" "-audiodev" "alsa,id=alsa1,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=5124" ;;
 	esac
 	fi
+
+		;;
+	esac	;;
+	esac
 	fi
 ####################
 #进阶选项
@@ -1885,14 +1962,14 @@ else
 		echo -e "是否加载${YELLOW}共享文件夹${RES}"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
-		1) 
-			echo -e "\n1) 传统500m容量，只读"
-			echo -e "2) mtp协议，可访问整个设备目录，显示部分文件有bug，只读，部分旧系统或精简系统需驱动"
-			uname -a | grep 'Android' -q
-			if [ $? == 1 ]; then
-			echo -e "3) 本地网共享"
-			fi
-			echo -e "9) 不加载"
+	1) 
+	echo -e "\n1) 传统500m容量，只读"
+	echo -e "2) mtp协议，可访问整个设备目录，显示部分文件有bug，只读，部分旧系统或精简系统需驱动"
+	uname -a | grep 'Android' -q
+	if [ $? == 1 ]; then
+	echo -e "3) 本地网共享"
+	fi
+	echo -e "9) 不加载"
 	read -r -p "请选择: " input
 	case $input in
 	1) SHARE=true ;;
@@ -2100,7 +2177,7 @@ eof
 	elif [ -n "$CPU" ]; then
 		set -- "${@}" "-smp" "${CPU}"
 	else
-		if echo "${@}" | grep -q monitor; then
+		if echo "${@}" | grep -q daemonize; then
 		set -- "${@}" "-smp" "${MAXCPUS}"
 	else
 		set -- "${@}" "-smp" "${SMP_}"
@@ -2111,7 +2188,7 @@ eof
 	if [ -n "$mem" ]; then
 	set -- "${@}" "-m" "$mem"
 	else
-	if echo ${@} | grep -q monitor; then
+	if echo ${@} | grep -q daemonize; then
 	set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
 	else
 	set -- "${@}" "-m" "$mem_"
@@ -2125,7 +2202,7 @@ eof
 	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [1-4] ]]; then
 	set -- "${@}" "-m" "$mem_"
 	else
-	if echo "${@}" | grep -q monitor; then
+	if echo "${@}" | grep -q daemonize; then
 	set -- "${@}" "-m" "$mem_,slots=2,maxmem=$(( $mem_ * 2 ))m"
 	else
 	set -- "${@}" "-m" "$mem_"
@@ -2508,7 +2585,7 @@ cat <<-EOF
 ${@}
 EOF
 	echo -e "${RES}"
-	if echo "${@}" | grep -q monitor; then
+	if echo "${@}" | grep -q daemonize; then
 		echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	fi
 	if echo "${@}" | grep -q hugepage 2>/dev/null; then
@@ -2582,7 +2659,7 @@ EOF
 	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 	fi
 	echo -e "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
-	if echo "${@}" | grep -q monitor; then
+	if echo "${@}" | grep -q daemonize; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	else
 	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
@@ -2622,7 +2699,7 @@ EOF
 	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 		fi
 	fi
-	if echo "${@}" | grep -q monitor; then
+	if echo "${@}" | grep -q daemonize; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	else
 	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT

@@ -990,6 +990,37 @@ echo -e "\n已配置，启动命令${YELLOW}easyx11vnc${RES}\n"
 sleep 1
 INSTALL_SOFTWARE
 	;;
+10) $sudo_t apt install novnc xvfb x11vnc tigervnc-standalone-server tigervnc-viewer -y
+cat >/usr/local/bin/easynovnc<<-'eof'
+read -r -p "是否使用vncviewer密码 1)密码(建议) 2)免密 3)修改密码 :" input
+case $input in
+1) if [ ! -f ${HOME}/.vnc/passwd ]; then
+mkdir -p ${HOME}/.vnc
+vncpasswd
+fi
+PASS="-rfbauth ${HOME}/.vnc/passwd" ;;
+3) if [ ! -f ${HOME}/.vnc/passwd ]; then
+mkdir -p ${HOME}/.vnc
+fi
+vncpasswd
+PASS="-rfbauth ${HOME}/.vnc/passwd" ;;
+*)
+PASS="-SecurityTypes None" ;;
+esac
+vncserver -kill $DISPLAY 2>/dev/null
+killall -9 Xtightvnc 2>/dev/null
+killall -9 Xtigertvnc 2>/dev/null
+killall -9 Xvnc 2>/dev/null
+killall -9 vncsession 2>/dev/null
+export PULSE_SERVER=tcp:127.0.0.1:4713
+export DISPLAY=:0
+Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 2320x1080 -once -depth 32 -deferglyphs 16 $PASS &
+. /etc/X11/xinit/Xsession 2>/dev/null &
+bash /usr/share/novnc/utils/launch.sh --vnc localhost:5900 --listen 6080 2>/dev/null
+echo -e "请打开浏览器输\e[33mhttp://localhost:6080/vnc.html\e[0m"
+eof
+chmod 756 /usr/local/bin/easynovnc
+;;
 [Ee])
 	echo "exit"
 	exit 1
@@ -1234,7 +1265,7 @@ echo -e "1)  *安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)
 4)  安装Electron(需先安装GitHub仓库)
 5)  安装非官方版electron-netease-cloud-music(需先安装GitHub仓库与Electron)
 6)  中文输入法
-7)  mpv播放器
+7)  多媒体播放器
 8)  办公office软件
 9)  安装dosbox 并配置dosbox文件目录(运行文件目录需先运行一次dosbox以生成配置文件)
 10) qemu-system-x86_64模拟器
@@ -1360,11 +1391,22 @@ fi
 	INSTALL_SOFTWARE ;;
 esac
 ;;
-7)
+7) read -r -p "1)mpv播放器 2)vlc播放器 :" input
+	case $input in
+		1)
 	echo "安装mpv播放器"
 	$sudo_t apt install mpv
 	echo -e "${BLUE}done${RES}"
-		sleep 1
+		sleep 1 ;;
+		2)
+	echo "安装vlc播放器"
+	$sudo_t apt install vlc
+	sed -i 's/geteuid/getppid/' /usr/bin/vlc
+	echo -e "${BLUE}done${RES}"
+		sleep 1 ;;
+		*) INVALID_INPUT
+			;;
+	esac
 		INSTALL_SOFTWARE
 		;;
 	8)
@@ -1821,7 +1863,7 @@ case $input in
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./start-$rootfs.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 	if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-		sed -i "1i\killall -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
+		sed -i "1i\killall -9 pulseaudio 2>/dev/null" ${PREFIX}/etc/bash.bashrc
 	fi
 fi
 sleep 2 ;;
@@ -2235,7 +2277,7 @@ proot --kill-on-exit -S $bagname --link2symlink -b $DIRECT:/root$DIRECT -b $DIRE
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./$bagname.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-sed -i "1i\killall -9 pulseaudio" ${PREFIX}/etc/bash.bashrc
+sed -i "1i\killall -9 pulseaudio 2>/dev/null" ${PREFIX}/etc/bash.bashrc
 fi
 fi
 sleep 2
