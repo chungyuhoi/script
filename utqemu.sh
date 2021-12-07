@@ -3,16 +3,16 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
-UPDATE="2021/12/3"
+UPDATE="2021/12/9"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
 	增加vnc多渠道选项(可同时使用本地vnc，局域网vnc，浏览器进行显示操作)
-	修改qemu5.0以上声卡默认驱动，提高声音流畅度
 	优化参数，稍微提高点模拟效率
 	修复小bug
+	针对部分设备cpu修改默认核心数
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -218,6 +218,18 @@ BF_URL="deb http://mirrors.bfsu.edu.cn/debian"
 US_URL="deb http://mirrors.ustc.edu.cn/debian"
 DEB="main contrib non-free"
 ####################
+case $(dpkg --print-architecture) in
+	arm*|aarch64)
+        LO_CPU=$(cat  /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | tail -n 1)
+        ;;
+        esac
+        if [ $? = 0 ]; then
+        if (( $LO_CPU <= 300000000 )); then
+                LOW_CPU="2,cores=2,threads=1,sockets=1"
+                LOW_CORE=2
+        fi
+        fi
+####################	
 MEM() {
 	case $ARCH in
 		tablet) mem=$(free -m | awk '{print $2/4}' | sed -n 2p | cut -d '.' -f 1) ;;
@@ -1870,6 +1882,7 @@ axcpus=4" ;;
 #global-vmstate=flase: With this in place you don't get a vmstate section naming conflict any more when adding multiple pci vga devices to your vm.此参数可兼容多个pci显卡
 #edid=true Extended Display Identification Data(扩展显示标识数据) 为了能让PC或其他的图像输出设备更好的识别显示器属性
 #lnksta为显卡当前实际的传输速率，extcap外部采用
+#multifunction=off device can be plugged into each Port. This results in poor IO space utilization.设备可以插入每个端口， 结果是io利用率低
 	esac
 
 	echo -e "请选择${YELLOW}网卡${RES}"
@@ -2180,7 +2193,11 @@ eof
 		if echo "${@}" | grep -q daemonize; then
 		set -- "${@}" "-smp" "${MAXCPUS}"
 	else
+		if [ -n "$LOW_CORE" ]; then
+			set -- "${@}" "-smp" "$LOW_CORE"
+		else
 		set -- "${@}" "-smp" "${SMP_}"
+		fi
 		fi
 	fi
 #单内存槽
