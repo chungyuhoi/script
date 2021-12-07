@@ -224,7 +224,7 @@ case $(dpkg --print-architecture) in
         ;;
         esac
         if [ $? = 0 ]; then
-        if (( $LO_CPU <= 300000000 )); then
+        if (( $LO_CPU <= 30000000 )); then
                 LOW_CPU="2,cores=2,threads=1,sockets=1"
                 LOW_CORE=2
         fi
