@@ -224,7 +224,7 @@ case $(dpkg --print-architecture) in
         ;;
         esac
         if [ $? = 0 ]; then
-        if (( $LO_CPU <= 30000000 )); then
+        if (( $LO_CPU <= 3000000 )); then
                 LOW_CPU="2,cores=2,threads=1,sockets=1"
                 LOW_CORE=2
         fi
@@ -1646,23 +1646,19 @@ axcpus=4" ;;
 		CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,l3-cache=true,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-rdseed,-avx512cd,-avx512bw,-avx512vl,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-syscall,-lm,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-mds-no,+pdpe1gb"
 		SMP_="8,cores=8,threads=1,sockets=1"
 		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
-	99) CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,monitor=off,l3-cache=on,vmware-cpuid-freq=false,mds-no=off,fma=off,pcid=off,hle=off,x2apic=off,rtm=off,tsc-deadline=off,f16c=off,invpcid=off,rdseed=off,spec-ctrl=off,ssbd=off,3dnowprefetch=off,xsavec=off,rdctl-no=off,ibrs-all=off,skip-l1dfl-vmentry=off,vmx-eptp-switching=off,arch-capabilities=off,avx512-4fmaps=off,avx512-4vnniw=off,avx512-bf16=off,avx512-vp2intersect=off,avx512-vpopcntdq=off,avx512bitalg=off,avx512ifma=off,avx512pf=off,avx512vbmi2=off,avx512vbmi=off,avx=off,avx2=off,avx512f=off,avx512dq=off,avx512cd=off,avx512bw=off,avx512vl=off,avx512vnni=off,rdtscp=off,3dnow=on,3dnowext=on,check"
-		SMP_="8,cores=8,threads=1,sockets=1"
-		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"      ;;
+	99) 
+#AMD Phenom(tm) 9550 Quad-Core Processor
+	CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt"
+	SMP_="4,cores=4,threads=1,sockets=1"
+	MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
 	*) case $SYS in
 		QEMU_PRE) CPU_MODEL="n270"
 		SMP_="2,cores=1,threads=2,sockets=1"
 		;;
-	*)
-#AMD Phenom(tm) 9550 Quad-Core Processor
-		CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt"
-#		CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,-xsave,-xsaveopt,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1"
-		SMP_="4,cores=4,threads=1,sockets=1"
-		MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
-#        *)      CPU_MODEL=max
-#		unset _SMP
-#		SMP_="4"
-#		MAXCPUS="4,maxcpus=5" ;;
+        *)      CPU_MODEL=max
+		unset _SMP
+		SMP_="4"
+		MAXCPUS="4,maxcpus=5" ;;
 	esac ;;
 	esac
 #####################
@@ -1877,7 +1873,7 @@ axcpus=4" ;;
 		5) set -- "${@}" "-device" "qxl-vga,vgamem_mb=256,max_outputs=1"
 #			set -- "${@}" "-device" "virtio-keyboard-pci"
 ;;
-		*) set -- "${@}" "-device" "VGA,vgamem_mb=256,x-pcie-extcap-init=on,x-pcie-lnksta-dllla=off" ;;
+		*) set -- "${@}" "-device" "VGA,vgamem_mb=256,qemu-extended-regs=on,x-pcie-extcap-init=on,x-pcie-lnksta-dllla=off" ;;
 #EDID是一种VESA标准数据格式，它包含监视器和自身性能的基本信息。基本信息主要有输出分辨率、最大图像尺寸、颜色特征、出厂事先设置时间、频率范围限制和监视器名称等
 #global-vmstate=flase: With this in place you don't get a vmstate section naming conflict any more when adding multiple pci vga devices to your vm.此参数可兼容多个pci显卡
 #edid=true Extended Display Identification Data(扩展显示标识数据) 为了能让PC或其他的图像输出设备更好的识别显示器属性
@@ -2480,7 +2476,7 @@ set -- "${@}" "-drive" "file=${DIRECT}${STORAGE}$hdb_name,if=ide,index=1,media=d
 	set -- "${@}" "-drive" "id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none"
 	set -- "${@}" "-device" "ahci,id=ahci"
 	set -- "${@}" "-device" "ide-hd,drive=disk,bus=ahci.0"
-	set -- "${@}" "-global" "ide-hd.physical_block_size=4096"
+	set -- "${@}" "-global" "ide-hd.physical_block_size=1024"
 	if [ -n "$hdb_name" ]; then
 	set -- "${@}" "-drive" "id=installmedia,file=${DIRECT}${STORAGE}$hdb_name,if=none"
 	set -- "${@}" "-device" "ide-hd,drive=installmedia,bus=ahci.1"
