@@ -3,16 +3,16 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
-UPDATE="2021/12/9"
+UPDATE="2021/12/12"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
 	增加vnc多渠道选项(可同时使用本地vnc，局域网vnc，浏览器进行显示操作)
-	优化参数，稍微提高点模拟效率
-	修复小bug
 	针对部分设备cpu修改默认核心数
+	删除不常用的时区选项
+	增加spice局域网联接，支持声音传输(建议两设备热点联接，接近零损耗)
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -221,14 +221,13 @@ DEB="main contrib non-free"
 case $(dpkg --print-architecture) in
 	arm*|aarch64)
         LO_CPU=$(cat  /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | tail -n 1)
-        ;;
-        esac
         if [ $? = 0 ]; then
         if (( $LO_CPU <= 3000000 )); then
                 LOW_CPU="2,cores=2,threads=1,sockets=1"
                 LOW_CORE=2
         fi
-        fi
+        fi ;;
+esac
 ####################	
 MEM() {
 	case $ARCH in
@@ -1200,7 +1199,17 @@ esac
 	case $SYS in
 		QEMU_PRE) read -r -p "1)vnc 2)sdl 3)spice 4)图形界面(桌面环境) 5)局域网vnc 9)返回 0)退出 " input ;;
 	*) 
-	read -r -p "1)vnc 2)sdl 3)spice 4)图形界面下 5)局域网vnc 6)快速启动(仅输镜像名) 7)vnc多渠道显示(本地vnc、局域网vnc、浏览器，测试阶段) 9)返回 0)退出 " input
+	echo -e "1) vnc 画质操控推荐，依赖termux声音输出
+2) sdl 模拟效果，声音，画质与操控略低(源地址一般未编译此项)
+3) spice 模拟效果与声音略高，画质与操控略低
+4) gtk 在容器linux桌面环境(图形界面)显示模拟器
+5) 局域网vnc 同一局域网下可以用不同设备显示(请确认局域网ip唯一)
+6) 局域网spice 同一局域网下可以用不同设备显示，并且支持声音输>出(请确认局域网ip唯一)
+7) 多渠道显示 本地vnc、局域网vnc、浏览器
+8) 快速启动 仅输镜像名就可以通过vnc模拟显示
+9) 返回
+0) 退出\n "
+	read -r -p "请选择: " input
 	esac
 	case $input in
 		1|"") echo -e "\n${BLUE}vnc输出${RES}"
@@ -1228,9 +1237,9 @@ esac
 			CONFIRM
 			display=gtk_ ;;
 		5) display=wlan_vnc
-	echo -e "\n${GREEN}为减少效率的影响，暂不支持声音输出${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
+	echo -e "\n${GREEN}为减少效率的影响，暂不支持声音输出${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}局域网ip唯一${RES}\n输出显示的设备vnc地址为$IP:0${RES}"
 	sleep 1 ;;
-		6) case $SYS in
+		8) case $SYS in
 			QEMU_PRE) INVALID_INPUT
 			QEMU_SYSTEM ;; 
 		*) printf "\n%b\n" "${GREEN}本选项使用常用配置参数${RES}"
@@ -1240,7 +1249,7 @@ esac
 	echo -e "${YELLOW}请选择拟模拟的系统${RES}"
 	read -r -p "1)winxp 2)win7 3)virtio驱动模式 4)小白之家专用参数(不定期更新) 9)返回 " input
 	case $input in
-	1) echo -e "\nqemu5.0以上版本模拟winxp开机比较慢\n"
+	1) echo -e "\nqemu5版本模拟winxp开机比较慢\n"
 	LIST
 	HDA_READ
 	if (( $mem >= 512 )); then
@@ -1259,7 +1268,7 @@ esac
 		sleep 1
 		LIST
 		HDA_READ
-	QEMU_SYS=qemu-system-x86_64 MA=q35 CPU_MODEL="max,-hle,-rtm" VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio,format=raw"
+	QEMU_SYS=qemu-system-x86_64 MA=q35 CPU_MODEL="max,-syscall,-lm,-hle,-rtm" VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio,format=raw"
 	;;
 	4) echo -e "\n${GREEN}此选项参数是小白之家定制${RES}\n"
 	sleep 1
@@ -1311,6 +1320,9 @@ EOF
                         fi
 			NOVNC=novnc
 			display=xvnc ;;
+		6) display=wlan_spice
+			echo -e "\n${RES}\n因部分机型支持双wifi或wifi热点同开，导致出现两段ip，请确保使用的${RED}局域网ip唯一${RES}\n输出显示的设备spice地址为$IP:0${RES}"
+			sleep 1;;
 		9) QEMU_SYSTEM ;;
 		0) exit 0 ;;
 		*) INVALID_INPUT
@@ -1319,13 +1331,17 @@ EOF
 	sleep 1 ;;
 	computer)
 		echo -e "\n请选择${YELLOW}显示输出方式${RES}"
-		read -r -p "1)本地 2)局域网vnc 9)返回 0)退出 " input
+		read -r -p "1)本地 2)局域网vnc 3)局域网spice 9)返回 0)退出 " input
 		case $input in
 			1|"")
 				display=amd ;;
 			2)
 				display=wlan_vnc
 				echo -e "\n${BLUE}vnc不支持声音输出，输出显示的设备vnc地址为$IP:0${RES}"
+				sleep 1 ;;
+			3)
+				display=wlan_spice
+				echo -e "\n${BLUE}输出显示的设备spice地址为$IP:0${RES}"
 				sleep 1 ;;
 			9) QEMU_SYSTEM ;;
 			0) exit 0 ;;
@@ -1457,8 +1473,8 @@ dtes: Debug Trace Store
 dtes64: 64 位调试存储，监控器–监控/等待支持
 smap: (Supervisor Mode Access Prevention，管理模式访问保护)
 smep: (Supervisor Mode Execution Prevention，管理模式执行保护)
-syscal: 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入 内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大 约300个系统调用
-rdrand: 使用 CPU 内部的热噪声生成随机数。
+syscall: 用户态发起syscall请求，调用陷阱指令（i386为int指令）陷入 内核态执行syscall，CPU特权级别变更，每个系统调用函数都有一个唯一的ID，内核态通过这个ID区别不通的系统调用请求。linux提供了大 约300个系统调用
+rdrand: 使用 CPU 内部的热噪声生成随机数。随机数发生器的主要应用是加密技术，它们用于生成随机加密密钥以安全地传输数据。它们广泛用于Internet加密协议，如Secure Sockets Layer（SSL）
 est: “Enhanced SpeedStep” 增强的SpeedStep
 extapic: 扩展的APIC空
 bmi1: 新cpu模拟旧cpu向下兼容特性，不兼容旧特性会出现 #UD (UnDefined)
@@ -1535,7 +1551,7 @@ eof
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 	7) CPU_MODEL=Opteron_G5
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
-	8) CPU_MODEL="max,-hle,-rtm"
+	8) CPU_MODEL="max,-syscall,-lm,-hle,-rtm"
 		unset _SMP
 		SMP_=4
 		MAXCPUS="4,maxcpus=5" ;;
@@ -1639,23 +1655,23 @@ eof
 	96) CPU_MODEL="Penryn-v1,-lm,-syscall"
 		SMP_="2,cores=2,threads=1,sockets=2,m
 axcpus=4" ;;
-	97) CPU_MODEL="EPYC-v2,-fma,-avx,-f16c,-avx2,-rdseed,-sha-ni,-syscall,-fxsr-opt,-lm,-misalignsse,-3dnowprefetch,-osvw,-topoext,-ibpb,-nrip-save,-xsavec"
-		SMP_="4,cores=4,threads=1,sockets=1"
-		MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
-	98) 
-		CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,l3-cache=true,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-rdseed,-avx512cd,-avx512bw,-avx512vl,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-syscall,-lm,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-mds-no,+pdpe1gb"
+	97) CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,l3-cache=true,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-rdseed,-avx512cd,-avx512bw,-avx512vl,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-syscall,-lm,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-mds-no,+pdpe1gb"
 		SMP_="8,cores=8,threads=1,sockets=1"
 		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
+	98) CPU_MODEL="EPYC-IBPB,-fma,-avx,-f16c,-avx2,-rdseed,-sha-ni,-fxsr-opt,-misalignsse,-3dnowprefetch,-osvw,-topoext,-ibpb,-nrip-save,-xsavec,-de,-syscall,-lm,+hypervisor,+pdpe1gb,+3dnow,+3dnowext,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt,+npt"
+		SMP_="4,cores=4,threads=1,sockets=1"
+		MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
 	99) 
 #AMD Phenom(tm) 9550 Quad-Core Processor
-	CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt"
+#	CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt,+npt"
+	CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-lm,,-de,-rdrand,+aes,+pclmulqdq,+3dnowext,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt,+npt"
 	SMP_="4,cores=4,threads=1,sockets=1"
 	MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
 	*) case $SYS in
-		QEMU_PRE) CPU_MODEL="n270"
+		QEMU_PRE) CPU_MODEL="max,-hle,-rtm"
 		SMP_="2,cores=1,threads=2,sockets=1"
 		;;
-        *)      CPU_MODEL=max
+        *)      CPU_MODEL="max,-hle,-rtm"
 		unset _SMP
 		SMP_="4"
 		MAXCPUS="4,maxcpus=5" ;;
@@ -1675,7 +1691,7 @@ axcpus=4" ;;
 		*) VGA_MODEL=vmware-svga,vgamem_mb=256 ;;
 	esac ;;
 		4) VGA_MODEL=virtio-vga ;;
-		*) VGA_MODEL=VGA
+		*) VGA_MODEL="VGA,vgamem_mb=256,refresh_rate=60"
 #-device 'VGA',id='video0',vgamem_mb='256',global-vmstate='false',qemu-extended-regs='off',rombar='1',xmax='1920',xres='1280',ymax='1080',yres='720'  ;;
         esac
 	set -- "${@}" "-device" "${VGA_MODEL}"
@@ -1699,7 +1715,8 @@ axcpus=4" ;;
 		esac
 		if [ -n "${SOUND_MODEL}" ]; then
 		pulseaudio --start &
-		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.latency=5300,out.latency=5300,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=10248"
+#		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.latency=5300,out.latency=5300,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=10248"
+		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.format=s16,in.channels=2,in.frequency=8000,out.buffer-length=10248"
 		set -- "${@}" "-device" "$SOUND_MODEL,audiodev=pa1"
 		fi
 	fi
@@ -1747,13 +1764,13 @@ axcpus=4" ;;
 		echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
 	if [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 4 ]]; then
 	case $display in
-            spice|spice_)
+            wlan_spice|spice|spice_)
 		    read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 0)不加载 " input ;;
 		    *)
 			read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 6)ac97(修改参数，优化声音卡顿，不适合spice) 7)hda(修改参数，优化声音卡顿，不适合spice) 0)不加载 " input ;;
 		esac
 	case $display in
-		spice|spice_)
+		wlan_spice|spice|spice_)
 	case $input in
 		1) SOUND_MODEL=ES1370 ;;
 		2) SOUND_MODEL=sb16 ;;
@@ -1859,7 +1876,7 @@ axcpus=4" ;;
 		display=xvnc
 #		set -- "${@}" "-device" "qxl" "-vga" "virtio" "-display" "gtk,gl=on"
 ;;
-		spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on"
+		wlan_spice|spice_|spice|amd|gtk_) set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on"
 		unset display	;;
 	esac
 	case $ARCH in
@@ -1870,15 +1887,17 @@ axcpus=4" ;;
 		fi ;;
 	esac ;;
 	esac ;;
-		5) set -- "${@}" "-device" "qxl-vga,vgamem_mb=256,max_outputs=1"
+		5) set -- "${@}" "-device" "qxl-vga,vgamem_mb=256"
 #			set -- "${@}" "-device" "virtio-keyboard-pci"
 ;;
-		*) set -- "${@}" "-device" "VGA,vgamem_mb=256,qemu-extended-regs=on,x-pcie-extcap-init=on,x-pcie-lnksta-dllla=off" ;;
+		*) set -- "${@}" "-device" "VGA,vgamem_mb=256,edid=off,x-pcie-lnksta-dllla=off" ;;
 #EDID是一种VESA标准数据格式，它包含监视器和自身性能的基本信息。基本信息主要有输出分辨率、最大图像尺寸、颜色特征、出厂事先设置时间、频率范围限制和监视器名称等
 #global-vmstate=flase: With this in place you don't get a vmstate section naming conflict any more when adding multiple pci vga devices to your vm.此参数可兼容多个pci显卡
 #edid=true Extended Display Identification Data(扩展显示标识数据) 为了能让PC或其他的图像输出设备更好的识别显示器属性
-#lnksta为显卡当前实际的传输速率，extcap外部采用
+#lnksta为当前实际的传输速率，目前系統所提供的速度 PCI-Express 2.0 ( 5GT/s ) dllla动态库链接分配器
+#extcap接口是一个多功能插件接口，它允许外部二进制文件直接作为wireshark中的捕获接口。它用于捕获源不是传统捕获模型的场景(从接口、管道、文件等进行实时捕获)
 #multifunction=off device can be plugged into each Port. This results in poor IO space utilization.设备可以插入每个端口， 结果是io利用率低
+#qemu-extended-regs qemu扩展寄存器
 	esac
 
 	echo -e "请选择${YELLOW}网卡${RES}"
@@ -1893,13 +1912,13 @@ axcpus=4" ;;
 		wlan_vnc) ;;
 		*)
 	echo -e "请选择${YELLOW}声卡${RES}(不加载可提升模拟效率)"
-	case $display in                                                      spice|spice_)
+	case $display in                                                      wlan_spice|spice|spice_)
 		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 0)不加载 " input ;;
 		*)
 		read -r -p "1)es1370 2)sb16 3)hda 4)ac97 5)usb-audio 6)ac97(修改参数，优化声音卡顿，不适合spice) 7)hda(修改参数，优化声音卡顿，不适合spice) 0)不加载 " input ;;
 	esac
 	case $display in
-		spice|spice_)
+		wlan_spice|spice|spice_)
 	case $input in
 		1) SOUND_MODEL=ES1370 ;;
 		2) SOUND_MODEL=sb16 ;;
@@ -2155,23 +2174,15 @@ eof
 
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #driftfix=slew i386存在时间漂移
-	echo -e "请选择${YELLOW}系统时间${RES}标准"
-	read -r -p "1)utc(世界时间) 2)localtime(本机时间,推荐) " input
-	case $input in
-	1) case $QEMU_SYS in
-		qemu-system-i386) set -- "${@}" "-rtc" "base=utc,driftfix=slew" ;;
-		*) set -- "${@}" "-rtc" "base=utc" ;;
-	esac ;;
-	*) set -- "${@}" "-rtc" "base=localtime,clock=vm" ;;
 #       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
-	esac
 #strict=on|off 是否受宿主机网络控制
 	echo -e "请选择${YELLOW}启动顺序${RES}"
 	read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
 	case $input in
-	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=on" ;;
-	*) set -- "${@}" "-boot" "order=dc,menu=on,strict=off" ;;
-	esac ;;
+	1|"") set -- "${@}" "-boot" "order=cd,menu=on,strict=off" ;;
+	*) set -- "${@}" "-boot" "order=dc,menu=on,strict=on" ;;
+	esac
+	set -- "${@}" "-rtc" "base=localtime" ;;
 	*)
         set -- "${@}" "-rtc" "base=localtime"
         set -- "${@}" "-boot" "order=cd,menu=on,strict=off"
@@ -2572,6 +2583,8 @@ eof
 		xsdl) 
 			export DISPLAY=127.0.0.1:0
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
+		wlan_spice) set -- "${@}" "-spice" "port=5900,addr=$IP,disable-ticketing=on"
+			export PULSE_SERVER=tcp:$IP:4713 ;;
 		spice) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing=on,seamless-migration=off"
 			export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		spice_) set -- "${@}" "-spice" "port=5900,addr=127.0.0.1,disable-ticketing=on,seamless-migration=off"
@@ -2590,7 +2603,7 @@ eof
 	uname -a | grep 'Android' -q 
 	if [ $? != 0 ]; then
 		case $display in
-		wlan_vnc) ;;
+		wlan_vnc|wlan_spice) ;;
 		xvnc)
 	trap "pkill Xtightvnc; pkill Xtigervnc; pkill Xvnc; pkill websockify 2>/dev/null;exit" SIGINT EXIT
 	printf "%s\n"
@@ -2703,7 +2716,8 @@ EOF
 		vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n" ;;
 		wlan_vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer $IP:0\n" ;;
 		xsdl) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl\n" ;;
-		spice|spice_) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900\n" ;;
+		wlan_spice) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice $IP 端口 5900(部分aspice app可能默认未勾选声音，如无声音请检查打开)\n" ;;
+		spice|spice_) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900(部分aspice app可能默认未勾选声音，如无声音请检查打开)\n" ;;
 		*) printf "%s\n${GREEN}启动模拟器\n" ;;
 	esac
 	uname -a | grep 'Android' -q
