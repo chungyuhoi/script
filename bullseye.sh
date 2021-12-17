@@ -13,9 +13,6 @@ echo $(uname -a) | sed 's/Android/GNU\/Linux/' >bullseye/proc/version
 if [ ! -f "bullseye/usr/bin/perl" ]; then
         cp bullseye/usr/bin/perl* bullseye/usr/bin/perl
 fi
-cat >bullseye/usr/bin/uptime<<-'eof'
-sed -n "/load average/s/#//;s@$(grep 'load average' /usr/bin/uptime | awk '{print $2}' | sed -n 1p)@$(date +%T)@"p /usr/bin/uptime
-eof
 sed -i "1i\export TZ='Asia/Shanghai'" bullseye/etc/profile
 sed -i "3i\rm -rf \/tmp\/.X\*" bullseye/etc/profile
 sed -i "/zh_CN.UTF/s/#//" bullseye/etc/locale.gen
@@ -29,7 +26,7 @@ deb http://mirrors.ustc.edu.cn/debian/ bullseye-backports main contrib non-free
 deb http://mirrors.ustc.edu.cn/debian-security bullseye-security main contrib non-free' >bullseye/etc/apt/sources.list
 echo ". firstrun" >>bullseye/etc/profile
 cat >bullseye/root/firstrun<<-'eof'
-echo -e "正在配置首次运行\n安装常用应用"
+echo -e "\e[33m正在配置首次运行\n安装常用应用\e[0m"
 sleep 1
 apt update
 if ! grep -q https /etc/apt/sources.list; then
@@ -46,7 +43,7 @@ if [ $(command -v chromium) ]; then
 sed -i "s/Exec=\/usr\/bin\/chromium %U/Exec=\/usr\/bin\/chromium --no-sandbox \%U/g" /usr/share/applications/chromium.desktop
 fi
 if [ ! -f ${HOME}/.vnc/passwd ]; then
-echo "请设置vnc密码,6到8位"
+echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m"
 vncpasswd
 fi
 echo '#!/usr/bin/env bash
@@ -91,6 +88,12 @@ apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
 locale-gen
 sed -i "2i\export LANG=zh_CN.UTF-8" /etc/profile
 sed -i "/firstrun/d" /etc/profile
+curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PSTREE.tar.gz
+tar zxvf PSTREE.tar.gz && bash bash_me
+rm -rf PSTREE.tar.gz bash_me
+curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
+tar zxvf PKILL.tar.gz && bash PKILL/bash_me
+rm -rf PKILL*
 echo -e "打开vnc请输\e[33measyvnc\e[0m\nvnc viewer地址输127.0.0.1:0\nvnc的退出,在系统输exit即可
 如果启动失败,请输\e[33mbash firstrun\e[0m重新安装"
 read -r -p "按回车键继续" input
@@ -101,8 +104,6 @@ eof
 
 echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
-sed -i \"/days/d\" bullseye/usr/bin/uptime
-sed -i \"1i \#\$(uptime)\" bullseye/usr/bin/uptime
 unset LD_PRELOAD
-proot --kill-on-exit -S bullseye --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b bullseye/usr/bin/uptime:/proc/usr/bin/uptime -b bullseye/proc/version:/proc/version -b bullseye/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-bullseye.sh && chmod +x start-bullseye.sh
+proot --kill-on-exit -S bullseye --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b bullseye/proc/version:/proc/version -b bullseye/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-bullseye.sh && chmod +x start-bullseye.sh
 echo -e "已创建root用户系统登录脚本,登录方式为\e[33m./start-bullseye.sh\e[0m"

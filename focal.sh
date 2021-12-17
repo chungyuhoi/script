@@ -25,20 +25,17 @@ if [ ! -f "focal/usr/bin/perl" ]; then
 
         cp focal/usr/bin/perl* focal/usr/bin/perl
 fi
-cat >focal/usr/bin/uptime<<-'eof'
-sed -n "/load average/s/#//;s@$(grep 'load average' /usr/bin/uptime | awk '{print $2}' | sed -n 1p)@$(date +%T)@"p /usr/bin/uptime
-eof
 echo ". firstrun" >>focal/etc/profile
 cat >focal/root/firstrun<<-'eof'
-echo -e "正在配置首次运行\n安装常用应用"
+echo -e "\e[33m正在配置首次运行\n安装常用应用\e[0m"
 sleep 1
 apt update
-apt install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 lxtask pavucontrol -y
+apt install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 lxtask pavucontrol libxtst6 libnss3 -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
 if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
 echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 sleep 2
-apt --fix-broken install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 lxtask tigervnc-standalone-server tigervnc-viewer pavucontrol -y
+apt --fix-broken install -y && apt install --no-install-recommends curl wget vim fonts-wqy-zenhei tar firefox firefox-locale-zh-hans ffmpeg mpv xfce4 xfce4-terminal ristretto dbus-x11 lxtask tigervnc-standalone-server tigervnc-viewer pavucontrol libxtst6 libnss3 -y
 fi
 if [ $(command -v firefox) ]; then
 if grep -q '^ex.*MOZ_FAKE_NO_SANDBOX=1' /etc/environment; then
@@ -53,11 +50,13 @@ if ! grep -q 'environment' /etc/profile; then
 echo 'source /etc/environment' >>/etc/profile
 fi
 fi
+ln -s /usr/lib/firefox/libsmime3.so /usr/lib/aarch64-linux-gnu/
+ln -s /usr/lib/firefox/libnssutil3.so /usr/lib/aarch64-linux-gnu/
 curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PSTREE.tar.gz
 tar zxvf PSTREE.tar.gz && bash bash_me
 rm -rf PSTREE.tar.gz bash_me
 if [ ! -f ${HOME}/.vnc/passwd ]; then
-echo "请设置vnc密码,6到8位"
+echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m"
 vncpasswd
 fi
 echo '#!/usr/bin/env bash
@@ -113,8 +112,6 @@ eof
 
 echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
-sed -i \"/days/d\" focal/usr/bin/uptime
-sed -i \"1i \#\$(uptime)\" focal/usr/bin/uptime
 unset LD_PRELOAD
-proot --kill-on-exit -S focal --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b focal/proc/stat:/proc/stat -b focal/proc/version:/proc/version -b focal/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-focal.sh && chmod +x start-focal.sh
+proot --kill-on-exit -S focal --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b focal/proc/version:/proc/version -b focal/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-focal.sh && chmod +x start-focal.sh
 echo -e "已创建root用户系统登录脚本,登录方式为\e[33m./start-focal.sh\e[0m"
