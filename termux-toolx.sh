@@ -1411,7 +1411,7 @@ esac
 		;;
 	8)
 		echo -e "\n1) 安装libreoffice
-2) 安装wps(注意，目前wps在vnc比较多的bug,建议用xsdl来传输)\n"
+2) 安装wps(注意，目前wps在${YELLOW}部分vnc${RES}有bug,如果显示有问题，请尝试用xsdl来传输)\n"
 		read -r -p "E(exit) M(main)请选择: " input
 		case $input in
 			1|"") echo "安装libreoffice"
@@ -1533,7 +1533,7 @@ DOSBOX() {
 		sed -i "/xinhao/a #挂载光盘\n#mount d $DIRECT/xinhao/DOS/光盘目录 -t cdrom" ${HOME}/.dosbox/$dosbox
 #		echo 'mount d $DIRECT/DOS/hospital -t cdrom' ${HOME}/.dosbox/$dosbox
 #		echo 'mount d $DIRECT/DOS/CDROM -t cdrom -label mdk' ${HOME}/.dosbox/$dosbox
-		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录xinhao/DOS文件夹里，打开dosbox输入c:即可看到运行文件夹${RES}"
+		echo -e "${GREEN}配置完成，请把运行文件夹放在手机主目录xinhao/DOS文件夹里，打开dosbox输入c:即可看到运行文件夹，鼠标解锁ctrl+f10${RES}"
 		sleep 2
 	fi
 		INSTALL_SOFTWARE ;;

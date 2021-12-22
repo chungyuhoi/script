@@ -3,16 +3,15 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
-UPDATE="2021/12/12"
+UPDATE="2021/12/21"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
-	增加termux环境声音输出(强烈不建议，没有容器的修改参数选项流畅)
 	增加vnc多渠道选项(可同时使用本地vnc，局域网vnc，浏览器进行显示操作)
-	针对部分设备cpu修改默认核心数
 	删除不常用的时区选项
 	增加spice局域网联接，支持声音传输(建议两设备热点联接，接近零损耗)
+	系统镜像增加列表方式选项
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -366,10 +365,29 @@ HDA_READ() {
 }
 #################
 LIST() {
-	echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
-	ls ${DIRECT}${STORAGE} | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
+	case $DIRECT in
+	\/sdcard)
+		echo -e "\n${GREEN}请确认系统镜像已放入手机目录${STORAGE}里${RES}\n" ;;
+	*) echo -e "\n${GREEN}请确认系统镜像已放入目录${STORAGE}里${RES}\n" ;;
+	esac
+	ls ${DIRECT}${STORAGE} | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd" >/dev/null 2>&1
 	if [ $? == 1 ]; then
 		echo -e "${GREEN}\n貌似没有符合格式的镜像，请以实际文件名为主${RES}"
+		sleep 1
+	else
+	echo -e "已为你列出镜像文件夹中的常用镜像格式文件（仅供参考）\e[33m"
+	LIST=`ls ${DIRECT}${STORAGE} | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd" | awk '{printf("%d) %s\n" ,NR,$0)}'`
+#	LIST=`ls | awk '{printf("%d) %s\n" ,NR,$0)}'`
+	echo -e "$LIST${RES}"
+	echo -e "序号选项仅支持系统镜像，如果没列出请回车手输"
+	read -r -p "请选择: " input
+	hda_name=`echo "$LIST" | grep -w "${input})" | awk '{print $2}'`
+	if [ ! -f "${DIRECT}${STORAGE}$hda_name" ]; then
+	echo -e "\n${RED}选择有误，请手输镜像名${RES}"
+	sleep 1
+	else
+	echo -e "\n$hda_name\n"
+	fi
 	fi
 }
 #################
@@ -1204,7 +1222,7 @@ esac
 3) spice 模拟效果与声音略高，画质与操控略低
 4) gtk 在容器linux桌面环境(图形界面)显示模拟器
 5) 局域网vnc 同一局域网下可以用不同设备显示(请确认局域网ip唯一)
-6) 局域网spice 同一局域网下可以用不同设备显示，并且支持声音输>出(请确认局域网ip唯一)
+6) 局域网spice 同一局域网下可以用不同设备显示，并且支持声音输出(请确认局域网ip唯一)
 7) 多渠道显示 本地vnc、局域网vnc、浏览器
 8) 快速启动 仅输镜像名就可以通过vnc模拟显示
 9) 返回
@@ -1364,12 +1382,6 @@ EOF
  	esac
 ###################
 
-	case $DIRECT in
-		\/sdcard)
-	echo -e "\n${GREEN}请确认系统镜像已放入手机目录${STORAGE}里${RES}\n" ;;
-		*) echo -e "\n${GREEN}请确认系统镜像已放入目录${STORAGE}里${RES}\n" ;;
-	esac
-	sleep 1
 	pkill -9 qemu-system-x86 2>/dev/null
 	pkill -9 qemu-system-i38 2>/dev/null
 	if [ ! -d "${DIRECT}${STORAGE}" ];then
@@ -2757,7 +2769,7 @@ VIRTIO() {
 		ANDROID) ;;
 		*)
 echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外下载virtio驱动光盘）
-3) 为磁盘接口添加virtio驱动（自定义模式，载virtio驱动光盘)" ;;
+3) 为磁盘接口添加virtio驱动（自定义模式，加载virtio驱动光盘)" ;;
 	esac
 	echo -e "8) 关于virtio
 9) 返回主目录
