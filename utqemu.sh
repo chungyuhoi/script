@@ -12,6 +12,7 @@ INFO() {
 	删除不常用的时区选项
 	增加spice局域网联接，支持声音传输(建议两设备热点联接，接近零损耗)
 	系统镜像增加列表方式选项
+	分区与光盘选项移至进阶选项菜单
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -1391,27 +1392,6 @@ EOF
 	fi
 	LIST
 		HDA_READ
-	case $SYS in
-		QEMU_ADV) 
-	case $QEMU_MODE in
-		"")
-	echo -e "请选择${YELLOW}分区磁盘${RES}加载模式"
-	read -r -p "1)加载分区镜像 2)加载双光盘 不加载请直接回车 " input
-	case $input in
-		1) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
-	read hdb_name ;;
-		2) echo -n -e "请输入${YELLOW}第一个光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
-	read iso1_name ;;
-		*) ;;
-	esac ;;
-	VIRTIO_MODE) ;;
-	esac ;;
-	*) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
-	read hdb_name ;;
-	esac
-	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
-	read iso_name
-
 
 #内存
 	echo -e -n "请输入模拟的${YELLOW}内存${RES}大小(建议本机的1/4)，以m为单位（1g=1024m，例如输512），自动分配请回车: "
@@ -1999,7 +1979,29 @@ axcpus=4" ;;
 	read -r -p "1)是 2)否 " input
 	case $input in
         1)
-		echo -e "是否加载${YELLOW}共享文件夹${RES}"
+
+	case $SYS in
+		QEMU_ADV)
+	case $QEMU_MODE in
+		"")
+	echo -e "请选择${YELLOW}分区磁盘${RES}加载模式"
+	read -r -p "1)加载分区镜像 2)加载双光盘 不加载请直接回车 " input
+        case $input in
+		1) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
+	read hdb_name ;;
+		2) echo -n -e "请输入${YELLOW}第一个光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
+	read iso1_name ;;
+	*) ;;
+	esac ;;
+	VIRTIO_MODE) ;;
+	esac ;;
+	*) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
+	read hdb_name ;;
+	esac
+	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
+	read iso_name
+
+	echo -e "是否加载${YELLOW}共享文件夹${RES}"
 	read -r -p "1)加载 2)不加载 " input
 	case $input in
 	1) 
