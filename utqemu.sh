@@ -3,16 +3,15 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
-UPDATE="2021/12/21"
+UPDATE="2021/12/27"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
-	增加vnc多渠道选项(可同时使用本地vnc，局域网vnc，浏览器进行显示操作)
-	删除不常用的时区选项
 	增加spice局域网联接，支持声音传输(建议两设备热点联接，接近零损耗)
 	系统镜像增加列表方式选项
 	分区与光盘选项移至进阶选项菜单
+	修复部分hda声卡的错误提示
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -44,7 +43,8 @@ ABOUT_UTQEMU(){
 	printf "${YELLOW}关于utqemu脚本${RES}
 	最初是为utermux写下的qemu-system-x86脚本，目的是增加utermux可选功能，给使用者提供简易快捷的启动，我是业余爱好者，给使用者提供简易快捷的启动。非专业人士，所以内容比较乱，请勿吐槽。为适配常用镜像格式，脚本的参数选用是比较常用。业余的我，专业的参数配置并不懂，脚本参数都是来自官方网站、百度与群友。qemu5.0以上的版本较旧版本变化比较大，所以5.0后的参数选项比较丰富，欢迎群友体验使用。\n\n"
 	case $SYS in
-		ANDROID) CONFIRM ;;
+		ANDROID) CONFIRM 
+			QEMU_SYSTEM ;;
 		*) COMPILE ;;
 	esac
 
@@ -337,7 +337,7 @@ QEMU_VERSION(){
 	uname -a | grep 'Android' -q
         if [ $? == 0 ]; then
                 SYS=ANDROID
-		qemu_ver=$(qemu-system-x86_64 --version) 2>/dev/null
+		qemu_ver=$(qemu-system-x86_64 --version 2>/dev/null)
 	elif [ ! $(command -v qemu-system-x86_64) ]; then
 		echo ""
 	elif qemu_ver=$(qemu-system-x86_64 --version)
@@ -1287,7 +1287,7 @@ esac
 		sleep 1
 		LIST
 		HDA_READ
-	QEMU_SYS=qemu-system-x86_64 MA=q35 CPU_MODEL="max,-syscall,-lm,-hle,-rtm" VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio,format=raw"
+	QEMU_SYS=qemu-system-x86_64 MA=q35 CPU_MODEL="max" VIDEO="-device qxl-vga" DRIVE="-drive file=${DIRECT}${STORAGE}$hda_name,index=0,media=disk,if=virtio" NET="-device virtio-net-pci,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive file=fat:rw:${DIRECT}/xinhao/share,index=3,media=disk,if=virtio,format=raw"
 	;;
 	4) echo -e "\n${GREEN}此选项参数是小白之家定制${RES}\n"
 	sleep 1
@@ -1543,7 +1543,7 @@ eof
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 	7) CPU_MODEL=Opteron_G5
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
-	8) CPU_MODEL="max,-syscall,-lm,-hle,-rtm"
+	8) CPU_MODEL="max"
 		unset _SMP
 		SMP_=4
 		MAXCPUS="4,maxcpus=5" ;;
@@ -1604,7 +1604,7 @@ eof
 		esac ;;
 	0) NUM=`qemu-system-i386 --cpu help | awk '{print $2}' | cat -n | grep max | awk '{print $1}'`
 		qemu-system-i386 --cpu help | awk '{print $2}' | head -n $NUM | tail -n $(( $NUM - 1 ))
-		echo -e "$YELLOW已为你列出支持的cpu类型$RES"
+		echo -e "$YELLOW已为你列出支持的cpu类型\n(增加特性请+，去除特性请-，例如core2duo,+3dnowext,-avx)$RES"
 		echo -e -n "请输入: "
 		read CPU_MODEL
 		if echo $CPU_MODEL | grep max; then
@@ -1769,8 +1769,8 @@ axcpus=4" ;;
 		4) SOUND_MODEL=AC97 ;;
 		5) SOUND_MODEL=usb-audio ;;
 		0) ;;
-		*) SOUND_MODEL=intel-hda
-			set -- "${@}" "-device" "hda-duplex" ;;
+		*) SOUND_MODEL=hda-duplex
+			set -- "${@}" "-device" "intel-hda" ;;
 	esac
 	if [ -n "${SOUND_MODEL}" ]; then
 		set -- "${@}" "-device" "${SOUND_MODEL}"
@@ -1917,8 +1917,8 @@ axcpus=4" ;;
 		4) SOUND_MODEL=AC97 ;;
 		5) SOUND_MODEL=usb-audio ;;
 		0) ;;
-		*) SOUND_MODEL=intel-hda
-			set -- "${@}" "-device" "hda-duplex" ;;
+		*) SOUND_MODEL=hda-duplex
+			set -- "${@}" "-device" "intel-hda" ;;
 	esac
 	if [ -n "${SOUND_MODEL}" ]; then
 	set -- "${@}" "-device" "${SOUND_MODEL}"
