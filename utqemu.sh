@@ -840,6 +840,29 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	echo -e "\n${RED}错误，请重试${RES}"
 	fi
 	sleep 2 ;;
+	5) echo -e "\n${YELLOW}检测最新版本${RES}"
+	VERSION=`curl https://f-droid.org/zh_Hant/packages/com.gaurav.avnc/ | awk -F 'repo/' '{print $2}' | grep apk | cut -d '"' -f 1 | sed -n 1p`
+	if [ ! -z "$VERSION" ]; then
+		echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/$VERSION${RES}\n"
+	else
+		echo -e "${RED}获取错误，请重试${RES}"
+		sleep 2
+		unset VERSION
+		QEMU_ETC
+	fi
+		read -r -p "1)下载 9)返回 " input
+		case $input in
+		1) rm avnc.apk 2>/dev/null
+		curl https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/$VERSION -o avnc.apk
+		mv -v avnc.apk ${DIRECT}${STORAGE}
+		echo -e "\n已下载至${DIRECT}${STORAGE}目录"
+		sleep 2 ;;
+	*) ;;
+        esac
+	unset VERSION
+	QEMU_ETC
+	;;
+
 	*) INVALID_INPUT ;;
 	esac
 	QEMU_ETC ;;
@@ -1339,7 +1362,7 @@ EOF
 		if [ ! $(command -v novnc) ]; then
                         echo -e "${YELLOW}检测所需vnc包${RES}"
                         sleep 1
-                        $sudo apt install tigervnc-standalone-server tigervnc-viewer novnc --no-install-recommends -y
+                        $sudo apt install tigervnc-standalone-server novnc --no-install-recommends -y
 			sed -i '/Fail/{n;s/^/#/}' /usr/share/novnc/utils/launch.sh
                         fi
 			NOVNC=novnc
@@ -1854,7 +1877,8 @@ eof
 			if [ ! $(command -v tigervncserver) ]; then
 			echo -e "${YELLOW}检测所需vnc包${RES}"
 			sleep 1
-			$sudo apt install tigervnc-standalone-server tigervnc-viewer --no-install-recommends -y
+#			$sudo apt install tigervnc-standalone-server tigervnc-viewer --no-install-recommends -y
+			$sudo apt install tigervnc-standalone-server --no-install-recommends -y
 			fi
 			dpkg -l libegl1 >/dev/null 2>&1; if [ $? != 0 ]; then $sudo apt install libegl1 libgdk-pixbuf2.0-0 -y; fi
 #		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
