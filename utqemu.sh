@@ -3,7 +3,7 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
-UPDATE="2021/12/27"
+UPDATE="2022/01/03"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
@@ -12,6 +12,7 @@ INFO() {
 	系统镜像增加列表方式选项
 	分区与光盘选项移至进阶选项菜单
 	修复部分hda声卡的错误提示
+	为减少安装占用，部分不常用功能参数的默认安装包改为促发安装
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -889,9 +890,8 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	exit 0
 	QEMU_ETC ;;
 	9) echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list && $sudo apt update
-	$sudo apt install qemu-system-x86 tigervnc-standalone-server tigervnc-viewer novnc -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 6 ]]; then
-	sed -i '/Fail/{n;s/^/#/}' /usr/share/novnc/utils/launch.sh
 	echo -e "更新成功"
 	else
 	echo -e "更新失败"
@@ -995,16 +995,18 @@ QEMU_SYSTEM() {
 	if ! grep -q https /etc/apt/sources.list; then
 		$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-	if [ ! $(command -v samba) ]; then
-		$sudo apt install samba usbutils telnet -y
-	fi
 	fi
 	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE NET_MODEL0 NET_MODEL1 NUM
 	HMAT=",hmat=off"
 	QEMU_VERSION
 	NOTE
+	if [ ! $(command -v qemu-system-x86_64) ]; then
 echo -e "
-1)  安装qemu-system-x86_64，并联动更新模拟器所需应用\n\e[33m(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}"
+1)  \e[32m安装qemu-system-x86_64，并联动更新模拟器所需应用\n(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}"
+else
+echo -e "
+1)  安装qemu-system-x86_64，并联动更新模拟器所需应用\n(由于qemu的依赖问题，安装过程可能会失败，请尝试重新安装)${RES}"
+	fi
 case $ARCH in
 	computer) echo -e "2)  创建windows镜像目录" ;;
 	*)
@@ -1015,8 +1017,12 @@ else
 	echo -e "2)  创建windows镜像目录及本地共享文件目录share拷贝(已执行选项1可跳过)"
 	fi ;;
 esac
-echo -e "3)  启动qemu-system-x86_64模拟器
-4)  让termux成为网页服务器(使模拟系统可以通过浏览器访问本机内容)
+if [ ! $(command -v qemu-system-x86_64) ]; then
+echo -e "3)  启动qemu-system-x86_64模拟器"
+else
+echo -e "3)  \e[32m启动qemu-system-x86_64模拟器\e[0m"
+fi
+echo -e "4)  让termux成为网页服务器(使模拟系统可以通过浏览器访问本机内容)
 5)  virtio驱动相关"
 	case $SYS in
 	ANDROID) ;;
@@ -1053,13 +1059,12 @@ echo -e "7)  查看日志
 	if ! grep -q https /etc/apt/sources.list; then
 	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer novnc -y
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	if [ ! $(command -v qemu-system-x86_64) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
-	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl samba usbutils telnet tigervnc-standalone-server tigervnc-viewer novnc -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	fi
-	sed -i '/Fail/{n;s/^/#/}' /usr/share/novnc/utils/launch.sh
 	PA
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
 	fi
@@ -1331,7 +1336,7 @@ EOF
 	esac
 			;;
 		7) 
-		if [ ! $(command -v tigervncserver) ]; then
+		if [ ! $(command -v novnc) ]; then
                         echo -e "${YELLOW}检测所需vnc包${RES}"
                         sleep 1
                         $sudo apt install tigervnc-standalone-server tigervnc-viewer novnc --no-install-recommends -y
@@ -1645,8 +1650,7 @@ eof
 		SMP_="2,cores=2,threads=1,sockets=1"
 		MAXCPUS="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
 	96) CPU_MODEL="Penryn-v1,-lm,-syscall"
-		SMP_="2,cores=2,threads=1,sockets=2,m
-axcpus=4" ;;
+		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
 	97) CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,l3-cache=true,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-rdseed,-avx512cd,-avx512bw,-avx512vl,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-syscall,-lm,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-mds-no,+pdpe1gb"
 		SMP_="8,cores=8,threads=1,sockets=1"
 		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
@@ -1677,11 +1681,7 @@ axcpus=4" ;;
 	read -r -p "1)cirrus 2)vmware 3)vga 4)virtio " input
 	case $input in 
 		1) VGA_MODEL=cirrus-vga ;;
-		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
-		case $input in
-		1|"") VGA_MODEL=vmware-svga ;;
-		*) VGA_MODEL=vmware-svga,vgamem_mb=256 ;;
-	esac ;;
+		2) VGA_MODEL=vmware-svga,vgamem_mb=256 ;;
 		4) VGA_MODEL=virtio-vga ;;
 		*) VGA_MODEL="VGA,vgamem_mb=256,refresh_rate=60"
 #-device 'VGA',id='video0',vgamem_mb='256',global-vmstate='false',qemu-extended-regs='off',rombar='1',xmax='1920',xres='1280',ymax='1080',yres='720'  ;;
@@ -1703,7 +1703,8 @@ axcpus=4" ;;
 		2) SOUND_MODEL=sb16 ;;
 		3) SOUND_MODEL=ES1370 ;;
 		4) set -- "${@}" "-device" "intel-hda"
-		SOUND_MODEL=hda-duplex ;;                                                            0) ;;
+		SOUND_MODEL=hda-duplex ;;
+		0) ;;
 		esac
 		if [ -n "${SOUND_MODEL}" ]; then
 		pulseaudio --start &
@@ -1838,18 +1839,11 @@ axcpus=4" ;;
 	read -r -p "1)cirrus 2)vmware 3)vga 4)virtio 5)qxl " input
 	case $input in
 		1) set -- "${@}" "-device" "cirrus-vga" ;;
-		2) read -r -p "1)不设置3D参数 2)设置3D参数 " input
-	case $input in
-		1|"") set -- "${@}" "-device" "vmware-svga" ;;
-		*) set -- "${@}" "-device" "vmware-svga,vgamem_mb=256" ;;
-	esac ;;
+		2) set -- "${@}" "-device" "vmware-svga,vgamem_mb=256" ;;
 		4) echo -e "${YELLOW}virtio显卡带3D功能，但因使用的系统环境原因，目前只能通过电脑启用，如果真想尝试，可在vnc或图形界面打开(需32位色彩，否则出现花屏)\n目前测试需win8以上系统。\n系统已装virtio的gpu驱动，如果没有请去virtio相关下载${RES}"
 	read -r -p "1)不设置3D参数 2)设置3D参数 " input
 	case $input in
-		1|"")
-		set -- "${@}" "-device" "virtio-vga"
 #		set -- "${@}" "-device" "virtio-vga,virgl=on"
-;;
 		2) echo -e "\n${YELLOW}你选择virtio显卡3D参数，该模式只能在vnc或图形界面(桌面)显示\n${RES}"
 	CONFIRM
 	case $display in
@@ -1878,6 +1872,7 @@ axcpus=4" ;;
 		export PULSE_SERVER=tcp:127.0.0.1:4713
 		fi ;;
 	esac ;;
+	*) set -- "${@}" "-device" "virtio-vga" ;;
 	esac ;;
 		5) set -- "${@}" "-device" "qxl-vga,vgamem_mb=256"
 #			set -- "${@}" "-device" "virtio-keyboard-pci"
@@ -2016,7 +2011,12 @@ axcpus=4" ;;
 	case $input in
 	1) SHARE=true ;;
 	2) set -- "${@}" "-device" "ich9-usb-ehci1,id=ehci" "-device" "ich9-usb-uhci1,masterbus=ehci.0,multifunction=on" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
-	3) SMB=",smb=${HOME}/share"
+	3) if [ ! $(command -v samba) ]; then
+		echo -e "${YELLOW}检测安装支持包${RES}"
+		sleep 2
+		$sudo apt install samba --no-install-recommends -y
+	fi
+		SMB=",smb=${HOME}/share"
 		;;
 	*) ;;
 	*) esac
@@ -2035,7 +2035,13 @@ axcpus=4" ;;
 	echo -e "是否使用${YELLOW}控制台${RES}调试(部分功能需root用户)${RES}"
         read -r -p "1)使用 2)不使用 " input
         case $input in
-	1) rm ${HOME}/hugepages* 2>/dev/null
+	1) 
+	if [ ! $(command -v telnet) ]; then
+		echo -e "${YELLOW}检测安装支持包${RES}"
+		sleep 2
+		$sudo apt install telnet -y
+	fi
+		rm ${HOME}/hugepages* 2>/dev/null
 	echo -e "${RED}注意！使用控制台不会因为qemu退出而自动删除大页文件，请退出后输rm ${HOME}/hugepage*自行删除${RES}"
 		set -- "${@}" "-monitor" "telnet:127.0.0.1:4444,server,nowait" "-daemonize"
 		echo -e "${YELLOW}调试命令telnet 127.0.0.1 4444${RES}\n${YELLOW}#换光盘${RES}：先info block查看光盘标识，例如ide0-cd1，再用命令change ide0-cd1 /sdcard/xinhao/windows/DGDOS.iso\n${YELLOW}#热插拔内存${RES}：本脚本已对默认内存预留两个内存槽$(( $mem_ / 2 ))m\n输入命令\n(qemu) object_add memory-backend-ram,id=mem1,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm0,memdev=mem1\n(qemu) object_add memory-backend-ram,id=mem2,size=$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm,memdev=mem2\n或者大页内存：\n(qemu) object_add memory-backend-file,id=mem1,size=$(( $mem_ / 2 ))m,mem-path=${HOME}/hugepages-$(( $mem_ / 2 ))m\n(qemu) device_add pc-dimm,id=dimm1,memdev=mem1输入后可用info memdev或info memory-devices查看\n${YELLOW}#热插拔cpu${RES}：本脚本仅对默认smp的max预留一个cpu槽\n查可用cpu槽info hotpluggable-cpus(找到没有qom_path一组，记住type信息，CPUInstance Properties信息)\n输入格式(以提示为准)：device_add driver=qemu32-i386-cpu,socket-id=2,core-id=0,thread-id=0,node-id=0\n${YELLOW}#退出qemu${RES}，输quit\n"
@@ -2092,7 +2098,12 @@ eof
 	echo -e "${YELLOW}usb直连${RES}，虚拟机可读u盘(手机需已root并使用root用户)"
 	read -r -p "1)通过端口开启 2)通过物理地址开启 0)不使用 " input
         case $input in
-	1) echo -e "${YELLOW}请插入usb${RES}"
+		1) if [ ! $(command -v lsusb) ]; then
+			echo -e "${YELLOW}检测支持包${RES}"
+			sleep 2
+			$sudo apt install usbutils -y
+		fi
+		echo -e "${YELLOW}请插入usb${RES}"
 	CONFIRM
 	lsusb 2>/dev/null
 	if [ $? == 1 ]; then
@@ -2105,7 +2116,12 @@ eof
         set -- "${@}" "-device" "usb-ehci,id=ehci"
 	fi
 	set -- "${@}" "-device" "usb-host,bus=ehci.0,hostbus=$HOSTBUS,hostport=$HOSTPORT" ;;
-	2) echo -e "\n${YELLOW}请插入usb${RES}"
+	2) if [ ! $(command -v lsusb) ]; then
+		echo -e "${YELLOW}检测安装支持包${RES}"
+		sleep 2
+		$sudo apt install usbutils -y
+	fi
+		echo -e "\n${YELLOW}请插入usb${RES}"
 	CONFIRM
 	if echo ${@} | grep ! -q echi; then
 	set -- "${@}" "-device" "usb-ehci,id=ehci"
@@ -2636,7 +2652,7 @@ EOF
 	if [ "$NOVNC" == novnc ]; then
 echo -e "本地vncviewer地址 \e[33m127.0.0.1:0\e[0m"
 echo -e "局域网vncviewer地址 \e[33m$IP:0\e[0m"
-echo -e "浏览器输 \e[33mhttp://localhost:6080/vnc.html\e[0m\n(浏览器适合没vnc，大平板，点击触屏，)"
+echo -e "浏览器输 \e[33mhttp://localhost:6080/vnc.html\e[0m\n(浏览器适合没vnc，大平板，点击触屏)"
 echo -e  "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 	sleep 1
 	XVNC
