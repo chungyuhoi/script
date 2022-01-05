@@ -94,7 +94,7 @@ COMPILE(){
 	read -r -p "请选择: " input
 	case $input in
 		2)
-	apt install -y git; apt install -y libglib2.0-dev; apt install -y libfdt-dev; apt install -y libpixman-1-dev; apt install -y zlib1g-dev; apt install -y libsdl1.2-dev; apt install -y libsnappy-dev; apt install -y liblzo2-dev; apt install -y automake; apt install -y gcc; apt install -y python3; apt install -y python3-setuptools; apt install -y build-essential; apt install -y ninja-build; apt install -y libspice-server-dev; apt install -y libsdl2-dev; apt install -y libspice-protocol-dev; apt install -y meson; apt install -y libgtk-3-dev; apt install -y libaio-dev; apt install -y gettext; apt install -y samba; apt install -y xz-utils; apt install -y usbutils; apt install -y telnet; apt install -y wget; apt install -y libvirglrenderer-dev; apt install -y libusb-dev; apt install -y libusb-1.0-0; apt install -y python; apt install -y pulseaudio ;;
+	$sudo apt install -y git; $sudo apt install -y libglib2.0-dev; $sudo apt install -y libfdt-dev; $sudo apt install -y libpixman-1-dev; $sudo apt install -y zlib1g-dev; $sudo apt install -y libsdl1.2-dev; $sudo apt install -y libsnappy-dev; $sudo apt install -y liblzo2-dev; $sudo apt install -y automake; $sudo apt install -y gcc; $sudo apt install -y python3; $sudo apt install -y python3-setuptools; $sudo apt install -y build-essential; $sudo apt install -y ninja-build; $sudo apt install -y libspice-server-dev; $sudo apt install -y libsdl2-dev; $sudo apt install -y libspice-protocol-dev; $sudo apt install -y meson; $sudo apt install -y libgtk-3-dev; $sudo apt install -y libaio-dev; $sudo apt install -y gettext; $sudo apt install -y samba; $sudo apt install -y xz-utils; $sudo apt install -y usbutils; $sudo apt install -y telnet; $sudo apt install -y wget; $sudo apt install -y libvirglrenderer-dev; $sudo apt install -y libusb-dev; $sudo apt install -y libusb-1.0-0; $sudo apt install -y python; $sudo apt install -y pulseaudio ;;
 	9) ABOUT_UTQEMU ;;
 	*) ;;
 	esac
@@ -204,14 +204,12 @@ RES="\e[0m"
 sudo_() {
 	date_t=`date +"%D"`
 	if ! grep -q $date_t ".utqemu_log" 2>/dev/null; then
-        $sudo apt update
-	echo $date_t >>.utqemu_log 2>&1
+		$sudo apt update
+		echo $date_t >>.utqemu_log 2>&1
 	fi
 }
 	if [ `whoami` != "root" ];then
-	sudo="sudo"
-	else
-	sudo=""
+		sudo="sudo"
 	fi
 ####################
 BF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/"
@@ -772,7 +770,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 		fi
 	QEMU_ETC
 		;;
-	6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api " input
+	6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api 5)avnc(操控是触点方式，非移动光标)" input
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
 	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -1010,7 +1008,7 @@ MOVE_OUT() {
 ##################
 QEMU_SYSTEM() {
 	if [ ! $(command -v curl) ]; then
-		$sudo apt update
+		sudo_
 		$sudo apt install curl -y
 	fi
 	uname -a | grep 'Android' -q
@@ -1075,13 +1073,14 @@ echo -e "7)  查看日志
 		echo -e "\n${YELLOW}debian-sid源地址已有qemu6.0可供安装，是否更新版本？(非本脚本安装的容器慎选)${RES}"
 		read -r -p "1)继续使用qemu5.2系统 2)更新为qemu6.0系统 " input
 		case $input in
-			2) echo 'deb http://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && apt update ;;
+			2) echo 'deb http://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && $sudo apt update ;;
 			*) ;;
 		esac
 	fi
 	if ! grep -q https /etc/apt/sources.list; then
-	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
+	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list
 	fi
+	sudo_
        	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
 	if [ ! $(command -v qemu-system-x86_64) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
@@ -1362,6 +1361,7 @@ EOF
 		if [ ! $(command -v novnc) ]; then
                         echo -e "${YELLOW}检测所需vnc包${RES}"
                         sleep 1
+			sudo_
                         $sudo apt install tigervnc-standalone-server novnc --no-install-recommends -y
 			sed -i '/Fail/{n;s/^/#/}' /usr/share/novnc/utils/launch.sh
                         fi
@@ -1878,9 +1878,12 @@ eof
 			echo -e "${YELLOW}检测所需vnc包${RES}"
 			sleep 1
 #			$sudo apt install tigervnc-standalone-server tigervnc-viewer --no-install-recommends -y
+	sudo_
 			$sudo apt install tigervnc-standalone-server --no-install-recommends -y
 			fi
-			dpkg -l libegl1 >/dev/null 2>&1; if [ $? != 0 ]; then $sudo apt install libegl1 libgdk-pixbuf2.0-0 -y; fi
+			dpkg -l libegl1 >/dev/null 2>&1; if [ $? != 0 ]; then 
+			sudo_
+			$sudo apt install libegl1 libgdk-pixbuf2.0-0 -y; fi
 #		set -- "${@}" "-vga" "qxl" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci,virgl=on"
 		set -- "${@}" "-device" "virtio-vga" "-display" "gtk,gl=on" "-device" "virtio-gpu-pci"
 		display=xvnc
@@ -2038,6 +2041,7 @@ eof
 	3) if [ ! $(command -v samba) ]; then
 		echo -e "${YELLOW}检测安装支持包${RES}"
 		sleep 2
+		sudo_
 		$sudo apt install samba --no-install-recommends -y
 	fi
 		SMB=",smb=${HOME}/share"
@@ -2063,6 +2067,7 @@ eof
 	if [ ! $(command -v telnet) ]; then
 		echo -e "${YELLOW}检测安装支持包${RES}"
 		sleep 2
+		sudo_
 		$sudo apt install telnet -y
 	fi
 		rm ${HOME}/hugepages* 2>/dev/null
@@ -2125,6 +2130,7 @@ eof
 		1) if [ ! $(command -v lsusb) ]; then
 			echo -e "${YELLOW}检测支持包${RES}"
 			sleep 2
+			sudo_
 			$sudo apt install usbutils -y
 		fi
 		echo -e "${YELLOW}请插入usb${RES}"
@@ -2143,6 +2149,7 @@ eof
 	2) if [ ! $(command -v lsusb) ]; then
 		echo -e "${YELLOW}检测安装支持包${RES}"
 		sleep 2
+		sudo_
 		$sudo apt install usbutils -y
 	fi
 		echo -e "\n${YELLOW}请插入usb${RES}"
@@ -2955,7 +2962,6 @@ LOGIN_() {
 	6) 在线安装体验linux系统(ubuntu)
 	7) 在线安装体验x86_64架构linux系统(debian，仅架构模拟)
 	8) 下载新版termux
-	9) 设置打开termux(utermux)自动启动本脚本
 	0) 退出\n"
 	read -r -p "请选择: " input
 	case $input in
@@ -3001,13 +3007,6 @@ LOGIN_() {
         unset VERSION
 	clear
 	LOGIN_ ;;
-	9) read -r -p "1)开机启动脚本 2)取消开机启动脚本 " input
-	case $input in
-	1) curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o ${HOME}/utqemu.sh
-	echo "bash utqemu.sh" >>${PREFIX}/etc/bash.bashrc ;;
-	*) sed -i "/utqemu/d" ${PREFIX}/etc/bash.bashrc ;;
-	esac
-	MAIN ;;
 	0) trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	exit 0 ;;
 	*) INVALID_INPUT
