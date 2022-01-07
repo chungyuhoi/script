@@ -1913,14 +1913,17 @@ sleep 2
 	2) 北外大学(推荐)\n"
 	read -r -p "E(exit) M(main) 请选择: " input
 	case $input in
-		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
-		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
+		1) 
+	curl https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ >rootfs.tar.xz
+	CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
+		2) curl https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ | grep link |tail -n 1 | awk -F '</tr><tr>' '{print $2}' >rootfs.tar.xz
+	CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
 		[Ee]) exit 0 ;;
 		[Mm]) MAIN ;;
 	esac
 	echo "下载Ubuntu(bionic)系统..."                     
 	sleep 1
-	curl -o rootfs.tar.xz ${CURL_T}
+#	curl -o rootfs.tar.xz ${CURL_T}
 SYSTEM_DOWN
 echo "修改为北外源"
 echo "${SOURCES_ADD}ubuntu-ports/ bionic ${DEB_UBUNTU}
@@ -2224,7 +2227,7 @@ esac
 }
 #######################
 SYSTEM_DOWN() {
-        VERSION=`cat rootfs.tar.xz | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1`
+        VERSION=`cat rootfs.tar.xz | grep href | cut -d '"' -f 4 | tail -n 1`
                 curl -o rootfs.tar.xz ${CURL_T}${VERSION}rootfs.tar.xz
                 if [ $? -ne 0 ]; then
                         echo -e "${RED}下载失败，请重输${RES}\n"
