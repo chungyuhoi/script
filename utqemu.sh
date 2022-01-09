@@ -3,6 +3,7 @@ cd $(dirname $0)
 ####################
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
+#am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
 UPDATE="2022/01/03"
 INFO() {
 	clear
@@ -770,7 +771,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 		fi
 	QEMU_ETC
 		;;
-	6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api 5)avnc(操控是触点方式，非移动光标)" input
+	6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api 5)avnc(操控是触点方式，非移动光标) " input
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
 	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -1642,25 +1643,7 @@ eof
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
-	93) CPU_MODEL="Cascadelake-Server-v4,model_id=MediaTek Dimensity 1100 @ 2.60GHz,-mds-no,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-rdseed,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry"
-		SMP_="8,cores=8,threads=1,sockets=1"
-		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"
-#		set -- "${@}" "-mem-prealloc"
-		set -- "${@}" "-smbios" "type=0,version=Intel-Xeon"
-		case $ARCH in
-			tablet)
-		set -- "${@}" "-smbios" "type=1,manufacturer=Termux,product=ZeroTermux,version=2021.10" ;;
-		*) set -- "${@}" "-smbios" "type=1,manufacturer=Termux,product=ZeroTermux,version=2021.10" ;;
-		esac
-		set -- "${@}" "-smbios" "type=2,manufacturer=$(uname -a | awk '{print $NF}'),version=2021.7,product=$(uname -a | awk '{print $NF}') $(dpkg --print-architecture)"
-		case $ARCH in
-			tablet)
-		set -- "${@}" "-smbios" "type=3,manufacturer=tablet" ;;
-		*) set -- "${@}" "-smbios" "type=3,manufacturer=computer" ;;
-		esac
-		set -- "${@}" "-smbios" "type=4,manufacturer=MediaTek,max-speed=5200,current-speed=3600"
-		set -- "${@}" "-name" "${hda_name%.*}"
-		set -- "${@}" "-uuid" "1f8e6f7e-5a70-4780-89c1-464dc0e7f308" ;;
+#		set -- "${@}" "-name" "${hda_name%.*}"
 	94) CPU_MODEL="IvyBridge-v2,model_id=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,-x2apic,-tsc-deadline,-avx,-f16c,-spec-ctrl,-syscall,-lm,+pdpe1gb"
 #+hypervisor,hv_spinlocks=0xFFFFFFFF,hv_relaxed,
 		SMP_="cpus=8,cores=8"
@@ -1669,11 +1652,6 @@ eof
 		set -- "${@}" "-smbios" "type=2,manufacturer=Hewlett-Packard,product=158A,version=0.00,serial=6CR419WFHT,asset=6CR419WFHT,location=Not Specified"
                 set -- "${@}" "-smbios" "type=3,manufacturer=Hewlett-Packard,version=Not Specified,serial=6CR419WFHT,asset=6CR419WFHT,sku=Not Specified"
 		set -- "${@}" "-smbios" "type=4,sock_pfx=CPU0,manufacturer=Intel,version=Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz,serial=Not Specified,asset=Not Specified,part=Not Specified,max-speed=3800,current-speed=2800" ;;
-	95) CPU_MODEL="Opteron_G5,-fma,-avx,-f16c,-syscall,-lm,-misalignsse,-3dnowprefetch,-xop,-fma4,-tbm,-nrip-save"
-		SMP_="2,cores=2,threads=1,sockets=1"
-		MAXCPUS="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
-	96) CPU_MODEL="Penryn-v1,-lm,-syscall"
-		SMP_="2,cores=2,threads=1,sockets=2,maxcpus=4" ;;
 	97) CPU_MODEL="Cascadelake-Server-v4,model_id=Intel(R) Xeno(TM) Gold 5218 @ 2.30GHz,l3-cache=true,-fma,-pcid,-x2apic,-tsc-deadline,-avx,-f16c,-avx2,-invpcid,-avx512f,-avx512dq,-rdseed,-avx512cd,-avx512bw,-avx512vl,-avx512vnni,-spec-ctrl,-arch-capabilities,-ssbd,-syscall,-lm,-3dnowprefetch,-xsavec,-rdctl-no,-ibrs-all,-skip-l1dfl-vmentry,-mds-no,+pdpe1gb"
 		SMP_="8,cores=8,threads=1,sockets=1"
 		MAXCPUS="8,cores=8,threads=1,sockets=2,maxcpus=16"	;;
@@ -2308,67 +2286,6 @@ eof
 	;;
 #		*) set -- "${@}" "-mem-prealloc" ;;
 	esac
-:<<\eof
-        if echo ${@} | egrep -qw "512|1024|2048"; then
-        if echo ${@} | grep -wq "512"; then
-        set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
-        set -- "${@}" "-numa" "node,memdev=mem"
-        HMAT=",hmat=on"
-        fi
-        if echo ${@} | egrep -wq "1024|2048"; then
-        set -- "${@}" "-object" "memory-backend-file,id=mem,size=1024m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
-	set -- "${@}" "-numa" "node,memdev=mem"
-        HMAT=",hmat=on"
-        fi
-        if echo ${@} | egrep -wq "2048"; then
-        set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=1024m,mem-path=${HOME}/hugepage1,prealloc=on,share=on"
-        if echo ${@} | egrep -wq "maxcpus"; then
-        set -- "${@}" "-numa" "node,memdev=pc.ram"
-        else
-        set -- "${@}" "-numa" "node,memdev=pc.ram,initiator=0"
-	fi
-	fi
-	else
-	set -- "${@}" "-object" "memory-backend-file,id=pc.ram,size=${mem}m,mem-path=${HOME}/hugepage,prealloc=on,share=on"
-	set -- "${@}" "-numa" "node,memdev=pc.ram"
-	HMAT=",hmat=on"
-	fi
-	;;
-#仅注释下面esac
-#	esac
-#双内存分配
-	*)
-	if echo ${@} | grep -q 'mem-prealloc'; then
-	echo ""
-	else
-	if echo ${@} | egrep -wq "512|1024|2048"; then
-	case $SYS in
-	QEMU_ADV)
-	echo -e ""
-	if echo ${@} | grep -wq "512"; then
-	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=512m"
-	set -- "${@}" "-numa" "node,memdev=mem"
-	HMAT=",hmat=on"
-	fi
-	if echo ${@} | egrep -wq "1024|2048"; then
-	set -- "${@}" "-object" "memory-backend-ram,id=mem,size=1024m"
-        set -- "${@}" "-numa" "node,memdev=mem"
-        HMAT=",hmat=on"
-	fi
-	if echo ${@} | egrep -wq "2048"; then
-        set -- "${@}" "-object" "memory-backend-ram,id=mem0,size=1024m"
-	if echo ${@} | egrep -wq "maxcpus"; then
-        set -- "${@}" "-numa" "node,memdev=mem0"
-        else
-        set -- "${@}" "-numa" "node,memdev=mem0,initiator=0"
-        fi
-        fi
-        ;;
-	esac
-	fi
-        fi ;;
-        esac
-eof
 #################
 	if [ -n "${NET_MODEL}" ]; then
 	set -- "${@}" "-device" "${NET_MODEL}"
@@ -2786,6 +2703,8 @@ EOF
 		if echo "${@}" | grep -q "smb="; then
 	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 		fi
+	else
+	am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity >/dev/null 2>&1
 	fi
 	if echo "${@}" | grep -q daemonize; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
