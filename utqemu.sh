@@ -4,16 +4,15 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
-UPDATE="2022/01/03"
+UPDATE="2022/01/10"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
-	增加spice局域网联接，支持声音传输(建议两设备热点联接，接近零损耗)
-	系统镜像增加列表方式选项
 	分区与光盘选项移至进阶选项菜单
 	修复部分hda声卡的错误提示
 	为减少安装占用，部分不常用功能参数的默认安装包改为促发安装
+	增加termux环境的qemu本地共享(在termux目录下创建share共享文件夹，模拟系统可同步访问文件夹内容)
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	termux环境的源qemu已更新为6.1
@@ -1559,12 +1558,16 @@ eof
 
 	case $input in
 	1) CPU_MODEL=n270
+		unset LOW_CORE
 		SMP_="2,cores=1,threads=2,sockets=1" ;;
         2) CPU_MODEL=athlon
+		unset LOW_CORE
 		SMP_="2,cores=2,threads=1,sockets=1" ;;
         3) CPU_MODEL=pentium2
+		unset LOW_CORE
 		SMP_="1,cores=1,threads=1,sockets=1" ;;
         4) CPU_MODEL=core2duo
+		unset LOW_CORE
 		SMP_="2,cores=2,threads=1,sockets=1" ;;
 	5) CPU_MODEL=Skylake-Server-IBRS
 		SMP_="4,cores=2,threads=1,sockets=2" ;;
@@ -1692,10 +1695,10 @@ eof
 	echo -e "请选择${YELLOW}网卡${RES}"
 	read -r -p "1)e1000 2)rtl8139 3)virtio 0)不加载 " input
 	case $input in
-		2) NET_MODEL="rtl8139,netdev=user0" ;;
-		3) NET_MODEL="virtio-net-pci,netdev=user0" ;;
+		2) NET_MODEL1="rtl8139,netdev=user0" ;;
+		3) NET_MODEL1="virtio-net-pci,netdev=user0" ;;
 		0) ;;
-		*) NET_MODEL="e1000,netdev=user0" ;;
+		*) NET_MODEL1="e1000,netdev=user0" ;;
 	esac
 	echo -e "请选择${YELLOW}声卡${RES}(强烈不建议)"
 	read -r -p "1)ac97 2)sb16 3)es1370 4)hda 0)不加载 " input
@@ -1710,7 +1713,7 @@ eof
 		if [ -n "${SOUND_MODEL}" ]; then
 		pulseaudio --start &
 #		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.latency=5300,out.latency=5300,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=10248"
-		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.format=s16,in.channels=2,in.frequency=8000,out.buffer-length=10248"
+		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.format=s16,in.channels=2,in.frequency=8000,in.buffer-length=10248"
 		set -- "${@}" "-device" "$SOUND_MODEL,audiodev=pa1"
 		fi
 	fi
@@ -2007,20 +2010,22 @@ eof
 	1) 
 	echo -e "\n1) 传统500m容量，只读"
 	echo -e "2) mtp协议，可访问整个设备目录，显示部分文件有bug，只读，部分旧系统或精简系统需驱动"
-	uname -a | grep 'Android' -q
-	if [ $? == 1 ]; then
 	echo -e "3) 本地网共享"
-	fi
 	echo -e "9) 不加载"
 	read -r -p "请选择: " input
 	case $input in
 	1) SHARE=true ;;
 	2) set -- "${@}" "-device" "ich9-usb-ehci1,id=ehci" "-device" "ich9-usb-uhci1,masterbus=ehci.0,multifunction=on" "-device" "usb-mtp,rootdir=${DIRECT}" ;;
-	3) if [ ! $(command -v samba) ]; then
+	3) if [ ! $(command -v smbcontrol) ]; then
 		echo -e "${YELLOW}检测安装支持包${RES}"
 		sleep 2
+		uname -a | grep 'Android' -q
+		if [ $? == 0 ]; then
 		sudo_
+		pkg install samba --no-install-recommends -y
+	else
 		$sudo apt install samba --no-install-recommends -y
+		fi
 	fi
 		SMB=",smb=${HOME}/share"
 		;;
