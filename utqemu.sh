@@ -4,7 +4,7 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
-UPDATE="2022/01/10"
+UPDATE="2022/01/11"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
@@ -23,11 +23,11 @@ NOTE() {
 	clear
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
+	模拟效率低？是的这是整机模拟，以体验为主，想玩游戏，可以去了解exagear，一款安卓app。或者其linux版wine。
 	通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	xp玩经典游戏(如星际争霸，帝国时代)需使用cirrus显卡才能运行
 	模拟效率，因手机而异，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl。
 	q35主板与sata，virtio硬盘接口由于系统原因，可能导致启动不成功。
-	sdl输出显示，源地址并未编译qemu的sdl，这里只是通过信号输出，需先开启xsdl(不支持termux与utermux环境）。
 	qemu5.0以下模拟xp较好，qemu5.0以上对win7以上模拟较好，qemu6.0似乎恢复对旧windows系统的支持
 	大页文件虽然可以分担设备ram，但同时会提高设备cpu负担，且创建大容量文件，请审慎使用
 	最近新增的内容比较多，如不能正常加载，请选择1重新安装qemu\n"
@@ -1308,7 +1308,7 @@ esac
 #-kvm-asyncpf-int,-kvm-poll-control,-kvm-pv-sched-yield,-rdrand
 	2) 	LIST
 	HDA_READ
-	QEMU_SYS=qemu-system-x86_64 MA=pc VIDEO="-device VGA" CPU_MODEL="max,-hle,-rtm" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0,smb=${HOME}/share" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
+	QEMU_SYS=qemu-system-x86_64 MA=pc VIDEO="-device VGA" CPU_MODEL="max,-hle,-rtm" DRIVE="-drive id=disk,file=${DIRECT}${STORAGE}$hda_name,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0" NET="-device e1000,netdev=user0 -netdev user,id=user0" AUDIO="-device intel-hda -device hda-duplex" SHARE="-drive if=none,format=raw,id=disk1,file=fat:rw:${DIRECT}/xinhao/share/ -device usb-storage,drive=disk1"
 ;;
 	3) echo -e "${GREEN}此选项参数是hda声卡，virtio网卡，qxl显卡，virtio磁盘接口(注意，模拟系统需已装驱动，否则启动不成功)${RES}"
 		sleep 1
@@ -1713,7 +1713,7 @@ eof
 		if [ -n "${SOUND_MODEL}" ]; then
 		pulseaudio --start &
 #		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.latency=5300,out.latency=5300,in.format=s16,in.channels=2,in.frequency=44100,out.buffer-length=10248"
-		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,in.format=s16,in.channels=2,in.frequency=8000,in.buffer-length=10248"
+		set -- "${@}" "-audiodev" "pa,server=127.0.0.1:4713,id=pa1,timer-period=30000,in.format=s16,in.channels=2,in.frequency=8000,in.buffer-length=10248"
 		set -- "${@}" "-device" "$SOUND_MODEL,audiodev=pa1"
 		fi
 	fi
