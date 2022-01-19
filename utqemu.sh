@@ -4,7 +4,7 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
-UPDATE="2022/01/11"
+UPDATE="2022/01/17"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
@@ -13,9 +13,9 @@ INFO() {
 	修复部分hda声卡的错误提示
 	为减少安装占用，部分不常用功能参数的默认安装包改为促发安装
 	增加termux环境的qemu本地共享(在termux目录下创建share共享文件夹，模拟系统可同步访问文件夹内容)
+	增加termux环境创建快捷脚本(会在主目录下创建short_qemu文件夹)
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
-	termux环境的源qemu已更新为6.1
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
 }
 ###################
@@ -23,7 +23,7 @@ NOTE() {
 	clear
 	printf "${YELLOW}注意事项${RES}
 	本脚本是方便大家简易配置，所有参数都是经多次测试通过，可运行大部分系统，由于兼容问题，性能不作保证，专业玩家请自行操作。
-	模拟效率低？是的这是整机模拟，以体验为主，想玩游戏，可以去了解exagear，一款安卓app。或者其linux版wine。
+	模拟效率低？是的，这是整机模拟，以体验为主，想玩游戏，可以去了解exagear，一款安卓app。或者其linux版wine。
 	通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	xp玩经典游戏(如星际争霸，帝国时代)需使用cirrus显卡才能运行
 	模拟效率，因手机而异，termux(utermux)在后台容易被停或降低效率。通过分屏模拟的效果是aspice>vnc>xsdl。
@@ -223,7 +223,7 @@ case $(dpkg --print-architecture) in
         if [ $? = 0 ]; then
         if (( $LO_CPU <= 3000000 )); then
                 LOW_CPU="2,cores=2,threads=1,sockets=1"
-                LOW_CORE=2
+                LOW_CORE="2,cores=2"
         fi
         fi ;;
 esac
@@ -1182,53 +1182,46 @@ START_QEMU() {
 		CONFIRM
 	fi
 	sync
-	uname -a | grep 'Android' -q 
-	if [ $? == 0 ]; then
+#	uname -a | grep 'Android' -q 
+#	if [ $? == 0 ]; then
 		echo -e "\n${YELLOW}vncviewer地址为127.0.0.1:0${RES}"     
-		sleep 1
+#		sleep 1
 		display=vnc
-	else
+#	else
 	case $QEMU_MODE in
 		VIRTIO_MODE) ;;
 		*) echo -n -e "\n${GREEN}是否已有快捷脚本，如有请输快捷脚本名字，如无请回车:${RES} "
 	read script_name
 	if [ -n "$script_name" ]; then
-	if [ $(command -v $script_name) ] || [ -f "${HOME}/xinhao/$script_name" ]; then
+	if [ $(command -v $script_name) ] || [ -f "${HOME}/xinhao/$script_name" ] || [ -f "${HOME}/short_qemu/$script_name" ]; then
 		printf "%s\n"
 #cat $(which $script_name)
 
-	if grep '\-cpu' ${HOME}/xinhao/$script_name 2>/dev/null; then
-	printf "%s\n${GREEN}启动模拟器\n"
-	elif grep 'vnc' /usr/local/bin/$script_name; then
-	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n"
-	elif grep -q 'DISPLAY' /usr/local/bin/$script_name; then
-	grep '\-cpu' /usr/local/bin/$script_name
-	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl\n"
-	elif grep 'spice' /usr/local/bin/$script_name; then
-	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900\n"
-	else
-	grep '\-cpu' /usr/local/bin/$script_name
-	printf "%s\n${GREEN}启动模拟器\n"
+	if grep 'vnc' /usr/local/bin/$script_name 2>/dev/null || grep 'vnc' ${HOME}/xinhao/$script_name 2>/dev/null || grep 'vnc' ${HOME}/short_qemu/$script_name 2>/dev/null; then
+	printf "%s\n${BLUE}启动模拟器${RES}\n"
+	printf "%s\n${GREEN}请打开vncviewer 127.0.0.1:0\n"
 	fi
-	if echo "${@}" | grep -q "smb="; then
+	if grep -q 'DISPLAY' /usr/local/bin/$script_name 2>/dev/null; then
+	grep '\-cpu' /usr/local/bin/$script_name 2>/dev/null
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl\n"
+	elif grep 'spice' /usr/local/bin/$script_name 2>/dev/null; then
+	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice 127.0.0.1 端口 5900\n"
+	fi
+	if grep -q "smb=" /usr/local/bin/$script_name 2>/dev/null || grep -q "smb=" ${HOME}/xinhao/$script_name 2>/dev/null || grep -q "smb=" ${HOME}/short_qemu/$script_name 2>/dev/null; then
 	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 	fi
-	if grep -q daemonize ${HOME}/xinhao/$script_name 2>/dev/null; then
-	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
-	elif grep -q daemonize /usr/local/bin/$script_name 2>/dev/null; then
+	if grep -q daemonize ${HOME}/xinhao/$script_name 2>/dev/null || grep -q daemonize /usr/local/bin/$script_name 2>/dev/null; then
 	echo -e "调试命令：telnet 127.0.0.1 4444${RES}"
 	else
 	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	fi
-	if grep -q hugepage ${HOME}/xinhao/$script_name 2>/dev/null; then
-	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
-	elif grep -q hugepage /usr/local/bin/$script_name 2>/dev/null; then
+	if grep -q hugepage ${HOME}/xinhao/$script_name 2>/dev/null || grep -q hugepage /usr/local/bin/$script_name 2>/dev/null || grep -q hugepage ${HOME}/short_qemu/$script_name 2>/dev/null; then
 	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
 	fi
 	echo ""
 	printf "%s${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 	sleep 1
-	$script_name >/dev/null 2>>${HOME}/.utqemu_log || bash ${HOME}/xinhao/$script_name >/dev/null 2>>${HOME}/.utqemu_log 
+	$script_name >/dev/null 2>>${HOME}/.utqemu_log || bash ${HOME}/xinhao/$script_name >/dev/null 2>>${HOME}/.utqemu_log || bash ${HOME}/short_qemu/$script_name >/dev/null 2>>${HOME}/.utqemu_log 
 	if [ $? == 1 ]; then
 	FAIL
 	printf "%s${RED}启动意外中止，请查看日志d(ŐдŐ๑)${RES}\n"
@@ -1240,6 +1233,8 @@ START_QEMU() {
 	fi
 	fi ;;
 esac
+	uname -a | grep 'Android' -q
+	if [ $? == 1 ]; then
 	case $ARCH in
 	tablet) echo -e "\n请选择${YELLOW}显示输出方式${RES}"
 	case $SYS in
@@ -1346,8 +1341,7 @@ cat <<-EOF
 $START
 EOF
 	printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0"
-	echo ""
-	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
+#	echo '如共享目录成功加载，请在地址栏输 \\10.0.2.4'
 	printf "%s\n${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}\n"
 	$START >/dev/null 2>>${HOME}/.utqemu_log
 	if [ $? == 1 ]; then
@@ -1577,13 +1571,13 @@ eof
 		SMP_="8,cores=8,threads=1,sockets=1" ;;
 	8) CPU_MODEL="max"
 		unset _SMP
-		SMP_=4
-		MAXCPUS="4,maxcpus=5" ;;
+		SMP_="4,cores=4"
+		MAXCPUS="4,cores=4,sockets=2,maxcpus=8" ;;
 	9) case $ARCH in
 		computer) CPU_MODEL=host
 			unset _SMP
-			SMP_=4
-			MAXCPUS="4,maxcpus=5"
+			SMP_="4,cores=4"
+			MAXCPUS="4,cores=4,sockets=2,maxcpus=8"
 			;;
 		*)
 : <<\eof
@@ -1641,8 +1635,8 @@ eof
 		read CPU_MODEL
 		if echo $CPU_MODEL | grep max; then
 		unset _SMP
-		SMP_="4"
-		MAXCPUS="4,maxcpus=5"
+		SMP_="4,cores=4"
+		MAXCPUS="4,cores=4,sockets=2,maxcpus=8"
 		else
 		SMP_="4,cores=4,threads=1,sockets=1"
 		fi ;;
@@ -1673,8 +1667,8 @@ eof
 		;;
         *)      CPU_MODEL="max,-hle,-rtm"
 		unset _SMP
-		SMP_="4"
-		MAXCPUS="4,maxcpus=5" ;;
+		SMP_="4,cores=4"
+		MAXCPUS="4,cores=4,sockets=2,maxcpus=8" ;;
 	esac ;;
 	esac
 #####################
@@ -2236,19 +2230,19 @@ eof
 
 ################
 	set -- "${@}" "-cpu" "${CPU_MODEL}"
-	if [ -n "$_SMP" ]; then
-		set -- "${@}" "-smp" "${_SMP}"
-	elif [ -n "$CPU" ]; then
-		set -- "${@}" "-smp" "${CPU}"
-	else
-		if echo "${@}" | grep -q daemonize; then
-		set -- "${@}" "-smp" "${MAXCPUS}"
-	else
-		if [ -n "$LOW_CORE" ]; then
-			set -- "${@}" "-smp" "$LOW_CORE"
+		if [ -n "$_SMP" ]; then
+			set -- "${@}" "-smp" "${_SMP}"
+		elif [ -n "$CPU" ]; then
+			set -- "${@}" "-smp" "${CPU}"
 		else
-		set -- "${@}" "-smp" "${SMP_}"
-		fi
+			if echo "${@}" | grep -q daemonize; then
+				set -- "${@}" "-smp" "${MAXCPUS}"
+			else
+			if [ -n "$LOW_CORE" ]; then
+				set -- "${@}" "-smp" "$LOW_CORE"
+			else
+				set -- "${@}" "-smp" "${SMP_}"
+			fi
 		fi
 	fi
 #单内存槽
@@ -2583,8 +2577,8 @@ eof
 	fi
 
         set -- "$QEMU_SYS" "${@}"
-	uname -a | grep 'Android' -q 
-	if [ $? != 0 ]; then
+#	uname -a | grep 'Android' -q 
+#	if [ $? != 0 ]; then
 		case $display in
 		wlan_vnc|wlan_spice) ;;
 		xvnc)
@@ -2624,7 +2618,17 @@ echo -e  "${YELLOW}如启动失败请ctrl+c退回shell，并查阅日志${RES}"
 		1) echo -n "请给脚本起个名字: "
 	read script_name
 
-
+uname -a | grep 'Android' -q
+if [ $? == 0 ]; then
+	if [ ! -d ${HOME}/short_qemu ]; then
+	mkdir ${HOME}/short_qemu
+	fi
+	cat >${HOME}/short_qemu/$script_name <<-EOF
+pkill -9 qemu-system-x86 2>/dev/null
+pkill -9 qemu-system-i38 2>/dev/null
+${@}
+EOF
+else
 	case $display in
 		xsdl)
 cat >/usr/local/bin/$script_name <<-EOF
@@ -2683,14 +2687,15 @@ EOF
 
 
 	esac
-	chmod +x /usr/local/bin/$script_name 2>/dev/null
+fi
+	chmod +x /usr/local/bin/$script_name 2>/dev/null || chmod +x ${HOME}/short_qemu/$script_name 2>/dev/null
 	echo -e "已保存本次参数的脚本，下次可直接输${GREEN}$script_name${RES}启动qemu"
 	sleep 2 ;;
 		*)
 	;;
 	esac ;;
 	esac
-	fi
+#	fi
 	printf "%s\n"
 	cat <<-EOF
 	${@}
