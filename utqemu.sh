@@ -4,16 +4,16 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
-UPDATE="2022/01/17"
+UPDATE="2022/01/25"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	增加小白之家专用参数，在快速启动选项
 	分区与光盘选项移至进阶选项菜单
-	修复部分hda声卡的错误提示
 	为减少安装占用，部分不常用功能参数的默认安装包改为促发安装
 	增加termux环境的qemu本地共享(在termux目录下创建share共享文件夹，模拟系统可同步访问文件夹内容)
 	增加termux环境创建快捷脚本(会在主目录下创建short_qemu文件夹)
+	修复usb重定向参数判断(usb重定向仅支持已root设备与电脑)
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
@@ -471,12 +471,7 @@ case $(dpkg --print-architecture) in
 		DEF_CUR="${BF_CUR}${DEBIAN}/armel/default/" ;;
 		esac
 		BAGNAME="rootfs.tar.xz"
-        if [ -e ${BAGNAME} ]; then
-                rm -rf ${BAGNAME}
-        fi
-        curl -o ${BAGNAME} ${DEF_CUR}
-                VERSION=`cat ${BAGNAME} | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1`
-                curl -o ${BAGNAME} ${DEF_CUR}${VERSION}${BAGNAME}
+		curl -o ${BAGNAME} ${DEF_CUR}$(curl ${DEF_CUR}| grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)${BAGNAME}
         if [ $? -ne 0 ]; then
 		echo -e "${RED}下载失败，请重输${RES}\n" && MAIN
         fi
@@ -484,7 +479,6 @@ case $(dpkg --print-architecture) in
 		rm -rf $sys_name
         fi
                 mkdir $sys_name
-#tar xvf rootfs.tar.xz -C ${BAGNAME}
 	echo -e "${BLUE}正在解压系统包${RES}"
 	tar xf ${BAGNAME} --checkpoint=100 --checkpoint-action=dot --totals -C $sys_name 2>/dev/null
         rm ${BAGNAME}
@@ -854,6 +848,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 		curl https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/$VERSION -o avnc.apk
 		mv -v avnc.apk ${DIRECT}${STORAGE}
 		echo -e "\n已下载至${DIRECT}${STORAGE}目录"
+		echo -e "${YELLOW}像手机操作设置：右上角设置/ Input/1 FingerSwipe选Scroll Remote Content${RES}"
 		sleep 2 ;;
 	*) ;;
         esac
@@ -1184,7 +1179,6 @@ START_QEMU() {
 	sync
 #	uname -a | grep 'Android' -q 
 #	if [ $? == 0 ]; then
-		echo -e "\n${YELLOW}vncviewer地址为127.0.0.1:0${RES}"     
 #		sleep 1
 		display=vnc
 #	else
@@ -2119,7 +2113,9 @@ eof
 	read -r -p "输入usb名称对应的bus序号(如001，请输1或者011，请输11) " HOSTBUS
 	lsusb -t | grep -w "Bus 0$HOSTBUS" -A 4 2>/dev/null
 	read -r -p "输入Port序号(如001，请输1或者011，请输11) " HOSTPORT
-	if echo ${@} | grep ! -q echi; then
+	if echo ${@} | grep -q ehci; then
+		printf ""
+	else
         set -- "${@}" "-device" "usb-ehci,id=ehci"
 	fi
 	set -- "${@}" "-device" "usb-host,bus=ehci.0,hostbus=$HOSTBUS,hostport=$HOSTPORT" ;;
@@ -2131,7 +2127,9 @@ eof
 	fi
 		echo -e "\n${YELLOW}请插入usb${RES}"
 	CONFIRM
-	if echo ${@} | grep ! -q echi; then
+	if echo ${@} | grep -q ehci; then
+		printf ""
+	else
 	set -- "${@}" "-device" "usb-ehci,id=ehci"
 	fi
 	lsusb 2>/dev/null
@@ -2213,6 +2211,7 @@ eof
 #时间设置，RTC时钟，用于提供年、月、日、时、分、秒和星期等的实时时间信息，由后备电池供电，当你晚上关闭系统和早上开启系统时，RTC仍然会保持正确的时间和日期
 #driftfix=slew i386存在时间漂移
 #       *) set -- "${@}" "-rtc" "base=`date +%Y-%m-%dT%T`" ;;
+#"base=$(TZ=UTC-8 date +%Y-%m-%dT%T)"
 #strict=on|off 是否受宿主机网络控制
 	echo -e "请选择${YELLOW}启动顺序${RES}"
 	read -r -p "1)优先硬盘启动 2)优先光盘启动 " input
