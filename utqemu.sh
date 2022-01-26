@@ -4,7 +4,7 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
-UPDATE="2022/01/25"
+UPDATE="2022/01/26"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
@@ -14,6 +14,7 @@ INFO() {
 	增加termux环境的qemu本地共享(在termux目录下创建share共享文件夹，模拟系统可同步访问文件夹内容)
 	增加termux环境创建快捷脚本(会在主目录下创建short_qemu文件夹)
 	修复usb重定向参数判断(usb重定向仅支持已root设备与电脑)
+	改变usb参数，方便使用者识别
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
@@ -2111,7 +2112,7 @@ eof
 		echo -e "${RED}未能获取设备信息，请确认已获取系统权限${RES}"
 	fi
 	read -r -p "输入usb名称对应的bus序号(如001，请输1或者011，请输11) " HOSTBUS
-	lsusb -t | grep -w "Bus 0$HOSTBUS" -A 4 2>/dev/null
+	lsusb -t
 	read -r -p "输入Port序号(如001，请输1或者011，请输11) " HOSTPORT
 	if echo ${@} | grep -q ehci; then
 		printf ""
