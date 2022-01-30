@@ -4,7 +4,7 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
-UPDATE="2022/01/26"
+UPDATE="2022/01/28"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
@@ -15,6 +15,7 @@ INFO() {
 	增加termux环境创建快捷脚本(会在主目录下创建short_qemu文件夹)
 	修复usb重定向参数判断(usb重定向仅支持已root设备与电脑)
 	改变usb参数，方便使用者识别
+	修复小bug
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
@@ -1347,7 +1348,8 @@ EOF
 	esac
 			;;
 		7) 
-		if [ ! $(command -v novnc) ]; then
+		dpkg -l novnc >/dev/null 2>&1
+                if [ $? != 0 ]; then
                         echo -e "${YELLOW}检测所需vnc包${RES}"
                         sleep 1
 			sudo_
@@ -2582,7 +2584,7 @@ eof
 		case $display in
 		wlan_vnc|wlan_spice) ;;
 		xvnc)
-	trap "pkill Xtightvnc; pkill Xtigervnc; pkill Xvnc; pkill websockify 2>/dev/null;exit" SIGINT EXIT
+#	trap "pkill Xtightvnc; pkill Xtigervnc; pkill Xvnc; pkill websockify 2>/dev/null;exit" SIGINT EXIT
 	printf "%s\n"
 cat <<-EOF
 ${@}
@@ -2590,8 +2592,7 @@ EOF
 	echo -e "${RES}"
 	if echo "${@}" | grep -q daemonize; then
 		echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
-	fi
-	if echo "${@}" | grep -q hugepage 2>/dev/null; then
+	elif echo "${@}" | grep -q hugepage 2>/dev/null; then
 	echo -e "${GREEN}注意！你使用了大页内存，脚本会qemu退出而自动删除大页文件，如未删除请退出后输rm ${HOME}/hugepage*自行删除${RES}${RES}"
 	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	fi
@@ -2719,6 +2720,7 @@ fi
 	if echo "${@}" | grep -q daemonize; then
 	echo -e "\n${YELLOW}调试命令：telnet 127.0.0.1 4444${RES}"
 	else
+#		trap "pkill Xtightvnc; pkill Xtigervnc; pkill Xvnc; pkill websockify 2>/dev/null; exit" SIGINT EXIT
 	trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	if echo "${@}" | grep -q hugepage 2>/dev/null; then
 	echo -e "${GREEN}你使用了大页内存，开始模拟器前需要时间创建同内存大小文件，文件会在qemu退出后自动删除${RES}"
