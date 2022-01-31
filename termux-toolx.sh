@@ -701,7 +701,7 @@ read -r -p "1)xfce4 2)lxde 3)mate " input
 case $input in
         1) echo -e "done" && sleep 2 ;;
         2) sed -i "s/startxfce4/startlxde/g" ${HOME}/.vnc/xstartup 
-		$sudo_t apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
+#		$sudo_t apt purge --allow-change-held-packages gvfs udisks2 -y 2>/dev/null
 		echo -e "done" && sleep 2 ;;
 		3)
 echo '#!/usr/bin/env bash
@@ -713,7 +713,7 @@ x-window-manager
 mate-panel
 mate-session
 thunar' >${HOME}/.vnc/xstartup
-                $sudo_t apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
+#                $sudo_t apt purge --allow-change-held-packages gvfs udisks2 -y 2>/dev/null
                 echo -e "done" && sleep 2
                 ;;
         *)
@@ -794,10 +794,10 @@ XSTARTUP
         read resolution
 	echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
-killall -9 Xtightvnc 2>/dev/null
-killall -9 Xtigertvnc 2>/dev/null
-killall -9 Xvnc 2>/dev/null
-killall -9 vncsession 2>/dev/null
+pkill -9 Xtightvnc 2>/dev/null
+pkill -9 Xtigertvnc 2>/dev/null
+pkill -9 Xvnc 2>/dev/null
+pkill -9 vncsession 2>/dev/null
 export USER="$(whoami)"
 export PULSE_SERVER=127.0.0.1
 set -- "${@}" "-ZlibLevel=1"
@@ -848,7 +848,7 @@ else
 dbus-launch startxfce4
 fi' >${HOME}/.vnc/xstartup
 EOF
-$sudo_t apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
+#$sudo_t apt purge --allow-change-held-packages gvfs udisks2 -y 2>/dev/null
 U_ID=`id | cut -d '(' -f 2 | cut -d ')' -f 1`
 GROUP_ID=`id | cut -d '(' -f 4 | cut -d ')' -f 1`
 touch .ICEauthority .Xauthority 2>/dev/null
@@ -898,10 +898,10 @@ case $input in
 esac
 # ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1' | sed "s@\$@:5901@"
 echo '#!/usr/bin/env bash
-killall -9 Xtightvnc 2>/dev/null
-killall -9 Xtigertvnc 2>/dev/null
-killall -9 Xvnc 2>/dev/null
-killall -9 vncsession 2>/dev/null
+pkill -9 Xtightvnc 2>/dev/null
+pkill -9 Xtigertvnc 2>/dev/null
+pkill -9 Xvnc 2>/dev/null
+pkill -9 vncsession 2>/dev/null
 export DISPLAY=127.0.0.1:0
 export PULSE_SERVER=tcp:127.0.0.1:4713' >/usr/local/bin/easyxsdl
 echo "$XWIN" >>/usr/local/bin/easyxsdl && chmod +x /usr/local/bin/easyxsdl
@@ -933,10 +933,10 @@ VNCSERVER
 	read resolution
 cat >/usr/local/bin/easyx11vnc<<-'eof'
 #!/usr/bin/env bash
-killall -9 Xtightvnc 2>/dev/null
-killall -9 Xtigertvnc 2>/dev/null
-killall -9 Xvnc 2>/dev/null
-killall -9 vncsession 2>/dev/null
+pkill -9 Xtightvnc 2>/dev/null
+pkill -9 Xtigertvnc 2>/dev/null
+pkill -9 Xvnc 2>/dev/null
+pkill -9 vncsession 2>/dev/null
 vncserver -kill $DISPLAY 2>/dev/null
 export PULSE_SERVER=127.0.0.1
 export DISPLAY=:233
@@ -1008,10 +1008,10 @@ PASS="-rfbauth ${HOME}/.vnc/passwd" ;;
 PASS="-SecurityTypes None" ;;
 esac
 vncserver -kill $DISPLAY 2>/dev/null
-killall -9 Xtightvnc 2>/dev/null
-killall -9 Xtigertvnc 2>/dev/null
-killall -9 Xvnc 2>/dev/null
-killall -9 vncsession 2>/dev/null
+pkill -9 Xtightvnc 2>/dev/null
+pkill -9 Xtigertvnc 2>/dev/null
+pkill -9 Xvnc 2>/dev/null
+pkill -9 vncsession 2>/dev/null
 export PULSE_SERVER=tcp:127.0.0.1:4713
 export DISPLAY=:0
 Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 2320x1080 -once -depth 32 -deferglyphs 16 $PASS &
@@ -1267,10 +1267,10 @@ echo -e "1)  *安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)
 6)  中文输入法
 7)  多媒体播放器
 8)  办公office软件
-9)  安装dosbox 并配置dosbox文件目录(运行文件目录需先运行一次dosbox以生成配置文件)
+9)  安装dosbox 并配置dosbox文件目录
 10) qemu-system-x86_64模拟器
 11) 游戏相关
-12) 让本终端成为局域网浏览器页面
+12) 让本终端成为局域网服务器
 13) 新立得(类软件商店)
 14) linux版qq
 15) 安装默认版本java\n"
@@ -1470,13 +1470,31 @@ esac
 		$sudo_t apt install python3 python3-pip -y && mkdir -p ${HOME}/.config/pip && echo "[global] 
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >${HOME}/.config/pip/pip.conf
 	fi
+	echo ""
+	read -r -p "请选择 1)局域网http网页服务 2)ftp服务 9)返回 " input
+	echo ""
+	case $input in
+		1)
 IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
 	${YELLOW}本机	http://127.0.0.1:8080
 	局域网	http://$IP:8080${RES}\n
-	如需关闭，请按ctrl+c，然后输killall python3或直接exit退出shell\n"
+	如需关闭，请按ctrl+c，然后输pkill python3或直接exit退出shell\n"
 	python3 -m http.server 8080 &
-	sleep 2
+	sleep 2 ;;
+	2)
+		echo -e "检测应用模块\n"
+		pip3 list | grep -q pyftpdlib
+		if [ $? != 0 ]; then
+		pip3 install pyftpdlib
+		fi
+		echo -e "已完成配置，请尝试用浏览器打开并输入地址\n
+		本机	${YELLOW}ftp://127.0.0.1:2121${RES}
+		用户名	${YELLOW}guest${RES}
+		密码	${YELLOW}123456${RES}"
+		python3 -m pyftpdlib -u guest -P 123456
+		;;
+	esac
 	;;
 13) echo -e "正在安装新立得"
 	sleep 2
@@ -1520,14 +1538,10 @@ DOSBOX() {
 		case $input in
 			1) echo "安装dosbox"
 				$sudo_t apt install dosbox -y
-				echo -e "done\n如需创建dos运行文件目录，需先运行一次dosbox以生成配置文件"
-				CONFIRM
 				INSTALL_SOFTWARE ;;
 			2) mkdir -p $DIRECT/xinhao/DOS
-		if [ ! -e ${HOME}/.dosbox ]; then
-			echo -e "\n${RED}未检测到dosbox配置文件，请先运行一遍dosbox，再做此步操作${RES}"
-			sleep 2
-		else
+		if [ ! -f ${HOME}/.dosbox/*.conf ]; then
+			dosbox -printconf >/dev/null 2>&1
 		dosbox=`ls ${HOME}/.dosbox`
                 sed -i "/^\[autoexec/a\mount c $DIRECT/xinhao/DOS" ${HOME}/.dosbox/$dosbox
 		sed -i "/xinhao/a #挂载光盘\n#mount d $DIRECT/xinhao/DOS/光盘目录 -t cdrom" ${HOME}/.dosbox/$dosbox
@@ -1792,7 +1806,7 @@ esac
 			sleep 2
 			Uid=`sed -n p $rootfs/etc/passwd | grep $name | cut -d ':' -f 3`
 			Gid=`sed -n p $rootfs/etc/passwd | grep $name | cut -d ':' -f 4`
-echo "killall -9 pulseaudio 2>/dev/null
+echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -r $rootfs -i $Uid:$Gid --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
@@ -1814,7 +1828,7 @@ sleep 2
 			echo "$name:x:$i:$i:,,,:/home/$name:/bin/bash" >>$rootfs/etc/passwd
 			echo "$name:x:$i:" >>$rootfs/etc/group
 			echo "$name:!:18682:0:99999:7:::" >>$rootfs/etc/shadow
-echo "killall -9 pulseaudio 2>/dev/null
+echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -r $rootfs -i $i:$i --link2symlink -b $DIRECT:/root$DIRECT -b /dev -b /sys -b /proc -b /data/data/com.termux/files -b $DIRECT -b $rootfs/root:/dev/shm -w /home/$name /usr/bin/env USER=$name HOME=/home/$name TERM=xterm-256color PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$name.sh && chmod +x $name.sh
@@ -1843,7 +1857,7 @@ fi ;;
 		rm -rf start-$rootfs.sh
 	fi
 	echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$rootfs/proc/version
-echo "killall -9 pulseaudio 2>/dev/null
+echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $rootfs --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $rootfs/proc/version:/proc/version -b $rootfs/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" > start-$rootfs.sh && chmod +x start-$rootfs.sh
@@ -1858,7 +1872,7 @@ case $input in
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./start-$rootfs.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 	if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-		sed -i "1i\killall -9 pulseaudio 2>/dev/null" ${PREFIX}/etc/bash.bashrc
+		sed -i "1i\pkill -9 pulseaudio 2>/dev/null" ${PREFIX}/etc/bash.bashrc
 	fi
 fi
 sleep 2 ;;
@@ -1916,8 +1930,12 @@ sleep 2
 		1) 
 	curl https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ >rootfs.tar.xz
 	CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
-		2) curl https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ | grep link |tail -n 1 | awk -F '</tr><tr>' '{print $2}' >rootfs.tar.xz
-	CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
+		2) 
+	curl https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ >rootfs.tar.xz
+	CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/"
+#	curl https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ | grep link |tail -n 1 | awk -F '</tr><tr>' '{print $2}' >rootfs.tar.xz
+#	CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/"
+		;;
 		[Ee]) exit 0 ;;
 		[Mm]) MAIN ;;
 	esac
@@ -2006,7 +2024,7 @@ cp qemu_temp/usr/bin/qemu-x86_64-static $bagname/
 echo "删除临时文件"
 sleep 1
 rm -rf qemu_temp qemu.deb
-echo "killall -9 pulseaudio 2>/dev/null
+echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $bagname --link2symlink -b $bagname/root:/dev/shm -b $DIRECT -q $bagname/qemu-x86_64-static -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color LANG=C.UTF-8 TZ=Asia/Shanghai /bin/bash" >$bagname.sh
@@ -2268,14 +2286,14 @@ if grep -q 'ubuntu' "$bagname/etc/os-release" ; then
         touch "$bagname/root/.hushlogin"
 fi
 echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$bagname/proc/version
-echo "killall -9 pulseaudio 2>/dev/null
+echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $bagname --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $bagname/proc/version:/proc/version -b $bagname/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$bagname.sh && chmod +x $bagname.sh
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./$bagname.sh${RES}"
 if [ -e ${PREFIX}/etc/bash.bashrc ]; then
 if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-sed -i "1i\killall -9 pulseaudio 2>/dev/null" ${PREFIX}/etc/bash.bashrc
+sed -i "1i\pkill -9 pulseaudio 2>/dev/null" ${PREFIX}/etc/bash.bashrc
 fi
 fi
 sleep 2
