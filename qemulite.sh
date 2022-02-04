@@ -212,7 +212,7 @@ ${URL}alpine/edge/community
 ${URL}alpine/edge/testing" >${HOME}/qemu_alpine/etc/apk/repositories
 echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >${HOME}/qemu_alpine/etc/resolv.conf
-curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/qemulite.sh -o ${HOME}/qemu_alpine/root/
+curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/qemulite.sh -o ${HOME}/qemu_alpine/root/qemulite.sh
 echo 'sh qemulite.sh' >>${HOME}/qemu_alpine/etc/profile
 rm rootfs.tar.xz
 	echo -e "${YELLOW}容器已下载，正在登录系统${RES}"
