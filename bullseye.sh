@@ -2,8 +2,7 @@
 echo -e "\e[33m即将下载系统,本脚本是进行全新安装,非恢复包\e[0m"
 sleep 1
 rm rootfs.tar.xz 2>/dev/null
-VERSION=`curl https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1`
-curl -O https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/${VERSION}rootfs.tar.xz
+curl -O https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/$(curl https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
 mkdir bullseye
 tar xvf rootfs.tar.xz -C bullseye
 rm rootfs.tar.xz
@@ -13,7 +12,6 @@ echo $(uname -a) | sed 's/Android/GNU\/Linux/' >bullseye/proc/version
 if [ ! -f "bullseye/usr/bin/perl" ]; then
         cp bullseye/usr/bin/perl* bullseye/usr/bin/perl
 fi
-sed -i "1i\export TZ='Asia/Shanghai'" bullseye/etc/profile
 sed -i "3i\rm -rf \/tmp\/.X\*" bullseye/etc/profile
 sed -i "/zh_CN.UTF/s/#//" bullseye/etc/locale.gen
 rm bullseye/etc/resolv.conf 2>/dev/null
@@ -84,7 +82,6 @@ xfce4-session
 else
 startxfce4
 fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
-apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
 locale-gen
 sed -i "2i\export LANG=zh_CN.UTF-8" /etc/profile
 sed -i "/firstrun/d" /etc/profile
@@ -105,5 +102,5 @@ eof
 echo "killall -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
-proot --kill-on-exit -S bullseye --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b bullseye/proc/version:/proc/version -b bullseye/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >start-bullseye.sh && chmod +x start-bullseye.sh
+proot --kill-on-exit -S bullseye --link2symlink -b /sdcard:/root/sdcard -b /sdcard -b bullseye/proc/version:/proc/version -b bullseye/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 TZ=Asia/Shanghai /bin/bash --login" >start-bullseye.sh && chmod +x start-bullseye.sh
 echo -e "已创建root用户系统登录脚本,登录方式为\e[33m./start-bullseye.sh\e[0m"

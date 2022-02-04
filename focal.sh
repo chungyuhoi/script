@@ -97,7 +97,6 @@ xfce4-session
 else
 startxfce4
 fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
-apt purge --allow-change-held-packages gvfs udisk2 -y 2>/dev/null
 locale-gen
 sed -i "2i\export LANG=zh_CN.UTF-8" /etc/profile
 sed -i "/firstrun/d" /etc/profile
