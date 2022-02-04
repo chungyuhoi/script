@@ -17,7 +17,7 @@ URL="https://mirrors.tuna.tsinghua.edu.cn/"
 	if grep -q '^sh qemulite.sh' /etc/profile; then
 	sed -i '/qemulite.sh/s/^/ba/' /etc/profile
 	fi
-	whiptail --title "欢迎使用qemulite" --msgbox "你已安装 QEMU emulator version $(echo $(qemu-system-x86_64 --version) | awk '{print $4}')\n\n目录下的文件名切勿有空格，否则影响文件扫描\n\n手机目录下已创建/xinhao/windows文件夹，请把系统镜像放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n\n启动请输 bash qemu_alpine.sh\n\n退出请输 exit" 0 0
+	whiptail --title "欢迎使用qemulite" --msgbox "你已安装 QEMU emulator version $(echo $(qemu-system-x86_64 --version) | awk '{print $4}')\n\n目录下的文件名切勿有空格，否则影响文件扫描\n\n手机目录下已创建/xinhao/windows文件夹，请把系统镜像放进这个目录里\n\n共享目录是/xinhao/share(目录内总文件大小不能超过500m)\n\n退出请输 exit" 0 0
 	fi
 	fi
 
@@ -212,7 +212,7 @@ ${URL}alpine/edge/community
 ${URL}alpine/edge/testing" >${HOME}/qemu_alpine/etc/apk/repositories
 echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >${HOME}/qemu_alpine/etc/resolv.conf
-cp $(dirname $0)/qemulite.sh ${HOME}/qemu_alpine/root/
+curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/qemulite.sh -o ${HOME}/qemu_alpine/root/
 echo 'sh qemulite.sh' >>${HOME}/qemu_alpine/etc/profile
 rm rootfs.tar.xz
 	echo -e "${YELLOW}容器已下载，正在登录系统${RES}"
