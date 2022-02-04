@@ -4,18 +4,15 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
-UPDATE="2022/01/28"
+UPDATE="2022/02/03"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
-	增加小白之家专用参数，在快速启动选项
-	分区与光盘选项移至进阶选项菜单
 	为减少安装占用，部分不常用功能参数的默认安装包改为促发安装
 	增加termux环境的qemu本地共享(在termux目录下创建share共享文件夹，模拟系统可同步访问文件夹内容)
 	增加termux环境创建快捷脚本(会在主目录下创建short_qemu文件夹)
-	修复usb重定向参数判断(usb重定向仅支持已root设备与电脑)
-	改变usb参数，方便使用者识别
-	修复小bug
+	termux环境增加轻量化容器+qemu(约322m，镜像与默认配置两个选项，vnc输出)
+	容器内增加dos环境体验，可运行dos游戏(游戏需另外下载)
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
@@ -1050,8 +1047,12 @@ echo -e "7)  查看日志
 8)  更新内容${YELLOW}${UPDATE}${RES}
 9)  关于utqemu
 10) 在线termux-toolx脚本体验维护linux系统(debian)
-11) 在线测试本机cpu支持模拟的特性
-0)  退出\n"
+11) 在线测试本机cpu支持模拟的特性"
+	uname -a | grep 'Android' -q
+	if [ $? == 1 ]; then
+echo "12) 体验dos环境(可运行游戏，需自行下载)"
+	fi
+echo -e "0)  退出\n"
 	read -r -p "请选择: " input
 	case $input in
 	1) echo -e "${YELLOW}安装过程中，如遇到询问选择，请输(y)，安装过程容易出错，请重试安装${RES}"
@@ -1157,6 +1158,7 @@ unable to find CPU model; ${YELLOW}cpu名字有误${RES}"
 	11) bash -c "$(curl -s https://cdn.jsdelivr.net/gh/chungyuhoi/script/Check_cpuids.sh)"
 	CONFIRM
 	QEMU_SYSTEM ;;
+	12) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utdos.sh)" ;;
 	0) trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	exit 0 ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
@@ -2892,7 +2894,8 @@ LOGIN_() {
 	5) 在线安装体验linux系统(debian)
 	6) 在线安装体验linux系统(ubuntu)
 	7) 在线安装体验x86_64架构linux系统(debian，仅架构模拟)
-	8) 下载新版termux
+	8) 安装运行轻量版容器+qemu(qemulite)
+	9) 下载新版termux
 	0) 退出\n"
 	read -r -p "请选择: " input
 	case $input in
@@ -2923,7 +2926,8 @@ LOGIN_() {
 	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye.sh)" ;;
 	6) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/focal.sh)" ;;
 	7) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye-amd64.sh)" ;;
-	8) echo -e "\n${YELLOW}检测最新版本${RES}"
+	8) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/qemulite.sh)" ;;
+	9) echo -e "\n${YELLOW}检测最新版本${RES}"
         VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
         echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
         read -r -p "1)下载 9)返回 " input
