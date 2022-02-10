@@ -4,6 +4,7 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
+#time echo "scale=5000; 4*a(1)" | bc -l -q
 UPDATE="2022/02/03"
 INFO() {
 	clear
@@ -546,9 +547,12 @@ SYSTEM_CHECK() {
 		1|"") echo "换国内源" 
 	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
 	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update ;;
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && yes | pkg update 
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update
+	;;
 		3)
 	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://termux.org/packages/ stable main@' $PREFIX/etc/apt/sources.list
+#	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://packages-cf.termux.org/apt/termux-main/ stable main@' $PREFIX/etc/apt/sources.list
 	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/science.list
 	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/game.list && pkg update
 	;;
