@@ -248,7 +248,9 @@ curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
 tar zxvf PKILL.tar.gz && bash PKILL/bash_me
 rm -rf PKILL*
 curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullsbox.sh
-echo "bash bullseye.sh" >>${HOME}.bashrc
+if [ -f "${HOME}/bullsbox.sh" ]; then
+echo "bash bullsbox.sh" >>${HOME}/.bashrc
+fi
 echo -e "打开vnc请输\e[33measyvnc\e[0m\nvnc viewer地址输127.0.0.1:0\nvnc的退出,在系统输exit即可\n启动wine请输\e[33mbash bullsbox.sh\e[0m
 如果启动失败,请输\e[33mbash firstrun\e[0m重新安装"
 read -r -p "按回车键继续" input
@@ -281,7 +283,7 @@ esac
 else
 echo -e "
 1)      编译安装box86+box64+wine(由于涉及两种架构的包，系统极容崩掉，请做好备份，系统崩溃恕不负责!)
-2)      启动wine(桌面运行)
+2)      启动wine(需先进入桌面，桌面运行)
 3)      启动wine(非桌面环境，不建议)
 4)      退出容器后无法再次启动
 5)      下载mono与gecko插件
