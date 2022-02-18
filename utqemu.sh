@@ -4,7 +4,6 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
-#time echo "scale=5000; 4*a(1)" | bc -l -q
 UPDATE="2022/02/03"
 INFO() {
 	clear
@@ -121,7 +120,7 @@ COMPILE(){
 	CONFIRM
 	ABOUT_UTQEMU
 	else
-	LENGTH=$(curl -sI https://download.qemu.org/$VERSION.tar.xz | grep Length | awk '{print $2}'| sed "s/\r//")
+	LENGTH=$(curl -sI https://download.qemu.org/$VERSION.tar.xz | grep -i Length | awk '{print $2}'| sed "s/\r//")
 
 	if [ $(ls -l "$VERSION".tar.xz | awk '{print $5}') -ne $LENGTH ]; then
 	echo -e "${YELLOW}下载的文件大小与检测的不符，请确认是否下载成功${RES}"
@@ -423,7 +422,7 @@ LOGIN() {
 	read -r -p "1)更新 0)忽略并不再提示此版本 " input
 	case $input in
 		1|"") rm $DEBIAN-qemu/root/utqemu.sh 2>/dev/null
-			curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o $DEBIAN-qemu/root/utqemu.sh ;;
+			curl https://shell.xb6868.com/ut/utqemu.sh -o $DEBIAN-qemu/root/utqemu.sh ;;
 		*) ;;
 	esac
 	sed -i "/$(date +"%Y")/d" $DEBIAN-qemu/root/.utqemu_ && echo "$UPDATE" >>$DEBIAN-qemu/root/.utqemu_
@@ -514,7 +513,7 @@ ${US_URL}/ bullseye-backports ${DEB}
 ${US_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
 EOF
 	if [ ! -f $(pwd)/utqemu.sh ]; then
-	curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
+	curl https://shell.xb6868.com/ut/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
 	else
 		cp utqemu.sh $sys_name/root/
 	fi
@@ -547,14 +546,11 @@ SYSTEM_CHECK() {
 		1|"") echo "换国内源" 
 	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
 	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && yes | pkg update 
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update
-	;;
+	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list &&  pkg update ;;
 		3)
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://termux.org/packages/ stable main@' $PREFIX/etc/apt/sources.list
-#	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://packages-cf.termux.org/apt/termux-main/ stable main@' $PREFIX/etc/apt/sources.list
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://packages-cf.termux.org/apt/termux-main/ stable main@' $PREFIX/etc/apt/sources.list
 	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/science.list
-	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/game.list && pkg update
+	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/game.list &&  pkg update
 	;;
 		*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;  
 	esac                                                    
@@ -767,7 +763,7 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 		fi
 	QEMU_ETC
 		;;
-	6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api 5)avnc(操控是触点方式，非移动光标) " input
+	6) read -r -p "1)termux 2)aspice 3)xsdl 4)termux-api 5)avnc(操控是触点方式，非移动光标)  6)vnc" input
 	case $input in
 	1) echo -e "\n${YELLOW}检测最新版本${RES}"
 	VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
@@ -858,6 +854,17 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	unset VERSION
 	QEMU_ETC
 	;;
+	6)curl -o ${DIRECT}/vnc.tar.gz https://shell.xb6868.com/ut/files/VNCViewer.tar.gz
+	if [ -f ${DIRECT}/vnc.tar.gz ]; then
+	echo -e "\n已下载至${DIRECT}目录"
+	else
+	echo -e "\n${RED}错误，请重试${RES}"
+	fi
+	echo "正在解压"
+	tar -zxvf ${DIRECT}/vnc.tar.gz -C ${DIRECT}
+	rm -rf ${DIRECT}/vnc.tar.gz
+	echo "done.."
+	sleep 1 ;;
 
 	*) INVALID_INPUT ;;
 	esac
@@ -1158,11 +1165,11 @@ unable to find CPU model; ${YELLOW}cpu名字有误${RES}"
 	CONFIRM
 	QEMU_SYSTEM     ;;
 	9) ABOUT_UTQEMU ;;
-	10) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/termux-toolx.sh)" ;;
-	11) bash -c "$(curl -s https://cdn.jsdelivr.net/gh/chungyuhoi/script/Check_cpuids.sh)"
+	10) bash -c "$(curl https://https://shell.xb6868.com/ut/termux-toolx.sh)" ;;
+	11) bash -c "$(curl -s https://shell.xb6868.com/ut/Check_cpuids.sh)"
 	CONFIRM
 	QEMU_SYSTEM ;;
-	12) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utdos.sh)" ;;
+	12) bash -c "$(curl https://shell.xb6868.com/ut/utdos.sh)" ;;
 	0) trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	exit 0 ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
@@ -2806,10 +2813,8 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 2)
 	if [ ! -f ${DIRECT}${STORAGE}virtio-gpu-wddm-dod.iso ]; then
 	echo -e "\n${GREEN}正在下载virtio显卡驱动盘${RES}"
-	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/gpu.tar.gz
-        tar zxvf gpu.tar.gz
+	curl -O https://https://shell.xb6868.com/ut/files/virtio-gpu-wddm-dod.iso
 	mv virtio-gpu-wddm-dod.iso ${DIRECT}${STORAGE}
-	rm gpu.tar.gz
 	echo -e "\n已下载virtio显卡至${DIRECT}${STORAGE}目录，名为virtio-gpu-wddm-dod.iso"
 	fi
 	sleep 2 ;;
@@ -2927,10 +2932,10 @@ LOGIN_() {
 		LOGIN
 		fi ;;
 	4) SOURCE ;;
-	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye.sh)" ;;
-	6) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/focal.sh)" ;;
-	7) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye-amd64.sh)" ;;
-	8) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/qemulite.sh)" ;;
+	5) bash -c "$(curl https://shell.xb6868.com/ut/bullseye.sh)" ;;
+	6) bash -c "$(curl https://shell.xb6868.com/ut/focal.sh)" ;;
+	7) bash -c "$(curl https://shell.xb6868.com/ut/bullseye-amd64.sh)" ;;
+	8) bash -c "$(curl https://shell.xb6868.com/ut/qemulite.sh)" ;;
 	9) echo -e "\n${YELLOW}检测最新版本${RES}"
         VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
         echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
