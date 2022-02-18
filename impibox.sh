@@ -23,11 +23,11 @@ fi
 $sudo apt install cmake build-essential -y
 if [ ! $(command -v cmake) ]; then
 $sudo apt install cmake build-essential -y
+fi
 echo -e "${YELLOW}即将安装ubuntu的解码优化包，请在提示过程中按tab切换光标至ok按钮回车确认${RES}"
 confirm
 $sudo apt install ubuntu-restricted-extras -y
 #zenity libstdc++6 mesa* libasound*
-fi
 wget -O box86.tar.gz https://codeload.github.com/ptitSeb/box86/tar.gz/refs/tags/v0.2.4
 
 if [ $(ls -l box86.tar.gz | awk '{print $5}') -ne 2230262 ];  then
@@ -203,6 +203,7 @@ echo 'deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ impish main restricted unive
 deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ impish-updates main restricted universe multiverse
 deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ impish-backports main restricted universe multiverse
 deb https://mirrors.bfsu.edu.cn/ubuntu-ports/ impish-security main restricted universe multiverse' >impibox/etc/apt/sources.list
+touch "impibox/root/.hushlogin"
 echo ". firstrun" >>impibox/etc/profile
 cat >impibox/root/firstrun<<-'eof'
 echo -e "\e[33m正在配置首次运行\n安装常用应用\e[0m"
