@@ -24,9 +24,11 @@ $sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 -y
 if [ ! $(command -v cmake) ]; then
 $sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 -y
 fi
+if grep -q ubuntu /etc/os-release; then
 echo -e "${YELLOW}即将安装ubuntu的解码优化包，请在提示过程中按tab切换光标至ok按钮回车确认${RES}"
 confirm
 $sudo apt install ubuntu-restricted-extras -y
+fi
 #zenity libstdc++6 mesa* libasound*
 wget -O box86.tar.gz https://codeload.github.com/ptitSeb/box86/tar.gz/refs/tags/v0.2.4
 
@@ -75,11 +77,10 @@ make -j$(nproc); make install
 cd
 rm -rf box64.tar.gz box64 box86.tar.gz box86
 
-mkdir wine64
 read -r -p "是否获取wine下载地址 1)是 2)否 " input
 case $input in
 	2) 
-	echo -e "已为你在主目录创建wine64文件夹，请把wine包解压至此目录"
+	echo -e "\n${YELLOW}解wine的tar.gz压缩包，请用命令tar zxvf 目录/wine包 -C /usr${RES}"
 		confirm ;;
 	*) 
 #unset version
@@ -90,8 +91,8 @@ case $input in
 	1)
 #wget https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/$version
 wget https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
-tar zxvf PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C wine64 ;;
-	*) echo -e "\n已为你在主目录创建wine64文件夹，记得把wine包解压到wine64目录哦"
+tar zxvf PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /usr ;;
+	*) echo -e "\n${YELLOW}解压wine的tar.gz压缩包，请用命令tar zxvf 目录/wine包 -C /usr${RES}"
 		confirm ;;
 esac ;;
 esac
@@ -135,6 +136,7 @@ export PULSE_SERVER=127.0.0.1
 trap "pkill Xvnc 2>/dev/null; exit" SIGINT EXIT
 Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 1024x768 -once -depth 16 -localhost -securitytypes None :0 &
 export DISPLAY=:0
+:<<\eof
 export BOX86_PATH=${HOME}/wine64/bin/
 export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/
 export BOX64_PATH=${HOME}/wine64/bin/
@@ -142,6 +144,7 @@ export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/l
 #export WINEPREFIX="${HOME}/.wine"
 #export WINEARCH=win32
 #bash -c "export BOX86_PATH=${HOME}/wine64/bin/; export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/; export BOX64_PATH=${HOME}/wine64/bin/; export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/; box64 wine64 winecfg & { sleep 8; kill $! & }"
+eof
 box64 wine64 taskmgr
 }
 start_wine() {
@@ -149,27 +152,23 @@ echo -e "${YELLOW}启动程序时间比较长，请耐心等待，如果长时�
 if [ ! -d ${HOME}/.wine ]; then
 	echo -e "\n${YELLOW}进行初始配置${RES}"
 	sleep 2
-	TASK="box64 wine64 taskmgr"
+	TASK="box64 wine64 wineboot"
 else
 	read -r -p "1)任务管理器(运行exe程序) 2)winecfg 3)控制面板 4)注册表" input
 case $input in
 	2) 
-TASK="box64 wine64 winecfg" ;;
+TASK="winecfg" ;;
 	3)
-TASK="box64 wine64 control" ;;
+TASK="control" ;;
 	4) 
-TASK="box64 wine64 regedit" ;;
+TASK="regedit" ;;
 	*) 
-TASK="box64 wine64 taskmgr" ;;
+TASK="taskmgr" ;;
 esac
 #xfce4-terminal -x bash -c "export BOX64_NOPULSE=1; export BOX64_NOGTK=1; export BOX64_NOVULKAN=1; export BOX64_JITGDB=1; export BOX86_PATH=${HOME}/wine64/bin/; export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/; export BOX64_PATH=${HOME}/wine64/bin/; export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/; box64 wine64 winecfg & { sleep 8; kill $! & }"
 #sleep 3
 fi
-export BOX86_PATH=${HOME}/wine64/bin/
-export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/
-export BOX64_PATH=${HOME}/wine64/bin/
-export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/
-$TASK
+box64 wine64 $TASK
 
 exit 0
 }
