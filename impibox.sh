@@ -10,19 +10,19 @@ case $input in
 esac
 }
 install_wine() {
-echo -e "本脚本仅在bullseye中完成测试\n如果安装失败，请重试"
+echo -e "本脚本仅在bullseye与impish中完成测试\n如果安装失败，请重试"
 confirm
 rm -rf box64.tar.gz box64 box86.tar.gz box86
 
 dpkg --add-architecture armhf
 apt update
-$sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf -y
+$sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf -y
 if [ ! $(command -v zenity) ]; then
-$sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf -y
+$sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf -y
 fi
-$sudo apt install cmake build-essential -y
+$sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 -y
 if [ ! $(command -v cmake) ]; then
-$sudo apt install cmake build-essential -y
+$sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 -y
 fi
 echo -e "${YELLOW}即将安装ubuntu的解码优化包，请在提示过程中按tab切换光标至ok按钮回车确认${RES}"
 confirm
@@ -74,6 +74,7 @@ cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make -j$(nproc); make install
 cd
 rm -rf box64.tar.gz box64 box86.tar.gz box86
+
 mkdir wine64
 read -r -p "是否获取wine下载地址 1)是 2)否 " input
 case $input in
@@ -286,8 +287,11 @@ echo -e "
 2)      启动wine(需先进入桌面，桌面运行)
 3)      启动wine(非桌面环境，不建议)
 4)      退出容器后无法再次启动
-5)      下载mono与gecko插件
-0)      退出\n"
+5)      下载mono与gecko插件"
+if [ $(command -v easyvnc) ]; then
+echo -e "6)	easyvnc(打开桌面)"
+fi
+echo -e "0)      退出\n"
 read -r -p "请选择: " input
 case $input in
 	1) install_wine ;;
@@ -295,6 +299,11 @@ case $input in
 	3) start_none ;;
 	4) fix_ ;;
 	5) add_msi ;;
+	6) if [ $(command -v easyvnc) ]; then
+		easyvnc
+	else
+		exit 0
+	fi ;;
 	*) exit 0 ;;
 esac
 fi
