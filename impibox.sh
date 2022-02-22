@@ -85,7 +85,7 @@ case $input in
 	*) 
 #unset version
 #version=$(curl https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/ | grep "tar.gz'" | awk -F "href='" '{print $2}' | awk -F "'>" '{print $1}' | grep 6.17)
-echo -e "下载地址：\n${YELLOW}https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz${RES}\n解包命令 tar zxvf 目录/包名 -C ${HOME}wine64"
+echo -e "下载地址：\n${YELLOW}https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz${RES}\n解包命令 tar zxvf 目录/包名 -C /usr"
 read -r -p "1)下载(速度很慢) 0)返回 " input
 case $input in
 	1)
@@ -161,7 +161,7 @@ if [ ! -d ${HOME}/.wine ]; then
 	rm simsun.tar.gz
 	TASK="taskmgr"
 else
-	read -r -p "1)任务管理器(运行exe程序) 2)winecfg 3)控制面板 4)注册表" input
+	read -r -p "1)任务管理器(运行exe程序) 2)winecfg 3)控制面板 4)注册表 5)无法正常启动 " input
 case $input in
 	2) 
 TASK="winecfg" ;;
@@ -169,6 +169,13 @@ TASK="winecfg" ;;
 TASK="control" ;;
 	4) 
 TASK="regedit" ;;
+	5)
+echo -e "${YELLOW}非有效方法，建议chroot或安装更为优化的容器${RES}"
+sleep 1
+TASK="taskmgr" 
+xfce4-terminal -x bash -c "box64 wine64 winecfg & { sleep 8; kill $! & }"
+sleep 3
+;;
 	*) 
 TASK="taskmgr" ;;
 esac
