@@ -152,7 +152,14 @@ echo -e "${YELLOW}启动程序时间比较长，请耐心等待，如果长时�
 if [ ! -d ${HOME}/.wine ]; then
 	echo -e "\n${YELLOW}进行初始配置${RES}"
 	sleep 2
-	TASK="box64 wine64 wineboot"
+	box64 wine64 wineboot
+	echo -e "\n${YELLOW}字体配置..${RES}"
+	sleep 1
+	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/simsun.tar.gz
+	tar zxvf simsun.tar.gz -C /usr/share/wine/fonts
+	box64 wine64 regedit /data/data/com.termux/files/home/script/wine/simsun.reg
+	rm simsun.tar.gz
+	TASK="taskmgr"
 else
 	read -r -p "1)任务管理器(运行exe程序) 2)winecfg 3)控制面板 4)注册表" input
 case $input in
