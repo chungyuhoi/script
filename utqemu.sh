@@ -2932,7 +2932,7 @@ LOGIN_() {
 	6) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/focal.sh)" ;;
 	7) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye-amd64.sh)" ;;
 	8) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/qemulite.sh)" ;;
-	9) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/impish.sh)" ;;
+	9) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/boxswine.sh)" ;;
 	10) echo -e "\n${YELLOW}检测最新版本${RES}"
         VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
         echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
