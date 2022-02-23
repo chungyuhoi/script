@@ -224,8 +224,10 @@ case $input in
 		name=debian ;;
 	2) rootfs=impish
 		name=ubuntu ;;
+	0) exit 0 ;;
 	*) echo -e "选择有误"
-		sleep 1 ;;
+		sleep 1
+		main ;;
 esac
 echo -e "\e[33m即将下载系统,本脚本是进行全新安装,非恢复包\e[0m"
 sleep 1
