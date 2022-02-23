@@ -314,7 +314,7 @@ rm -rf PSTREE.tar.gz bash_me
 curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
 tar zxvf PKILL.tar.gz && bash PKILL/bash_me
 rm -rf PKILL*
-curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/impibox.sh
+curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/boxswine.sh
 if [ -f "${HOME}/boxswine.sh" ]; then
 echo "bash boxswine.sh" >>${HOME}/.bashrc
 fi
