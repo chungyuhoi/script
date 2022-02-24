@@ -163,7 +163,7 @@ if [ ! -d ${HOME}/.wine ]; then
 	sleep 1
 	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/simsun.tar.gz
 	tar zxvf simsun.tar.gz -C /usr/share/wine/fonts
-	box64 wine64 regedit /data/data/com.termux/files/home/script/wine/simsun.reg
+	box64 wine64 regedit /usr/share/wine/fonts/simsun.reg
 	rm simsun.tar.gz
 	TASK="taskmgr"
 else
