@@ -21,9 +21,9 @@ $sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:ar
 if [ ! $(command -v zenity) ]; then
 $sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf -y
 fi
-$sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 -y
+$sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 libmpg123-0 -y
 if [ ! $(command -v cmake) ]; then
-$sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 -y
+$sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 libmpg123-0 -y
 fi
 if grep -q ubuntu /etc/os-release; then
 echo -e "${YELLOW}即将安装ubuntu的解码优化包，请在提示过程中按tab切换光标至ok按钮回车确认${RES}"
@@ -49,8 +49,8 @@ tar zxvf box86.tar.gz -C box86
 VERSION=`ls box86`
 mkdir -p box86/$VERSION/build
 cd box86/$VERSION/build
-cmake .. -DNOGIT=ON -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
-#-DARM_DYNAREC=ON
+cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DARM_DYNAREC=1 -marm
+#cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRPI4ARM64=1
 make -j$(nproc); make install
 cd
 wget -O box64.tar.gz https://codeload.github.com/ptitSeb/box64/tar.gz/refs/tags/v0.1.6
@@ -72,7 +72,7 @@ VERSION=`ls box64`
 mkdir -p box64/$VERSION/build
 cd box64/$VERSION/build
 #cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr
-cmake .. -DNOGIT=ON -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake .. -DNOGIT=1 -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #-DRPI4ARM64=1
 make -j$(nproc); make install
 cd
@@ -86,8 +86,8 @@ case $input in
 	*) 
 #unset version
 #version=$(curl https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/ | grep "tar.gz'" | awk -F "href='" '{print $2}' | awk -F "'>" '{print $1}' | grep 6.17)
-echo -e "下载地址：\n${YELLOW}https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz${RES}\n解压命令 tar zxvf 目录/包名 -C /usr"
-read -r -p "1)下载(速度很慢) 0)返回 " input
+echo -e "下载地址：\n${YELLOW}https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz${RES}\n"
+read -r -p "1)下载(自动解压，下载速度很慢，除非..) 0)返回 " input
 case $input in
 	1)
 #wget https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/$version
@@ -191,7 +191,7 @@ export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/l
 if [ ! -d ${HOME}/.wine64 ]; then
 box64 wine64 taskmgr
 else
-xfce4-terminal -x bash -c "box64 wine64 winecfg & { sleep 8; kill $! & }"
+xfce4-terminal -x bash -c "export WINEPREFIX="${HOME}/.wine64"; export BOX86_PATH=${HOME}/wine64/bin/; export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/; export BOX64_PATH=${HOME}/wine64/bin/; export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/; box64 wine64 winecfg & { sleep 8; kill $! & }"
 sleep 3
 box64 wine64 taskmgr
 fi
@@ -212,7 +212,7 @@ fix_() {
 echo -e "由于proot环境原因，此次操作将删除wine配置文件(主目录.wine)\n"
 confirm
 #echo 'rm -rf ${HOME}/.wine' >>.bashrc
-rm -rf ${HOME}/.wine
+rm -rf ${HOME}/.wine ${HOME}/.wine64
 main
 }
 
