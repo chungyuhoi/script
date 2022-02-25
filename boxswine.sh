@@ -49,8 +49,8 @@ tar zxvf box86.tar.gz -C box86
 VERSION=`ls box86`
 mkdir -p box86/$VERSION/build
 cd box86/$VERSION/build
-cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DARM_DYNAREC=1 -marm
-#cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRPI4ARM64=1
+cmake .. -DNOGIT=ON -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
+#-DARM_DYNAREC=ON
 make -j$(nproc); make install
 cd
 wget -O box64.tar.gz https://codeload.github.com/ptitSeb/box64/tar.gz/refs/tags/v0.1.6
@@ -72,7 +72,7 @@ VERSION=`ls box64`
 mkdir -p box64/$VERSION/build
 cd box64/$VERSION/build
 #cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr
-cmake .. -DNOGIT=1 -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake .. -DNOGIT=ON -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #-DRPI4ARM64=1
 make -j$(nproc); make install
 cd
@@ -86,7 +86,7 @@ case $input in
 	*) 
 #unset version
 #version=$(curl https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/ | grep "tar.gz'" | awk -F "href='" '{print $2}' | awk -F "'>" '{print $1}' | grep 6.17)
-echo -e "下载地址：\n${YELLOW}https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz${RES}\n"
+echo -e "下载地址：\n${YELLOW}https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz${RES}\n解压命令 tar zxvf 目录/包名 -C /usr"
 read -r -p "1)下载(自动解压，下载速度很慢，除非..) 0)返回 " input
 case $input in
 	1)
@@ -212,7 +212,7 @@ fix_() {
 echo -e "由于proot环境原因，此次操作将删除wine配置文件(主目录.wine)\n"
 confirm
 #echo 'rm -rf ${HOME}/.wine' >>.bashrc
-rm -rf ${HOME}/.wine ${HOME}/.wine64
+rm -rf ${HOME}/.wine
 main
 }
 
