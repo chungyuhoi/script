@@ -49,7 +49,7 @@ tar zxvf box86.tar.gz -C box86
 VERSION=`ls box86`
 mkdir -p box86/$VERSION/build
 cd box86/$VERSION/build
-cmake .. -DNOGIT=ON -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake .. -DNOGIT=1 -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #-DARM_DYNAREC=ON
 make -j$(nproc); make install
 cd
@@ -72,7 +72,7 @@ VERSION=`ls box64`
 mkdir -p box64/$VERSION/build
 cd box64/$VERSION/build
 #cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr
-cmake .. -DNOGIT=ON -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake .. -DNOGIT=1 -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #-DRPI4ARM64=1
 make -j$(nproc); make install
 cd
