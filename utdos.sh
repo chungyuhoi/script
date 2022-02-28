@@ -2,6 +2,7 @@
 DIRECT="/sdcard/xinhao/DOS"
 YELLOW="\e[33m"
 RES="\e[0m"
+if [ $(id -u) != 0 ]; then sudo=sudo; fi
 uname -a | grep 'Android' -q
 if [ $? == 0 ]; then
 	echo -e "不支持termux环境"
@@ -38,7 +39,7 @@ dosbox
 install_dos() {
 clear
 if [ ! $(command -v dosbox) ]; then
-	apt install tigervnc-standalone-server pulseaudio dosbox --no-install-recommends -y
+$sudo 	apt install tigervnc-standalone-server pulseaudio dosbox --no-install-recommends -y
 mkdir -p $DIRECT
 echo -e "${YELLOW}请把运行文件夹放在手机主目录xinhao/DOS文件夹里。\n脚本只是给玩友体验linux中运行dos，想提高运行效率请自行去网上搜索dosbox并安装设备版本的app${RES}"
 read -r -p "按回车继续" input

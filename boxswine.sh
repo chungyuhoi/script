@@ -21,14 +21,21 @@ $sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:ar
 if [ ! $(command -v zenity) ]; then
 $sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf -y
 fi
+###ubuntu专用
+if grep -q ubuntu /etc/os-release; then
 $sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 libmpg123-0 -y
 if [ ! $(command -v cmake) ]; then
 $sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 libmpg123-0 -y
 fi
-if grep -q ubuntu /etc/os-release; then
 echo -e "${YELLOW}即将安装ubuntu的解码优化包，请在提示过程中按tab切换光标至ok按钮回车确认${RES}"
 confirm
 $sudo apt install ubuntu-restricted-extras -y
+else
+###debian专用
+$sudo apt install cmake build-essential libncurses5 libmpg123-0 -y
+if [ ! $(command -v cmake) ]; then
+$sudo apt install cmake build-essential libncurses5 libmpg123-0 -y
+fi
 fi
 #zenity libstdc++6 mesa* libasound*
 wget -O box86.tar.gz https://codeload.github.com/ptitSeb/box86/tar.gz/refs/tags/v0.2.4
@@ -49,8 +56,8 @@ tar zxvf box86.tar.gz -C box86
 VERSION=`ls box86`
 mkdir -p box86/$VERSION/build
 cd box86/$VERSION/build
-cmake .. -DNOGIT=1 -DRPI4ARM64=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
-#-DARM_DYNAREC=ON
+#cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DARM_DYNAREC=1 -marm
+cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRPI4ARM64=1
 make -j$(nproc); make install
 cd
 wget -O box64.tar.gz https://codeload.github.com/ptitSeb/box64/tar.gz/refs/tags/v0.1.6
@@ -81,19 +88,19 @@ mkdir wine64
 read -r -p "是否获取wine下载地址 1)是 2)否 " input
 case $input in
 	2) 
-	echo -e "\n${YELLOW}解压wine的tar.gz压缩包，请用命令tar zxvf 目录/wine包 -C /usr${RES}"
+	echo -e "\n${YELLOW}解压wine的tar.gz压缩包，请用命令tar zxkvf 目录/wine包 -C /usr${RES}"
 		confirm ;;
 	*) 
 #unset version
 #version=$(curl https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/ | grep "tar.gz'" | awk -F "href='" '{print $2}' | awk -F "'>" '{print $1}' | grep 6.17)
-echo -e "下载地址：\n${YELLOW}https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz${RES}\n解压命令 tar zxvf 目录/包名 -C /usr"
+echo -e "下载地址：\n${YELLOW}https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz${RES}\n"
 read -r -p "1)下载(自动解压，下载速度很慢，除非..) 0)返回 " input
 case $input in
 	1)
 #wget https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/$version
 wget https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
-tar zxvf PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /usr ;;
-	*) echo -e "\n${YELLOW}解压wine的tar.gz压缩包，请用命令tar zxvf 目录/wine包 -C /usr${RES}"
+tar zxkvf PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /usr ;;
+	*) echo -e "\n${YELLOW}解压wine的tar.gz压缩包，请用命令tar zxkvf 目录/wine包 -C /usr${RES}"
 		confirm ;;
 esac ;;
 esac
@@ -151,10 +158,12 @@ export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/l
 #export WINEARCH=win32
 #bash -c "export BOX86_PATH=${HOME}/wine64/bin/; export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/; export BOX64_PATH=${HOME}/wine64/bin/; export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/; box64 wine64 winecfg & { sleep 8; kill $! & }"
 eof
+export BOX64_NOVULKAN=1
 box64 wine64 taskmgr
 }
 start_wine() {
 echo -e "${YELLOW}启动程序时间比较长，请耐心等待，如果长时间不动，请关闭重新启动${RES}"
+export BOX64_NOVULKAN=1
 if [ ! -d ${HOME}/.wine ]; then
 	echo -e "\n${YELLOW}进行初始配置${RES}"
 	sleep 2
@@ -212,7 +221,7 @@ fix_() {
 echo -e "由于proot环境原因，此次操作将删除wine配置文件(主目录.wine)\n"
 confirm
 #echo 'rm -rf ${HOME}/.wine' >>.bashrc
-rm -rf ${HOME}/.wine
+rm -rf ${HOME}/.wine ${HOME}/.wine64
 main
 }
 
@@ -276,12 +285,12 @@ apt update
 if ! grep -q https /etc/apt/sources.list; then
 apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && apt update
 fi
-apt install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 python3 pulseaudio -y
+apt install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 python3 pulseaudio --no-install-recommends -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
 if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
 echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 sleep 2
-apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio python3 -y
+apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio python3 --no-install-recommends -y
 fi
 apt purge --allow-change-held-packages gvfs udisks2 -y
 echo '#!/usr/bin/env bash
