@@ -84,6 +84,26 @@ cmake .. -DNOGIT=1 -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make -j$(nproc); make install
 cd
 rm -rf box64.tar.gz box64 box86.tar.gz box86
+if [ $(command -v box64) ]; then
+mkdir 桌面 2>/dev/null
+echo '[Desktop Entry]
+Type=Application
+Name=wine-taskmgr
+Name[zh_CN]=wine-任务管理器
+Icon=utilities-system-monitor
+Exec="box64 wine64 taskmgr"
+Terminal=true' >桌面/wine-taskmgr.desktop
+chmod +x 桌面/wine-taskmgr.desktop
+mkdir Desktop 2>/dev/null
+echo '[Desktop Entry]
+Type=Application
+Name=wine-taskmgr
+Name[zh_CN]=wine-任务管理器
+Icon=utilities-system-monitor
+Exec="box64 wine64 taskmgr"
+Terminal=true' >Desktop/wine-taskmgr.desktop
+chmod +x Desktop/wine-taskmgr.desktop
+fi
 mkdir wine64
 read -r -p "是否获取wine下载地址 1)是 2)否 " input
 case $input in
@@ -285,12 +305,12 @@ apt update
 if ! grep -q https /etc/apt/sources.list; then
 apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && apt update
 fi
-apt install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 python3 pulseaudio --no-install-recommends -y
+apt install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 python3 pulseaudio elementary-xfce-icon-theme --no-install-recommends -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
 if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
 echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 sleep 2
-apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio python3 --no-install-recommends -y
+apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio python3 elementary-xfce-icon-theme --no-install-recommends -y
 fi
 apt purge --allow-change-held-packages gvfs udisks2 -y
 echo '#!/usr/bin/env bash
