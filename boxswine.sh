@@ -56,8 +56,8 @@ tar zxvf box86.tar.gz -C box86
 VERSION=`ls box86`
 mkdir -p box86/$VERSION/build
 cd box86/$VERSION/build
-#cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DARM_DYNAREC=1 -marm
 cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRPI4ARM64=1
+#If you encounter some linking errors, try activating NOLOADADDR
 make -j$(nproc); make install
 cd
 wget -O box64.tar.gz https://codeload.github.com/ptitSeb/box64/tar.gz/refs/tags/v0.1.6
@@ -86,14 +86,6 @@ cd
 rm -rf box64.tar.gz box64 box86.tar.gz box86
 if [ $(command -v box64) ]; then
 mkdir 桌面 2>/dev/null
-echo '[Desktop Entry]
-Type=Application
-Name=wine-taskmgr
-Name[zh_CN]=wine-任务管理器
-Icon=utilities-system-monitor
-Exec="box64 wine64 taskmgr"
-Terminal=true' >桌面/wine-taskmgr.desktop
-chmod +x 桌面/wine-taskmgr.desktop
 mkdir Desktop 2>/dev/null
 echo '[Desktop Entry]
 Type=Application
@@ -102,6 +94,8 @@ Name[zh_CN]=wine-任务管理器
 Icon=utilities-system-monitor
 Exec="box64 wine64 taskmgr"
 Terminal=true' >Desktop/wine-taskmgr.desktop
+cp Desktop/wine-taskmgr.desktop 桌面/
+chmod +x 桌面/wine-taskmgr.desktop
 chmod +x Desktop/wine-taskmgr.desktop
 fi
 mkdir wine64
@@ -245,6 +239,29 @@ rm -rf ${HOME}/.wine ${HOME}/.wine64
 main
 }
 
+tar_wine() {
+echo -e "${YELLOW}为保证搜索包的准确度，请把wine压缩包放置手机主目录，并保证wine包的名字是以PlayOnLinux开头，tar.gz结尾${RES}"
+confirm
+echo -e "\n即将扫描手机主目录相关压缩包...\n"
+LIST=`find /sdcard/ -name "PlayOnLinux*.tar.gz" 2>/dev/null | awk '{printf("%d) %s\n" ,NR,$0)}'
+echo ""`
+if [ -z "$LIST" ]; then
+echo "未扫描到任何tar.gz包，请查找原因"
+sleep 2
+else
+echo -e "$LIST\n"
+read -r -p "请选择要解压的tar.gz包: " input
+TAR=`echo "$LIST" | grep -w "${input})" | awk '{print $2}'`
+tar zxvf "${TAR}" -C /usr
+if [ $(command -v wine64) ]; then
+	echo -e "${YELLOW}解压成功${RES}"
+else
+	echo -e "${YELLOW}解压失败，请查找原因${RES}"
+fi
+sleep 2
+fi
+}
+
 rootfs_down() {
 echo -e "\n${YELLOW}下载容器编译安装box86+box64+wine${RES}\n"
 read -r -p "请选择要下载的容器 1)bullseye 2)impish 0)退出 " input
@@ -312,6 +329,25 @@ echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 sleep 2
 apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio python3 elementary-xfce-icon-theme --no-install-recommends -y
 fi
+if grep -q ubuntu /etc/os-release; then
+echo ""
+else
+ICONS="/usr/share/icons"
+if [ ! -d "$ICONS/Tango" ]; then
+mkdir -p $ICONS/Tango/16x16/apps
+mkdir -p $ICONS/Tango/22x22/apps
+mkdir -p $ICONS/Tango/24x24/apps
+mkdir -p $ICONS/Tango/32x32/apps
+mkdir -p $ICONS/Tango/48x48/apps
+mkdir -p $ICONS/Tango/64x64/apps
+cp $ICONS/elementary-xfce/apps/16/utilities-system-monitor.png $ICONS/Tango/16x16/apps/
+cp $ICONS/elementary-xfce/apps/16/utilities-system-monitor.png $ICONS/Tango/22x22/apps/
+cp $ICONS/elementary-xfce/apps/24/utilities-system-monitor.png $ICONS/Tango/24x24/apps/
+cp $ICONS/elementary-xfce/apps/32/utilities-system-monitor.png $ICONS/Tango/32x32/apps/
+cp $ICONS/elementary-xfce/apps/48/utilities-system-monitor.png $ICONS/Tango/48x48/apps/
+cp $ICONS/elementary-xfce/apps/64/utilities-system-monitor.png $ICONS/Tango/64x64/apps/
+fi
+fi
 apt purge --allow-change-held-packages gvfs udisks2 -y
 echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
@@ -374,9 +410,10 @@ echo -e "
 2)      启动wine(需先进入桌面，桌面运行)
 3)      启动wine(非桌面环境，不建议)
 4)      退出容器后无法再次启动
-5)      下载mono与gecko插件"
+5)      下载mono与gecko插件
+6)	搜索解压wine包"
 if [ $(command -v easyvnc) ]; then
-echo -e "6)	easyvnc(打开桌面)\n7)	修改easyvnc分辨率"
+echo -e "7)	easyvnc(打开桌面)\n8)	修改easyvnc分辨率"
 fi
 echo -e "0)      退出\n"
 read -r -p "请选择: " input
@@ -386,12 +423,13 @@ case $input in
 	3) start_none ;;
 	4) fix_ ;;
 	5) add_msi ;;
-	6) if [ $(command -v easyvnc) ]; then
+	6) tar_wine ;;
+	7) if [ $(command -v easyvnc) ]; then
 		easyvnc
 	else
 		exit 0
 	fi ;;
-	7) if [ $(command -v easyvnc) ]; then
+	8) if [ $(command -v easyvnc) ]; then
 		unset resolution
 	read -r -p "请输分辨率(例如1027x768)，默认请回车 " resolution
 	if [ -z "$sresolution" ]; then
