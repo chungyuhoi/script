@@ -11,8 +11,16 @@ case $input in
 esac
 }
 install_wine() {
-echo -e "本脚本仅在bullseye与impish中完成测试\n如果安装失败，请重试"
-confirm
+echo -e "本脚本仅在bullseye与impish中完成测试\n如果安装失败，请重试\n"
+read -r -p "请选择你的cpu 1)默认 2)骁龙845 " input
+case $input in
+	2) CPU86=DSD845
+		CPU64=DSD845
+		;;
+	*) CPU86=DRPI4ARM64
+		CPU64=DARM_DYNAREC
+		;;
+esac
 rm -rf box64.tar.gz box64 box86.tar.gz box86
 
 dpkg --add-architecture armhf
@@ -56,7 +64,7 @@ tar zxvf box86.tar.gz -C box86
 VERSION=`ls box86`
 mkdir -p box86/$VERSION/build
 cd box86/$VERSION/build
-cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRPI4ARM64=1
+cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -${CPU86}=ON
 #If you encounter some linking errors, try activating NOLOADADDR
 make -j$(nproc); make install
 cd
@@ -79,7 +87,7 @@ VERSION=`ls box64`
 mkdir -p box64/$VERSION/build
 cd box64/$VERSION/build
 #cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr
-cmake .. -DNOGIT=1 -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake .. -DNOGIT=1 -${CPU64}=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #-DRPI4ARM64=1
 make -j$(nproc); make install
 cd
@@ -172,24 +180,11 @@ export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/l
 #export WINEARCH=win32
 #bash -c "export BOX86_PATH=${HOME}/wine64/bin/; export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/; export BOX64_PATH=${HOME}/wine64/bin/; export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/; box64 wine64 winecfg & { sleep 8; kill $! & }"
 eof
-export BOX64_NOVULKAN=1
 box64 wine64 taskmgr
 }
 start_wine() {
 echo -e "${YELLOW}启动程序时间比较长，请耐心等待，如果长时间不动，请关闭重新启动${RES}"
-export BOX64_NOVULKAN=1
-if [ ! -d ${HOME}/.wine ]; then
-	echo -e "\n${YELLOW}进行初始配置${RES}"
-	sleep 2
-	box64 wine64 wineboot
-	echo -e "\n${YELLOW}字体配置..${RES}"
-	sleep 1
-	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/simsun.tar.gz
-	tar zxvf simsun.tar.gz -C /usr/share/wine/fonts
-	box64 wine64 regedit /usr/share/wine/fonts/simsun.reg
-	rm simsun.tar.gz
-	TASK="taskmgr"
-else
+#export BOX64_NOVULKAN=1
 	read -r -p "1)任务管理器(运行exe程序) 2)winecfg 3)控制面板 4)注册表 5)无法正常启动 " input
 case $input in
 	2) 
@@ -201,11 +196,29 @@ TASK="regedit" ;;
 	5)
 echo -e "${YELLOW}非有效方法，建议chroot或安装更为优化的容器${RES}"
 sleep 1
-TASK="taskmgr" 
-xfce4-terminal -x bash -c "box64 wine64 winecfg & { sleep 8; kill $! & }"
-sleep 3
+
+if [ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == 7 ]; then
+	echo -e "你使用的是wine7版本,将为你使用特殊方式启动wine"
+	sleep 2
+#export WINEDEBUG="handle SIGSEGV nostop"
+box64 wine64 taskmgr &
+sleep 5
+pkill services.exe
+elif [ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == 6 ]; then
+	echo -e "你使用的是wine6版本,将为你使用特殊方式启动wine"
+	if [ ! -d ${HOME}/.wine ]; then
+		box64 wine64 taskmgr
+		xfce4-terminal -x bash -c "box64 wine64 winecfg & { sleep 8; kill $! & }"
+		sleep 3
+		box64 wine64 taskmgr
+		fi
+	else
+		box64 wine64 taskmgr
+fi
+	exit
 ;;
 	6)
+:<<\eof
 export WINEPREFIX="${HOME}/.wine64"
 export BOX86_PATH=${HOME}/wine64/bin/
 export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/
@@ -218,14 +231,23 @@ xfce4-terminal -x bash -c "export WINEPREFIX="${HOME}/.wine64"; export BOX86_PAT
 sleep 3
 box64 wine64 taskmgr
 fi
+eof
 exit 0
 
 		;;
 	*) 
 TASK="taskmgr" ;;
 esac
-#xfce4-terminal -x bash -c "export BOX64_NOPULSE=1; export BOX64_NOGTK=1; export BOX64_NOVULKAN=1; export BOX64_JITGDB=1; export BOX86_PATH=${HOME}/wine64/bin/; export BOX86_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:/lib/i386-linux-gnu:/lib/aarch64-linux-gnu/; export BOX64_PATH=${HOME}/wine64/bin/; export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/; box64 wine64 winecfg & { sleep 8; kill $! & }"
-#sleep 3
+if [ ! -d ${HOME}/.wine ]; then
+	echo -e "\n${YELLOW}进行初始配置${RES}"
+	sleep 2
+	box64 wine64 wineboot
+	echo -e "\n${YELLOW}字体配置..${RES}"
+	sleep 1
+	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/simsun.tar.gz	
+	tar zxvf simsun.tar.gz -C /usr/share/wine/fonts
+#	box64 wine64 regedit /usr/share/wine/fonts/simsun.reg
+	rm simsun.tar.gz
 fi
 box64 wine64 $TASK
 
@@ -235,7 +257,7 @@ fix_() {
 echo -e "由于proot环境原因，此次操作将删除wine配置文件(主目录.wine)\n"
 confirm
 #echo 'rm -rf ${HOME}/.wine' >>.bashrc
-rm -rf ${HOME}/.wine ${HOME}/.wine64
+rm -rf ${HOME}/.wine
 main
 }
 
@@ -322,12 +344,12 @@ apt update
 if ! grep -q https /etc/apt/sources.list; then
 apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && apt update
 fi
-apt install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 python3 pulseaudio elementary-xfce-icon-theme --no-install-recommends -y
+apt install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 python3 pulseaudio xserver-xorg x11-utils elementary-xfce-icon-theme --no-install-recommends -y
 apt install tigervnc-standalone-server tigervnc-viewer -y
 if [ ! $(command -v dbus-launch) ] || [ ! $(command -v tigervncserver) ] || [ ! $(command -v xfce4-session) ]; then
 echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 sleep 2
-apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio python3 elementary-xfce-icon-theme --no-install-recommends -y
+apt --fix-broken install -y && apt install curl wget vim fonts-wqy-zenhei tar xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio xserver-xorg x11-utils python3 elementary-xfce-icon-theme --no-install-recommends -y
 fi
 if grep -q ubuntu /etc/os-release; then
 echo ""
@@ -348,6 +370,7 @@ cp $ICONS/elementary-xfce/apps/48/utilities-system-monitor.png $ICONS/Tango/48x4
 cp $ICONS/elementary-xfce/apps/64/utilities-system-monitor.png $ICONS/Tango/64x64/apps/
 fi
 fi
+#echo 'load-module module-udev-detect tsched=0' >>/etc/pulse/default.pa
 apt purge --allow-change-held-packages gvfs udisks2 -y
 echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
