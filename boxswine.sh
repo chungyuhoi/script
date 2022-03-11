@@ -29,21 +29,25 @@ $sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:ar
 if [ ! $(command -v zenity) ]; then
 $sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf -y
 fi
+$sudo apt install cmake build-essential libncurses5 libmpg123-0 -y
+if [ ! $(command -v cmake) ]; then
+$sudo apt install cmake build-essential libncurses5 libmpg123-0 -y
+fi
 ###ubuntu专用
 if grep -q ubuntu /etc/os-release; then
-$sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 libmpg123-0 -y
-if [ ! $(command -v cmake) ]; then
-$sudo apt install cmake build-essential vulkan* *-mesa-* mesa* libncurses5 libmpg123-0 -y
-fi
-echo -e "${YELLOW}即将安装ubuntu的解码优化包，请在提示过程中按tab切换光标至ok按钮回车确认${RES}"
+echo -e "\n${YELLOW}是否安装ubuntu的解码优化包${RES}
+1) 安装
+2) 不需要，我手机配置不算高"
+read -r -p "请选择: " input
+case $input in
+	2) $sudo apt install zenity libstdc++6 mesa* libasound* -y ;;
+	*)
+echo -e "${YELLOW}请在提示过程中按tab切换光标至ok按钮回车确认${RES}"
 confirm
+$sudo apt install vulkan* *-mesa-* mesa* -y
 $sudo apt install ubuntu-restricted-extras -y
-else
-###debian专用
-$sudo apt install cmake build-essential libncurses5 libmpg123-0 -y
-if [ ! $(command -v cmake) ]; then
-$sudo apt install cmake build-essential libncurses5 libmpg123-0 -y
-fi
+;;
+esac
 fi
 #zenity libstdc++6 mesa* libasound*
 wget -O box86.tar.gz https://codeload.github.com/ptitSeb/box86/tar.gz/refs/tags/v0.2.4

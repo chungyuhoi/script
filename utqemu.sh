@@ -5,15 +5,16 @@ cd $(dirname $0)
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
 #time echo "scale=5000; 4*a(1)" | bc -l -q
-UPDATE="2022/02/03"
+UPDATE="2022/03/10"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
 	为减少安装占用，部分不常用功能参数的默认安装包改为促发安装
 	增加termux环境的qemu本地共享(在termux目录下创建share共享文件夹，模拟系统可同步访问文件夹内容)
-	增加termux环境创建快捷脚本(会在主目录下创建short_qemu文件夹)
 	termux环境增加轻量化容器+qemu(约322m，镜像与默认配置两个选项，vnc输出)
 	容器内增加dos环境体验，可运行dos游戏(游戏需另外下载)
+	修复一下已知小bug
+	增加最近比较火的box86+box64+wine的编译安装，因为是proot，bug比较多。由于同时支持i386与x86_64，涉及到两种架构，建议使用本脚本容器
 
 ${GREEN}ps:	重要的事情说三次，通过tcg加速的cpu核心数不是越多越好，要看手机性能，多了反而手机吃不消，建议2-8核
 	qemu6.0以上似乎恢复对旧windows系统支持${RES}\n"
@@ -2562,8 +2563,10 @@ eof
 		set -- "${@}" "-display" "vnc=127.0.0.1:0,lossy=on,non-adaptive=on"
 		export PULSE_SERVER=tcp:127.0.0.1:4713 ;;
 		xvnc)
-		export PULSE_SERVER=tcp:127.0.0.1:4713 
+		export PULSE_SERVER=tcp:127.0.0.1:4713
+		if echo "${@}" | grep ! 'gl=on'; then
 		set -- "${@}" "-display" "gtk,gl=off"
+		fi
 		;;
 		xsdl) 
 			export DISPLAY=127.0.0.1:0
