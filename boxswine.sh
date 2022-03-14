@@ -12,26 +12,19 @@ esac
 }
 install_wine() {
 echo -e "本脚本仅在bullseye与impish中完成测试\n如果安装失败，请重试\n"
-read -r -p "请选择你的cpu 1)默认 2)骁龙845 " input
-case $input in
-	2) CPU86=DSD845
-		CPU64=DSD845
-		;;
-	*) CPU86=DRPI4ARM64
-		CPU64=DARM_DYNAREC
-		;;
-esac
+sleep 2
 rm -rf box64.tar.gz box64 box86.tar.gz box86
-
+echo -e "${YELLOW}安装需要的依赖库${RES}"
+sleep 1
 dpkg --add-architecture armhf
 apt update
 $sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf -y
 if [ ! $(command -v zenity) ]; then
 $sudo apt install zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf -y
 fi
-$sudo apt install cmake build-essential libncurses5 libmpg123-0 -y
+$sudo apt install cmake build-essential libncurses5 libmpg123-0 git -y
 if [ ! $(command -v cmake) ]; then
-$sudo apt install cmake build-essential libncurses5 libmpg123-0 -y
+$sudo apt install cmake build-essential libncurses5 libmpg123-0 git -y
 fi
 ###ubuntu专用
 if grep -q ubuntu /etc/os-release; then
@@ -50,6 +43,24 @@ $sudo apt install ubuntu-restricted-extras -y
 esac
 fi
 #zenity libstdc++6 mesa* libasound*
+read -r -p "请选择你的cpu 1)默认 2)骁龙845 " input
+case $input in
+	2) CPU86=DSD845
+		CPU64=DSD845
+		;;
+	*) CPU86=DRPI4ARM64
+		CPU64=DARM_DYNAREC
+		;;
+esac
+echo -e "\n${YELLOW}1)官方下载链接
+2)git仓库克隆(版本较新，受网络影响)${RES}"
+read -r -p '请选择编译包来源：' input
+case $input in
+	1) BUILD="-DNOGIT=1" ;;
+esac
+if [ ! $(command -v box86) ]; then
+case $BUILD in
+	"-DNOGIT=1")
 wget -O box86.tar.gz https://codeload.github.com/ptitSeb/box86/tar.gz/refs/tags/v0.2.4
 
 if [ $(ls -l box86.tar.gz | awk '{print $5}') -ne 2230262 ];  then
@@ -68,10 +79,21 @@ tar zxvf box86.tar.gz -C box86
 VERSION=`ls box86`
 mkdir -p box86/$VERSION/build
 cd box86/$VERSION/build
-cmake .. -DNOGIT=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -${CPU86}=ON
+;;
+*) git clone https://github.com/ptitSeb/box86
+mkdir box86/build
+cd box86/build
+;;
+esac
+cmake .. $BUILD -DCMAKE_BUILD_TYPE=RelWithDebInfo -${CPU86}=ON
 #If you encounter some linking errors, try activating NOLOADADDR
 make -j$(nproc); make install
+fi
+
 cd
+if [ ! $(command -v box64) ]; then
+case $BUILD in
+	"-DNOGIT=1")
 wget -O box64.tar.gz https://codeload.github.com/ptitSeb/box64/tar.gz/refs/tags/v0.1.6
 
 if [ $(ls -l box64.tar.gz | awk '{print $5}') -ne 1711815 ];
@@ -90,10 +112,18 @@ tar zxvf box64.tar.gz -C box64
 VERSION=`ls box64`
 mkdir -p box64/$VERSION/build
 cd box64/$VERSION/build
+;;
+*) git clone https://github.com/ptitSeb/box64
+mkdir box64/build
+cd box64/build
+;;
+esac
 #cmake .. -DARM_DYNAREC=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr
-cmake .. -DNOGIT=1 -${CPU64}=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake .. $BUILD -${CPU64}=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #-DRPI4ARM64=1
 make -j$(nproc); make install
+fi
+
 cd
 rm -rf box64.tar.gz box64 box86.tar.gz box86
 if [ $(command -v box64) ]; then
@@ -212,6 +242,7 @@ elif [ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == 6 ]; then
 	echo -e "你使用的是wine6版本,将为你使用特殊方式启动wine"
 	if [ ! -d ${HOME}/.wine ]; then
 		box64 wine64 taskmgr
+	else
 		xfce4-terminal -x bash -c "box64 wine64 winecfg & { sleep 8; kill $! & }"
 		sleep 3
 		box64 wine64 taskmgr
