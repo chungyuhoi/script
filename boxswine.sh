@@ -80,7 +80,12 @@ VERSION=`ls box86`
 mkdir -p box86/$VERSION/build
 cd box86/$VERSION/build
 ;;
-*) git clone https://github.com/ptitSeb/box86
+*)
+echo -e "${YELLOW}克隆检测box86最新版本，如果长时间检测不到，请尝试网络切换，中断请ctrl+c${RES}"
+sleep 2
+while [ ! -d box86 ]
+do git clone https://github.com/ptitSeb/box86
+done
 mkdir box86/build
 cd box86/build
 ;;
@@ -98,7 +103,7 @@ wget -O box64.tar.gz https://codeload.github.com/ptitSeb/box64/tar.gz/refs/tags/
 
 if [ $(ls -l box64.tar.gz | awk '{print $5}') -ne 1711815 ];
 then
-echo -e "${YELLOW}下载的文件大小与检测的不符，检测box64最新版本，如果长时间检测不到，请尝试网络切换，中断请ctrl+c${RES}"
+echo -e "${YELLOW}克隆检测box64最新版本，如果长时间检测不到，请尝试网络切换，中断请ctrl+c${RES}"
 sleep 2
 unset version
 while [ -z "${version}" ]
@@ -113,7 +118,12 @@ VERSION=`ls box64`
 mkdir -p box64/$VERSION/build
 cd box64/$VERSION/build
 ;;
-*) git clone https://github.com/ptitSeb/box64
+*)
+echo -e "${YELLOW}下载的文件大小与检测的不符，检测box64最新版本，如果长时间检测不到，请尝试网络切换，中断请ctrl+c${RES}"
+sleep 2
+while [ ! -d box64 ]
+do git clone https://github.com/ptitSeb/box64
+done
 mkdir box64/build
 cd box64/build
 ;;
