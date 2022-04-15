@@ -62,7 +62,7 @@ COMPILE(){
 3) 4*
 4) 5*
 5) 6*
-6) 6*最新版"
+6) 7*"
 	read -r -p "请选择 " input
 	case $input in
 		1) VERSION=2 ;;
@@ -70,7 +70,7 @@ COMPILE(){
 		3) VERSION=4 ;;
 		4) VERSION=5 ;;
 		5) VERSION=6 ;;
-		6) VERSION=6 RC="rc" ;;
+		6) VERSION=7 RC="rc" ;;
 		*) ABOUT_UTQEMU ;;
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
