@@ -5,10 +5,11 @@ cd $(dirname $0)
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
 #time echo "scale=5000; 4*a(1)" | bc -l -q
-UPDATE="2022/03/10"
+UPDATE="2022/07/25"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	仅优化容器
 	为减少安装占用，部分不常用功能参数的默认安装包改为促发安装
 	增加termux环境的qemu本地共享(在termux目录下创建share共享文件夹，模拟系统可同步访问文件夹内容)
 	termux环境增加轻量化容器+qemu(约322m，镜像与默认配置两个选项，vnc输出)
@@ -70,16 +71,15 @@ COMPILE(){
 		3) VERSION=4 ;;
 		4) VERSION=5 ;;
 		5) VERSION=6 ;;
-		6) VERSION=7 RC="rc" ;;
+		6) VERSION=7
+#RC="rc" 
+;;
 		*) ABOUT_UTQEMU ;;
 	esac
 	echo -e "${YELLOW}安装所需依赖包${RES}"
 	cd
 	sudo_
-	if ! grep -q https /etc/apt/sources.list; then
-	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
-	fi
-	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils usbutils telnet wget libvirglrenderer-dev libusb-dev libusb-1.0-0 python pulseaudio -y
+	$sudo apt install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils usbutils telnet wget libvirglrenderer-dev libusb-dev libusb-1.0-0 pulseaudio -y
 #libbluetooth-dev libbrlapi-dev libbz2-dev libcap-dev libcap-ng-dev libcurl4-gnutls-dev libibverbs-dev libncurses5-dev libnuma-dev librbd-dev librdmacm-dev libsasl2-dev libseccomp-dev flex bison git-email libssh2-1-dev libvde-dev libvdeplug-dev libvte-2.91-dev libxen-dev valgrind xfslibs-dev libnfs-dev libiscsi-dev libjpeg-dev libgbm-dev libgoogle-perftools-dev -y
 #	libui-gxmlcpp-dev
 	if [ $? != 0 ]; then
@@ -95,7 +95,7 @@ COMPILE(){
 	read -r -p "请选择: " input
 	case $input in
 		2)
-	$sudo apt install -y git; $sudo apt install -y libglib2.0-dev; $sudo apt install -y libfdt-dev; $sudo apt install -y libpixman-1-dev; $sudo apt install -y zlib1g-dev; $sudo apt install -y libsdl1.2-dev; $sudo apt install -y libsnappy-dev; $sudo apt install -y liblzo2-dev; $sudo apt install -y automake; $sudo apt install -y gcc; $sudo apt install -y python3; $sudo apt install -y python3-setuptools; $sudo apt install -y build-essential; $sudo apt install -y ninja-build; $sudo apt install -y libspice-server-dev; $sudo apt install -y libsdl2-dev; $sudo apt install -y libspice-protocol-dev; $sudo apt install -y meson; $sudo apt install -y libgtk-3-dev; $sudo apt install -y libaio-dev; $sudo apt install -y gettext; $sudo apt install -y samba; $sudo apt install -y xz-utils; $sudo apt install -y usbutils; $sudo apt install -y telnet; $sudo apt install -y wget; $sudo apt install -y libvirglrenderer-dev; $sudo apt install -y libusb-dev; $sudo apt install -y libusb-1.0-0; $sudo apt install -y python; $sudo apt install -y pulseaudio ;;
+	for i in git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev libsdl1.2-dev libsnappy-dev liblzo2-dev automake gcc python3 python3-setuptools build-essential ninja-build libspice-server-dev libsdl2-dev libspice-protocol-dev meson libgtk-3-dev libaio-dev gettext samba xz-utils usbutils telnet wget libvirglrenderer-dev libusb-dev libusb-1.0-0 pulseaudio; do $sudo apt install $i -y; done ;;
 	9) ABOUT_UTQEMU ;;
 	*) ;;
 	esac
@@ -424,36 +424,28 @@ LOGIN() {
 	read -r -p "1)更新 0)忽略并不再提示此版本 " input
 	case $input in
 		1|"") rm $DEBIAN-qemu/root/utqemu.sh 2>/dev/null
-			curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o $DEBIAN-qemu/root/utqemu.sh ;;
+			curl https://shell.xb6868.com/ut/utqemu.sh -o $DEBIAN-qemu/root/utqemu.sh ;;
 		*) ;;
 	esac
 	sed -i "/$(date +"%Y")/d" $DEBIAN-qemu/root/.utqemu_ && echo "$UPDATE" >>$DEBIAN-qemu/root/.utqemu_
 	fi
-pulseaudio --start & 2>/dev/null
-echo "" &
+if [ -e /linkerconfig/ld.config.txt ]; then
+LDCONFIG="-b /linkerconfig/ld.config.txt"
+fi
+if [ -e /plat_property_contexts ]; then
+PLAT_PROPERTY_CONTEXT="-b /plat_property_contexts"
+fi
+if [ -e /property_contexts ]; then
+PROPERTY_CONTEXT="-b /property_contexts"
+fi
+if [ -e /apex ]; then
+APEX="-b /apex"
+fi
+pkill -9 pulseaudio 2>/dev/null
+pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1 &
 unset LD_PRELOAD
-command="proot"
-command+=" --kill-on-exit"
-command+=" --link2symlink"
-command+=" -S $DEBIAN-qemu"
-command+=" -b /sdcard"
-command+=" -b $DEBIAN-qemu/root:/dev/shm"
-command+=" -b /sdcard:/root/sdcard"
-#command+=" -b $DEBIAN-qemu/proc/version:/proc/version"
-command+=" -w /root"
-command+=" /usr/bin/env -i"
-command+=" HOME=/root"
-command+=" USER=root"
-command+=" PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games"
-command+=" TERM=xterm-256color"
-command+=" LANG=C.UTF-8"
-command+=" /bin/bash --login"
-com="$@"
-	if [ -z "$1" ];then
-		exec $command
-	else
-		$command -c "$com"
-	fi
+proot --kill-on-exit ${LDCONFIG} ${PLAT_PROPERTY_CONTEXT} ${PROPERTY_CONTEXT} ${APEX} -b /vendor -b /system -b /sdcard -b /sdcard:/root/sdcard -b /data/data/com.termux/files -b /data/data/com.termux/cache -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/null:/proc/sys/kernel/cap_last_cap -b $DEBIAN-qemu/etc/proc/version:/proc/version -b $DEBIAN-qemu/etc/proc/misc:/proc/misc -b $DEBIAN-qemu/etc/proc/buddyinfo:/proc/buddyinfo -b $DEBIAN-qemu/etc/proc/kmsg:/proc/kmsg -b $DEBIAN-qemu/etc/proc/consoles:/proc/consoles -b $DEBIAN-qemu/etc/proc/execdomains:/proc/execdomains -b $DEBIAN-qemu/etc/proc/stat:/proc/stat -b $DEBIAN-qemu/etc/proc/fb:/proc/fb -b $DEBIAN-qemu/etc/proc/loadavg:/proc/loadavg -b $DEBIAN-qemu/etc/proc/key-users:/proc/key-users -b $DEBIAN-qemu/etc/proc/uptime:/proc/uptime -b $DEBIAN-qemu/etc/proc/devices:/proc/devices -b $DEBIAN-qemu/etc/proc/vmstat:/proc/vmstat -b /data/dalvik-cache -b $DEBIAN-qemu/tmp:/dev/shm -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b /dev/urandom:/dev/random --sysvipc --link2symlink -S $DEBIAN-qemu -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=zh_CN.UTF-8 TZ=Asia/Shanghai TERM=xterm-256color USER=root /bin/bash --login
+
 }
 ##################
 SYS_DOWN() {
@@ -514,12 +506,76 @@ ${US_URL}/ bullseye-updates ${DEB}
 ${US_URL}/ bullseye-backports ${DEB}
 ${US_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
 EOF
+curl http://mirrors.bfsu.edu.cn/debian/pool/main/c/ca-certificates/$(curl http://mirrors.bfsu.edu.cn/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/ca.deb
+curl http://mirrors.bfsu.edu.cn/debian/pool/main/o/openssl/$(curl http://mirrors.bfsu.edu.cn/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/openssl.deb
 	if [ ! -f $(pwd)/utqemu.sh ]; then
-	curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
+	curl https://shell.xb6868.com/ut/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
 	else
 		cp utqemu.sh $sys_name/root/
 	fi
-	echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$sys_name/proc/version
+	
+echo 'for i in /var/run/dbus/pid  /tmp/.X*-lock /tmp/.X11-unix/X* /tnp/wayland*; do if [ -e "${i}" ]; then rm -vf ${i}; fi; done' >>$sys_name/etc/profile
+
+echo -e "\e[33m优化部分命令\e[0m"
+sleep 1
+find $sys_name/ -name busybox
+if [ $? == 0 ]; then
+mkdir qemu_tmp
+cd qemu_tmp
+wget -O busybox.apk https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/ | grep busybox | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1)
+tar zxvf busybox.apk bin 2>/dev/null
+mv bin/busybox ../$sys_name/usr/local/bin 2>/dev/null
+wget -O musl.apk https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/ | grep musl | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1)
+tar zxvf musl.apk lib
+mv lib/* ../$sys_name/usr/lib
+cd -
+rm -rf qemu_tmp
+fi
+echo "service dbus start" >>$sys_name/root/.bashrc
+#伪proc文件
+mkdir $sys_name/etc/proc/ -p
+printf ' 52 memory_bandwidth! 53 network_throughput! 54 network_latency! 55 cpu_dma_latency! 56 xt_qtaguid! 57 vndbinder! 58 hwbinder! 59 binder! 60 ashmem!239 uhid!236 device-mapper!223 uinput!  1 psaux!200 tun!237 loop-control! 61 lightnvm!228 hpet!229 fuse!242 rfkill! 62 ion! 63 vga_arbiter\n' | sed 's/!/\n/g' >$sys_name/etc/proc/misc
+printf "%-1s %-1s %-1s %8s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s\n" Node 0, zone DMA 3 2 2 4 3 3 2 1 2 2 0 Node 0, zone DMA32 1774 851 511 220 67 3 2 0 0 1 0 >$sys_name/etc/proc/buddyinfo
+
+echo "0.03 0.03 0.00 1/116 17521" >$sys_name/etc/proc/loadavg
+touch $sys_name/etc/proc/kmsg
+echo 'tty0                 -WU (EC p  )    4:7' >$sys_name/etc/proc/consoles
+echo '0-0     Linux                   [kernel]' >$sys_name/etc/proc/execdomains
+echo '0 EFI VGA' >$sys_name/etc/proc/fb
+echo '    0:     9 8/8 3/1000000 27/25000000' >$sys_name/etc/proc/key-users
+echo '285490.46 1021963.95' >$sys_name/etc/proc/uptime
+echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$sys_name/etc/proc/version
+touch $sys_name/etc/proc/vmstat
+echo 'Character devices:!  1 mem!  4 /dev/vc/0!  4 tty!  4 ttyS!  5 /dev/tty!  5 /dev/console!  5 /dev/ptmx!  7 vcs! 10 misc! 13 input! 21 sg! 29 fb! 81 video4linux!128 ptm!136 pts!180 usb!189 usb_device!202 cpu/msr!203 cpu/cpuid!212 DVB!244 hidraw!245 rpmb!246 usbmon!247 nvme!248 watchdog!249 ptp!250 pps!251 media!252 rtc!253 dax!254 gpiochip!!Block devices:!  1 ramdisk!  7 loop!  8 sd! 11 sr! 65 sd! 66 sd! 67 sd! 68 sd! 69 sd! 70 sd! 71 sd!128 sd!129 sd!130 sd!131 sd!132 sd!133 sd!134 sd!135 sd!179 mmc!253 device-mapper!254 virtblk!259 blkext' | sed 's/!/\n/g' >$sys_name/etc/proc/devices
+echo "cpu  0 0 0 0 0 0 0 0 0 0
+intr 1
+ctxt 0
+btime 0
+processes 0
+procs_running 1
+procs_blocked 0
+softirq 0 0 0 0 0 0 0 0 0 0 0" >$sys_name/etc/proc/stat
+
+if [ -z $ANDROID_RUNTIME_ROOT ]; then
+export ANDROID_RUNTIME_ROOT=/apex/com.android.runtime
+fi
+cat >>$sys_name/etc/profile<<-EOF
+export ANDROID_ART_ROOT=${ANDROID_ART_ROOT-}
+export ANDROID_DATA=${ANDROID_DATA-}
+export ANDROID_I18N_ROOT=${ANDROID_I18N_ROOT-}
+export ANDROID_ROOT=${ANDROID_ROOT-}
+export ANDROID_RUNTIME_ROOT=${ANDROID_RUNTIME_ROOT-}
+export ANDROID_TZDATA_ROOT=${ANDROID_TZDATA_ROOT-}
+export BOOTCLASSPATH=${BOOTCLASSPATH-}
+export COLORTERM=${COLORTERM-}
+export DEX2OATBOOTCLASSPATH=${DEX2OATBOOTCLASSPATH-}
+export EXTERNAL_STORAGE=${EXTERNAL_STORAGE-}
+export PATH=\${PATH}:/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin
+export PREFIX=${PREFIX-/data/data/com.termux/files/usr}
+export TERM=${TERM-xterm-256color}
+export TMPDIR=/tmp
+export PULSE_SERVER=tcp:127.0.0.1:4713
+EOF
 	if [ ! -f "$sys_name/usr/bin/perl" ]; then
 	cp $sys_name/usr/bin/perl* $sys_name/usr/bin/perl
 	fi
@@ -560,15 +616,7 @@ SYSTEM_CHECK() {
 		*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;  
 	esac                                                    
 		fi
-	if [ ! $(command -v curl) ]; then
-	pkg update && pkg install curl -y
-	fi
-	dpkg -l | grep pulseaudio -q 2>/dev/null
-	if [ $? != 0 ]; then
-	echo -e "${YELLOW}检测到你未安装pulseaudio，为保证声音正常输出，将自动安装${RES}"
-	sleep 2
-	pkg update && pkg install pulseaudio -y
-	fi
+	for i in curl pulseaudio proot ; do if [ ! $(command -v curl) ]; then pkg install $i -y; fi done
 	if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
 	then
 		echo ""
@@ -579,9 +627,6 @@ SYSTEM_CHECK() {
 	sed -i '/exit-idle/d' ${PREFIX}/etc/pulse/daemon.conf
 	echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
 	fi
-	if [ ! $(command -v proot) ]; then
-	pkg update && pkg install proot -y
-	fi
 	fi
 }
 ##################
@@ -591,7 +636,7 @@ WEB_SERVER() {
 	if [ ! $(command -v python) ]; then
 	echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
 	sudo_
-	apt install python -y
+	$sudo apt install python -y
 	fi
 	else
 	if [ ! $(command -v python3) ]; then
@@ -622,7 +667,7 @@ echo -e "
 6)  获取最新版termux、aspice与xsdl的安卓版下载地址(非永久有效)
 7)  模拟系统的时间不准
 8)  修改镜像目录
-9)  更新为支持qemu6.0容器
+9)  更新为支持qemu7.0容器
 10) 返回
 0)  退出\n"
 	read -r -p "请选择: " input
@@ -911,7 +956,7 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	QEMU_ETC ;;
 	9) echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list && $sudo apt update
 	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
-	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 6 ]]; then
+	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 7 ]]; then
 	echo -e "更新成功"
 	else
 	echo -e "更新失败"
@@ -1013,7 +1058,20 @@ QEMU_SYSTEM() {
 	uname -a | grep 'Android' -q
 	if [ $? != 0 ]; then
 	if ! grep -q https /etc/apt/sources.list; then
-		$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
+	ln -sf $(command -v busybox) $(command -v ps)
+	ln -sf $(command -v busybox) $(command -v pstree)
+	ln -sf $(command -v busybox) $(command -v pkill)
+	ln -sf $(command -v busybox) $(command -v uptime)
+	ln -sf $(command -v busybox) $(command -v killall)
+	ln -sf $(command -v busybox) $(command -v egrep)
+	ln -sf $(command -v busybox) $(command -v top)
+		if [ -f openssl.deb ]; then
+		$sudo	dpkg -i openssl.deb
+		$sudo	dpkg -i ca.deb
+		else
+		$sudo apt install apt-transport-https ca-certificates -y
+		fi
+		sed -i "s/http/https/g" /etc/apt/sources.list && $sudo apt update
 	fi
 	fi
 	unset hda_name display hdb_name iso_name iso1_name SOUND_MODEL VGA_MODEL CPU_MODEL NET_MODEL SMP URL script_name QEMU_MODE NET_MODEL0 NET_MODEL1 NUM
@@ -1072,16 +1130,29 @@ echo -e "0)  退出\n"
 	fi
 	else
 	sudo_
+	if ! grep -q https /etc/apt/sources.list; then
+	ln -sf $(command -v busybox) $(command -v ps)
+	ln -sf $(command -v busybox) $(command -v pstree)
+	ln -sf $(command -v busybox) $(command -v pkill)
+	ln -sf $(command -v busybox) $(command -v uptime)
+	ln -sf $(command -v busybox) $(command -v killall)
+	ln -sf $(command -v busybox) $(command -v egrep)
+	ln -sf $(command -v busybox) $(command -v top)
+	if [ -f openssl.deb ]; then
+	$sudo	dpkg -i openssl.deb
+	$sudo	dpkg -i ca.deb
+	else
+		$sudo apt install apt-transport-https ca-certificates -y
+		fi
+		sed -i "s/http/https/g" /etc/apt/sources.list
+	fi
 	if grep -q 'bullseye' "/etc/os-release"; then
-		echo -e "\n${YELLOW}debian-sid源地址已有qemu6.0可供安装，是否更新版本？(非本脚本安装的容器慎选)${RES}"
+		echo -e "\n${YELLOW}debian-sid源地址已有qemu7.0可供安装，是否更新版本？(非本脚本安装的容器慎选)${RES}"
 		read -r -p "1)继续使用qemu5.2系统 2)更新为qemu6.0系统 " input
 		case $input in
-			2) echo 'deb http://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && $sudo apt update ;;
+			2) echo 'deb https://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && $sudo apt update ;;
 			*) ;;
 		esac
-	fi
-	if ! grep -q https /etc/apt/sources.list; then
-	$sudo apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list
 	fi
 	sudo_
        	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
@@ -1159,11 +1230,11 @@ unable to find CPU model; ${YELLOW}cpu名字有误${RES}"
 	CONFIRM
 	QEMU_SYSTEM     ;;
 	9) ABOUT_UTQEMU ;;
-	10) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/termux-toolx.sh)" ;;
-	11) bash -c "$(curl -s https://cdn.jsdelivr.net/gh/chungyuhoi/script/Check_cpuids.sh)"
+	10) bash -c "$(curl https://shell.xb6868.com/ut/termux-toolx.sh)" ;;
+	11) bash -c "$(curl -s https://shell.xb6868.com/ut/Check_cpuids.sh)"
 	CONFIRM
 	QEMU_SYSTEM ;;
-	12) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utdos.sh)" ;;
+	12) bash -c "$(curl https://shell.xb6868.com/ut/utdos.sh)" ;;
 	0) trap " rm ${HOME}/hugepage* 2>/dev/null;exit" SIGINT EXIT
 	exit 0 ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
@@ -2711,7 +2782,8 @@ fi
 	${@}
 	EOF
 	case $display in
-		vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n" ;;
+		vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer 127.0.0.1:0\n" 
+am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity >/dev/null 2>&1 ;;
 		wlan_vnc) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开vncviewer $IP:0\n" ;;
 		xsdl) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开xsdl\n" ;;
 		wlan_spice) printf "%s\n${BLUE}启动模拟器\n${GREEN}请打开aspice $IP 端口 5900(部分aspice app可能默认未勾选声音，如无声音请检查打开)\n" ;;
@@ -2809,7 +2881,7 @@ echo -e "2) 为磁盘接口添加virtio驱动（维基指导模式，需另外�
 2)
 	if [ ! -f ${DIRECT}${STORAGE}virtio-gpu-wddm-dod.iso ]; then
 	echo -e "\n${GREEN}正在下载virtio显卡驱动盘${RES}"
-	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/gpu.tar.gz
+	curl -O https://shell.xb6868.com/ut/gpu.tar.gz
         tar zxvf gpu.tar.gz
 	mv virtio-gpu-wddm-dod.iso ${DIRECT}${STORAGE}
 	rm gpu.tar.gz
@@ -2898,11 +2970,8 @@ LOGIN_() {
 	2)  支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3） 支持qemu5.0以上版本容器(选项内容丰富)
 	4)  换源(如果无法安装或登录请尝试此操作)
-	5)  在线安装体验linux系统(debian)
-	6)  在线安装体验linux系统(ubuntu)
-	7)  在线安装体验x86_64架构linux系统(debian，仅架构模拟)
 	8)  安装运行轻量版容器+qemu(qemulite)
-	9)  体验box64+box86+wine运行exe(整个容器约4g)
+	9)  体验box64+box86+wine运行exe(整个容器约2.2g)
 	10) 下载新版termux
 	0) 退出\n"
 	read -r -p "请选择: " input
@@ -2916,8 +2985,8 @@ LOGIN_() {
 		LOGIN
 	else
 		SYS_DOWN
-		fi
 		LOGIN
+	fi
 		fi ;;
 	3) uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
@@ -2927,15 +2996,12 @@ LOGIN_() {
 		LOGIN
 	else
 		SYS_DOWN
-		fi
 		LOGIN
+	fi
 		fi ;;
 	4) SOURCE ;;
-	5) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye.sh)" ;;
-	6) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/focal.sh)" ;;
-	7) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/bullseye-amd64.sh)" ;;
-	8) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/qemulite.sh)" ;;
-	9) bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/boxswine.sh)" ;;
+	8) bash -c "$(curl https://shell.xb6868.com/ut/qemulite.sh)" ;;
+	9) bash -c "$(curl https://shell.xb6868.com/ut/boxwine.sh)" ;;
 	10) echo -e "\n${YELLOW}检测最新版本${RES}"
         VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
         echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
