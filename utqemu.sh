@@ -5,10 +5,11 @@ cd $(dirname $0)
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
 #time echo "scale=5000; 4*a(1)" | bc -l -q
-UPDATE="2022/07/25"
+UPDATE="2022/07/27"
 INFO() {
 	clear
 	printf "${YELLOW}更新日期$UPDATE 更新内容${RES}
+	修复容器的bug
 	仅优化容器
 	为减少安装占用，部分不常用功能参数的默认安装包改为促发安装
 	增加termux环境的qemu本地共享(在termux目录下创建share共享文件夹，模拟系统可同步访问文件夹内容)
@@ -137,8 +138,6 @@ COMPILE(){
 	fi
 	cd $VERSION
 	fi
-#	sed -i 's/^\(spice.*"\)$/#\1\nspice="yes"/' configure
-#aarch64-softmmu,arm-softmmu,i386-softmmu,x86_64-softmmu,ppc-softmmu,ppc64-softmmu,mips-softmmu,m68k-softmmu
 ./configure --target-list=i386-softmmu,x86_64-softmmu --enable-spice --enable-gtk --enable-sdl --audio-drv-list=oss,alsa,sdl,pa --python=$(command -v python3)
 	if [ $? != 0 ]; then
 		echo -e "${RED}编译失败${RES}"
@@ -214,8 +213,8 @@ sudo_() {
 	fi
 ####################
 BF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/"
-BF_URL="deb http://mirrors.bfsu.edu.cn/debian"
-US_URL="deb http://mirrors.ustc.edu.cn/debian"
+BF_URL="deb https://mirrors.bfsu.edu.cn/debian"
+US_URL="deb https://mirrors.ustc.edu.cn/debian"
 DEB="main contrib non-free"
 ####################
 case $(dpkg --print-architecture) in
@@ -254,8 +253,7 @@ INVALID_INPUT() {
 #####################
 CONFIRM() {
 	read -r -p "按回车键继续" input
-	case $input in
-		*) ;; esac
+	unset input
 }
 ####################
 CHECK() {
@@ -342,8 +340,6 @@ QEMU_VERSION(){
 		echo ""
 	elif qemu_ver=$(qemu-system-x86_64 --version)
 		[[ $(echo $qemu_ver | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [5-9] ]]; then
-#	elif [[ $(qemu-system-x86_64 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = [5-9] ]]; then
-#        elif [[ $(qemu-system-x86_64 --version) =~ :[5-9] ]] ; then
 		SYS=QEMU_ADV
 	else
 		SYS=QEMU_PRE
@@ -390,6 +386,12 @@ LIST() {
 	echo -e "\n$hda_name\n"
 	fi
 	fi
+}
+#################
+LIST1(){
+	echo -e "${YELLOW}"
+	ls ${DIRECT}${STORAGE} | egrep "\.blkdebug|\.blkverify|\.bochs|\.cloop|\.cow|\.tftp|\.ftps|\.ftp|\.https|\.http|\.dmg|\.nbd|\.parallels|\.qcow|\.qcow2|\.qed|\.host_cdrom|\.host_floppy|\.host_device|\.file|\.raw|\.sheepdog|\.vdi|\.vmdk|\.vpc|\.vvfat|\.img|\.XBZJ|\.vhd|\.iso|\.fd"
+	echo -e "${RES}"
 }
 #################
 FAIL() {
@@ -473,7 +475,7 @@ case $(dpkg --print-architecture) in
         fi
                 mkdir $sys_name
 	echo -e "${BLUE}正在解压系统包${RES}"
-	tar xf ${BAGNAME} --checkpoint=100 --checkpoint-action=dot --totals -C $sys_name 2>/dev/null
+	tar xf ${BAGNAME} --checkpoint=200 --checkpoint-action=dot --totals -C $sys_name 2>/dev/null
         rm ${BAGNAME}
 	echo -e "${BLUE}$sys_name系统已下载，文件夹名为$sys_name${RES}"
         echo "127.0.0.1 localhost" > $sys_name/etc/hosts
@@ -486,28 +488,17 @@ nameserver 223.6.6.6" >$sys_name/etc/resolv.conf
 echo "${US_URL}/ bullseye ${DEB}
 ${US_URL}/ bullseye-updates ${DEB}
 ${US_URL}/ bullseye-backports ${DEB}
-${US_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
+${US_URL}-security bullseye-security ${DEB}"|sed 's/https/http/' >$sys_name/etc/apt/sources.list
 
 			;;
 		buster) 
 echo "$US_URL buster ${DEB}
 ${US_URL} buster-updates ${DEB}
 ${US_URL} buster-backports ${DEB}
-${US_URL}-security buster/updates ${DEB}" >$sys_name/etc/apt/sources.list
-: <<\eof
-echo "${US_URL} stable ${DEB}
-${US_URL} stable-updates ${DEB}" >$sys_name/etc/apt/sources.list
-eof
-;;
-	esac
-cat >/dev/null <<EOF
-echo "${US_URL}/ bullseye ${DEB}
-${US_URL}/ bullseye-updates ${DEB}
-${US_URL}/ bullseye-backports ${DEB}
-${US_URL}-security bullseye-security ${DEB}" >$sys_name/etc/apt/sources.list
-EOF
-curl http://mirrors.bfsu.edu.cn/debian/pool/main/c/ca-certificates/$(curl http://mirrors.bfsu.edu.cn/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/ca.deb
-curl http://mirrors.bfsu.edu.cn/debian/pool/main/o/openssl/$(curl http://mirrors.bfsu.edu.cn/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/openssl.deb
+${US_URL}-security buster/updates ${DEB}"|sed 's/https/http/' >$sys_name/etc/apt/sources.list
+esac
+curl https://mirrors.bfsu.edu.cn/debian/pool/main/c/ca-certificates/$(curl https://mirrors.bfsu.edu.cn/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/ca.deb
+curl https://mirrors.bfsu.edu.cn/debian/pool/main/o/openssl/$(curl https://mirrors.bfsu.edu.cn/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/openssl.deb
 	if [ ! -f $(pwd)/utqemu.sh ]; then
 	curl https://shell.xb6868.com/ut/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
 	else
@@ -522,16 +513,19 @@ find $sys_name/ -name busybox
 if [ $? == 0 ]; then
 mkdir qemu_tmp
 cd qemu_tmp
-wget -O busybox.apk https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/ | grep busybox | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1)
+curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/ | grep busybox | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1) -o busybox.apk
 tar zxvf busybox.apk bin 2>/dev/null
 mv bin/busybox ../$sys_name/usr/local/bin 2>/dev/null
-wget -O musl.apk https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/ | grep musl | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1)
+curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/ | grep musl | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1) -o musl.apk
 tar zxvf musl.apk lib
 mv lib/* ../$sys_name/usr/lib
 cd -
 rm -rf qemu_tmp
 fi
+case $sys_name in
+bullseye-qemu)
 echo "service dbus start" >>$sys_name/root/.bashrc
+esac
 #伪proc文件
 mkdir $sys_name/etc/proc/ -p
 printf ' 52 memory_bandwidth! 53 network_throughput! 54 network_latency! 55 cpu_dma_latency! 56 xt_qtaguid! 57 vndbinder! 58 hwbinder! 59 binder! 60 ashmem!239 uhid!236 device-mapper!223 uinput!  1 psaux!200 tun!237 loop-control! 61 lightnvm!228 hpet!229 fuse!242 rfkill! 62 ion! 63 vga_arbiter\n' | sed 's/!/\n/g' >$sys_name/etc/proc/misc
@@ -594,29 +588,34 @@ SYSTEM_CHECK() {
 	if [ ! -e ${HOME}/storage ]; then
 		termux-setup-storage
 	fi
-	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep termux.org >/dev/null 2>&1; then 
+	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | egrep "mirror.iscas.ac.cn|mirrors.hit.edu.cn|mirrors.aliyun.com|mirrors.nju.edu.cn|mirrors.bfsu.edu.cn|mirrors.pku.edu.cn|mirrors.cqupt.edu.cn|mirrors.tuna.tsinghua.edu.cn|mirrors.dgut.edu.cn|mirrors.ustc.edu.cn" >/dev/null 2>&1; then
+		echo ""
+	else
 		echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
 		1) 换国内源
 		2) 不换
 		3) 我的是旧termux版本"
 	read -r -p "是否换国内源: " input   
 	case $input in    
-		1|"") echo "换国内源" 
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list 
-	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list 
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && yes | pkg update 
+		1|"") echo "换国内源"
+	if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
+	rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+	ln -s /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+	fi
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && yes | pkg update 
 	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update
 	;;
 		3)
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://termux.org/packages/ stable main@' $PREFIX/etc/apt/sources.list
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://termux.org/packages/ stable main@' $PREFIX/etc/apt/sources.list && pkg update
 #	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://packages-cf.termux.org/apt/termux-main/ stable main@' $PREFIX/etc/apt/sources.list
-	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/science.list
-	sed -i '/deb/s/^/#/' $PREFIX/etc/apt/sources.list.d/game.list && pkg update
 	;;
 		*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;  
 	esac                                                    
 		fi
-	for i in curl pulseaudio proot ; do if [ ! $(command -v curl) ]; then pkg install $i -y; fi done
+	for i in curl pulseaudio proot; do if [ ! $(command -v $i) ]; then pkg install $i -y; fi done
+	if [ ! $(command -v ip) ]; then
+		pkg i iproute2
+	fi
 	if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa ;
 	then
 		echo ""
@@ -635,8 +634,7 @@ WEB_SERVER() {
 	if [ $? == 0 ]; then
 	if [ ! $(command -v python) ]; then
 	echo -e "\n检测到你未安装所需要的包python,将先为你安装上"
-	sudo_
-	$sudo apt install python -y
+	pkg i python -y
 	fi
 	else
 	if [ ! $(command -v python3) ]; then
@@ -955,8 +953,10 @@ SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desk
 	exit 0
 	QEMU_ETC ;;
 	9) echo "${US_URL} sid ${DEB}" >/etc/apt/sources.list && $sudo apt update
-	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl fonts-wqy-microhei -y
 	if [[ $(qemu-system-i386 --version | grep version | awk -F "." '{print $1}' | awk '{print $4}') = 7 ]]; then
+	sed -i "/zh_CN.UTF/s/#//" /etc/locale.gen
+	locale-gen
 	echo -e "更新成功"
 	else
 	echo -e "更新失败"
@@ -1148,19 +1148,21 @@ echo -e "0)  退出\n"
 	fi
 	if grep -q 'bullseye' "/etc/os-release"; then
 		echo -e "\n${YELLOW}debian-sid源地址已有qemu7.0可供安装，是否更新版本？(非本脚本安装的容器慎选)${RES}"
-		read -r -p "1)继续使用qemu5.2系统 2)更新为qemu6.0系统 " input
+		read -r -p "1)继续使用qemu5.2系统 2)更新为qemu7.0系统 " input
 		case $input in
 			2) echo 'deb https://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && $sudo apt update ;;
 			*) ;;
 		esac
 	fi
 	sudo_
-       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+       	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl fonts-wqy-microhei -y
 	if [ ! $(command -v qemu-system-x86_64) ]; then
 	echo -e "\n检测安装失败，重新安装\n"
 	sleep 1
-	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl -y
+	$sudo apt install qemu-system-x86 xserver-xorg x11-utils pulseaudio curl fonts-wqy-microhei -y
 	fi
+	sed -i "/zh_CN.UTF/s/#//" /etc/locale.gen
+	locale-gen
 	PA
 	echo -e "\n${GREEN}已完成安装，如无法正常使用，请重新执行此操作${RES}"
 	fi
@@ -1922,7 +1924,7 @@ eof
 	case $display in
 		xsdl) set -- "${@}" "-device" "virtio-vga" "-display" "sdl,gl=on"
 		unset display ;;
-		vnc|wlan_vnc)
+		vnc|wlan_vnc|xvnc)
 		export PULSE_SERVER=tcp:127.0.0.1:4713
 			if [ ! $(command -v tigervncserver) ]; then
 			echo -e "${YELLOW}检测所需vnc包${RES}"
@@ -2059,15 +2061,18 @@ eof
 	echo -e "请选择${YELLOW}分区磁盘${RES}加载模式"
 	read -r -p "1)加载分区镜像 2)加载双光盘 不加载请直接回车 " input
         case $input in
-		1) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
+		1) LIST1
+			echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
 	read hdb_name ;;
-		2) echo -n -e "请输入${YELLOW}第一个光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
+		2) LIST1
+			echo -n -e "请输入${YELLOW}第一个光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
 	read iso1_name ;;
 	*) ;;
 	esac ;;
 	VIRTIO_MODE) ;;
 	esac ;;
-	*) echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
+	*) LIST1
+		echo -n -e "请输入${YELLOW}分区镜像${RES}全名,不加载请直接回车（例如hdb.img）: "
 	read hdb_name ;;
 	esac
 	echo -n -e "请输入${YELLOW}光盘${RES}全名,不加载请直接回车（例如DVD.iso）: "
@@ -2945,17 +2950,18 @@ echo -e "1) 换源
 9) 返回"
 	read -r -p "请选择: " input
 	case $input in
-		1) read -r -p "1)北外源 2)腾讯源 3)清华源 9)返回 " input
+		1) read -r -p "1)北外源 2)清华源 9)返回 " input
 	case $input in
-	1) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
-	2) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
-	3) sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
+	1) if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
+		rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+		ln -s /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+	fi
+		sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update ;;
+	2) if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
+		rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+		ln -s /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+	fi
+		sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update ;;
 	*) MAIN ;;
 	esac
 	pkg update ;;
@@ -2966,7 +2972,7 @@ sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/
 ###################
 LOGIN_() {
 	echo -e "\n\e[33m请选择qemu-system-x86的运行环境\e[0m\n
-	1)  直接运行，termux(utermux)目前版本为6.0以上，由于termux源的qemu编译的功能不全，强烈建议在容器上使用qemu，\e[33m其他系统的版本各不一样，一些功能参数可能没被编译进去${RES}
+	1)  直接运行，termux(utermux)目前版本为7.0以上，由于termux源的qemu编译的功能不全，强烈建议在容器上使用qemu，\e[33m其他系统的版本各不一样，一些功能参数可能没被编译进去${RES}
 	2)  支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3） 支持qemu5.0以上版本容器(选项内容丰富)
 	4)  换源(如果无法安装或登录请尝试此操作)
@@ -3001,7 +3007,7 @@ LOGIN_() {
 		fi ;;
 	4) SOURCE ;;
 	8) bash -c "$(curl https://shell.xb6868.com/ut/qemulite.sh)" ;;
-	9) bash -c "$(curl https://shell.xb6868.com/ut/boxwine.sh)" ;;
+	9) bash -c "$(curl https://shell.xb6868.com/wine/boxwine.sh)" ;;
 	10) echo -e "\n${YELLOW}检测最新版本${RES}"
         VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
         echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
