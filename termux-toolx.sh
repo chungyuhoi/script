@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 #####################
-cd $(dirname $0)
+#cd $(dirname $0)
+cd ${HOME}
 date_t=`date +"%D"`
 if ! grep -q $date_t ".date_tmp.log" 2>/dev/null; then
 	echo -e "\n\e[33m为保证环境系统源正常使用，每日首次运行本脚本会先自检更新一遍哦(≧∇≦)/\e[0m"
 	sleep 3
 	apt update
-	if [ ! $(command -v curl) ]; then
-		apt install curl -y
+	uname -a | grep 'Android' -q
+	if [ $? == 0 ]; then
+		apt install $(for i in curl tar proot pulseaudio; do if [ $(command -v $i) ]; then echo $i; fi done | sed 's/\n/ /g') -y
+	else
+		apt install $(for i in curl tar pulseaudio; do if [ $(command -v $i) ]; then echo $i; fi done | sed 's/\n/ /g') -y
 	fi
-	if [ ! $(command -v tar) ]; then
-		apt install tar -y
-	fi
+	unset i
 	echo $date_t >>.date_tmp.log 2>&1
 fi
 
@@ -27,8 +29,9 @@ WHITE="\e[37m"
 RES="\e[0m"
 
 #SOURCE
-SOURCES_USTC="deb http://mirrors.ustc.edu.cn/"
-SOURCES_ADD="deb http://mirrors.bfsu.edu.cn/"
+SOURCES_USTC="https://mirrors.ustc.edu.cn/"
+SOURCES_BF="https://mirrors.bfsu.edu.cn/"
+SOURCES_TUNA="https://mirrors.tuna.tsinghua.edu.cn/"
 DEB_DEBIAN="main contrib non-free"
 DEB_UBUNTU="main restricted universe multiverse"
 #######################
@@ -38,64 +41,50 @@ TERMUX_CHECK() {
 	if [ ! -e ${HOME}/storage ]; then
 	termux-setup-storage
 	fi
-	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | grep termux.org; then
-	echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n
-	1) 换国内源
-	2) 不换"
-	read -r -p "是否换国内源: " input
-	case $input in
-	1|"") echo "换国内源"
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update ;;
+	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | egrep "mirror.iscas.ac.cn|mirror.nyist|aliyun.com|bfsu|cqupt|dgut|hit|nju|njupt|pku|sau|scau|sdu|sustech|tuna.tsinghua|ustc" >/dev/null 2>&1; then
+		echo ""
+	else
+		echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n
+		1) 换国内源
+		2) 不换"
+read -r -p "是否换国内源: " input
+case $input in
+1|"") echo "换国内源"
+if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
+ln -sf /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+fi
+sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && yes | pkg update
+ln -sf /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && yes | pkg update
+;;
+
 	*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;
 	esac
         fi
-        if [ ! $(command -v curl) ]; then
-        pkg update && pkg install curl -y
-        fi
-        dpkg -l | grep pulseaudio -q 2>/dev/null
-        if [ $? != 0 ]; then
-        echo -e "${YELLOW}检测到你未安装pulseaudio，为保证声音正常输出，将自动安装${RES}"
-        sleep 2
-        pkg update && pkg install pulseaudio -y
-        fi
-        if grep -q "anonymous" ${PREFIX}/etc/pulse/default.pa; then
-        echo ""
-        else
-        echo "load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" >> ${PREFIX}/etc/pulse/default.pa
-	fi
-	if grep -q "exit-idle" ${PREFIX}/etc/pulse/daemon.conf ; then
-	sed -i '/exit-idle/d' ${PREFIX}/etc/pulse/daemon.conf
-	echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
-	fi
-	if [ ! $(command -v proot) ]; then
-	pkg update && pkg install proot -y
-	fi
         fi
 }
 #######################
 TERMUX_CHECK
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20210908${RES}\n"
+${YELLOW}更新日期20220913${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
 	if [ `whoami` == "root" ];then
 	echo -e "${BLUE}当前用户为root${RES}"
 else
-	echo -e "${RED}当前用户为$(whoami)，建议切换root用户${RES}\n"
+	echo -e "${RED}当前用户为$(whoami)${RES}\n"
 	sleep 1
 	fi
 fi
 if [ ! -e "/etc/os-release" ]; then
 uname -a | grep 'Android' -q
 if [ $? -eq 0 ]; then
-	echo "你的系统是Android"
+echo "你的系统是Android"
 SYS=android
 fi
 elif grep -q 'ID=debian' "/etc/os-release"; then
-	printf '你的系统是'
+printf '你的系统是'
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
 SYS=debian
 elif grep -q 'ID=ubuntu' "/etc/os-release"; then
@@ -103,7 +92,7 @@ printf "你的系统是"
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
 SYS=ubuntu
 elif grep -q 'ID=kali' "/etc/os-release"; then
-	printf "你的系统是"
+printf "你的系统是"
 cat /etc/os-release | grep PRETTY | cut -d '"' -f 2
 SYS=kali
 fi
@@ -177,8 +166,7 @@ sleep 1
 #####################
 CONFIRM() {
 read -r -p "按回车键继续" input
-case $input in
-*) ;; esac
+unset input
 }
 #####################
 PROCESS_CHECK() {
@@ -197,16 +185,16 @@ SETTLE() {
 3)  增加普通用户并赋予sudo功能
 4)  处理Ubuntu出现的groups: cannot find name for group *提示
 5)  设置时区
-6)  安装进程树(可查看进程,命令pstree)
-7)  安装网络信息查询(命令ifconfig)
-8)  修改国内源地址sources.list(only for debian and ubuntu)
-9)  修改dns
-10) GitHub资源库(仅支持debian-bullseye)
-11) python3和pip应用
-12) 中文汉化
-13) 安装系统信息显示(neofetch,screenfetch,conky)
-14) 用不了pkill，下载pkill恢复包\n"
-read -r -p "E(exit) M(main)请选择: " input
+6)  修改国内源地址sources.list(only for debian and ubuntu)
+7)  修改dns
+8)  GitHub资源库(仅支持debian-bullseye)
+9)  python3和pip应用
+10) 中文汉化
+11) 安装系统信息显示(neofetch,screenfetch,conky)
+12) 安装busybox(解决部分命令不可用)
+13) 返回
+0)  退出\n"
+read -r -p "请选择: " input
 
 case $input in
 	1)
@@ -215,12 +203,10 @@ case $input in
 		mv /var/lib/dpkg/info/ /var/lib/dpkg/info_old/&&mkdir /var/lib/dpkg/info/&&apt-get update&&apt-get -f install&&mv /var/lib/dpkg/info/* /var/lib/dpkg/info_old/&&mv /var/lib/dpkg/info /var/lib/dpkg/info_back&&mv /var/lib/dpkg/info_old/ /var/lib/dpkg/info
 		apt install
 		echo "done"
-		SETTLE
 		;;
 	2)
 		echo "安装个小火车，运行命令sl"
 		$sudo_t apt install sl && cp /usr/games/sl /usr/local/bin && sl 
-		SETTLE
 		;;
 	3)
 		echo -n "请输入普通用户名name: "
@@ -277,90 +263,40 @@ case $input in
 	echo ""
 	;;
 esac
-		SETTLE
 ;;
-4) echo -e "请选择哪种方式处理
-	1) 忽略信息
-	2) 编辑gid信息\n"
-	read -r -p "E(exit) M(main)请选择: " input
-	case $input in
-		1) echo "fix…"
-			sleep 1
-			touch ${HOME}/.hushlogin
-			echo "done"
-			sleep 1 ;;
-		2) echo -n "如有多个gid，需重复多次，添加完请输'0'退出，请输gid数字(例如 3003)，GID: "
-			while echo "请输入"
-				read GID
-				[ $GID != "0" ]
-do
-        echo "$GID:x:$GID:" >>/etc/group
-	echo -e "${YELLOW}已添加，如还需添加处理，请继续，退出请输'0'${RES}"
-done
-			echo -e "${YELLOW}exit${RES}"
-			sleep 1 ;;
-		[eE]) echo "exit"
-			exit 1 ;;
-        [Mm]) echo -e "back to main\n\n"
-		MAIN ;;
-	*) INVALID_INPUT
-		SETTLE ;;
-	esac
-	SETTLE
-	;;
-	[eE])
-		echo "exit"
-		exit 1
-		;;
-	[Mm])
-                echo -e "back to main\n\n"
-		MAIN
-		;;
-	5) echo "设置时区为上海"
+4) echo -e "即将编辑gid信息\n"
+	sleep 3
+for i in $(groups 2>/dev/null|sed "s/$(whoami)//"); do if ! grep -q "$i" /etc/group; then echo "$i:x:$i:" >>/etc/group; fi done
+#for i in $(groups 2>/dev/null|sed "s/$(whoami)//"); do echo "$i:x:$i:" >>/etc/group; done; source /etc/profile
+echo -e "已处理\n" ;;
+5) echo "设置时区为上海"
 		sed -i "/^export TZ=/d" /etc/profile
 		sed -i "1i\export TZ='Asia/Shanghai'" /etc/profile
 		echo "done"
 		sleep 2
 SETTLE ;;
-6) read -r -p "1)命令安装 2)恢复包安装 " input
-	case $input in
-		2) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PSTREE.tar.gz
-		tar zxvf PSTREE.tar.gz && bash bash_me
-		rm -rf PSTREE.tar.gz bash_me ;;
-		*) 
-	echo "安装进程树"
-	$sudo_t apt install psmisc
-	echo -e "${BLUE}done${RES}"
-	;;
-	esac
-	SETTLE
-                ;;
-	7)
-		echo "安装ifconfig"
-	$sudo_t apt install net-tools
-		echo -e "${BLUE}done${RES}"
-		SETTLE
-		;;
-	8) SOURCES_LIST ;;
-	9) MODIFY_DNS ;;
-	10) ADD_GITHUB ;;
-	11) INSTALL_PYTHON3 ;;
-	12) LANGUAGE_CHANGE ;;
-	13) echo -e "\n1)neofetch
-2)screenfetch
-3)conky(在图形界面下使用)\n"
-		read -r -p "E(exit) M(main)请选择: " input
+	6) SOURCES_LIST ;;
+	7) MODIFY_DNS ;;
+	8) ADD_GITHUB ;;
+	9) INSTALL_PYTHON3 ;;
+	10) LANGUAGE_CHANGE ;;
+	11) echo -e "\n1) neofetch
+2) screenfetch
+3) conky(在图形界面下使用)
+9) 返回
+0) 退出\n"
+		read -r -p "请选择: " input
 		case $input in
 			1) echo "安装neofetch"
-			$sudo_t	apt install neofetch
+			$sudo_t	apt install neofetch -y
 				echo -e "${BLUE}done${RES}"
 				SETTLE ;;
 			2) echo "安装screenfetch"
-			$sudo_t	apt install screenfetch
+			$sudo_t	apt install screenfetch -y
 				echo -e "${BLUE}done${RES}"
 				SETTLE ;;
 			3) echo "安装conky"
-				$sudo_t apt install conky
+				$sudo_t apt install conky -y
 cat >${HOME}/.conkyrc<<-'eof'
 conky.config = {
     alignment = 'top_right',
@@ -392,6 +328,7 @@ conky.config = {
     own_window_class = 'Conky',
     own_window_transparent = true,
     own_window_type = 'desktop',
+    own_window_hints = 'undecorated,sticky,skip_taskbar,skip_pager,below',
     show_graph_range = false,
     show_graph_scale = false,
     stippled_borders = 0,
@@ -402,7 +339,7 @@ conky.config = {
 }
 
 conky.text = [[
-${color white}Info:$color ${scroll 32 Good day $conky_version}
+${color white}Info:$color ${scroll 32 Goodday $conky_version}
 $hr
 ${color white}Frequency (in GHz):$color $freq_g
 ${color white}CPU ${hr 1}
@@ -427,7 +364,7 @@ Hostname: $alignr$nodename
 Kernel: $alignr$kernel
 Machine:$alignr$machine
 Temp: ${alignr}${acpitemp} °C
-${color white}Date: 2021-09-02
+${color white}Date: ${time %Y.%m.%d}
 ${color white}MEMORY ${hr 1}
 Ram ${alignr}$mem / $memmax ($memperc%)
 ${membar 4}
@@ -441,23 +378,28 @@ ${top_mem name 3}$alignr ${top_mem mem 3}
 eof
 			echo -e "${BLUE}done${RES}"
 			SETTLE ;;
-			[Ee]) echo "exit"
+			0) echo "exit"
 				exit 0 ;;
-			[Mm]) echo "返回"
+			9) echo "返回"
 				MAIN
 				;;
 			*) INVALID_INPUT
 				SETTLE ;;
 		esac ;;
-	14) curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/PKILL.tar.gz
-	tar zxvf PKILL.tar.gz && bash PKILL/bash_me
-	rm -rf PKILL*
-	echo -e "${BLUE}done${RES}"
-	SETTLE
-;;
+	12) $sudo_t apt install busybox -y
+		echo -e 'busybox用法：
+例如 ps 不可用，请使用命令
+ln -sf $(command -v busybox) $(command -v ps)'
+		;;
+	0) echo "exit"
+		exit 0 ;;
+	13) echo "返回"
+		MAIN
+		;;
 	*) INVALID_INPUT
-		SETTLE ;;
+		 ;;
 esac
+	SETTLE
 }
 ################
 LANGUAGE_CHANGE(){
@@ -484,52 +426,52 @@ else
 fi
 CHECK
 	case $(cat /etc/os-release) in
-		*bionic*) 
-echo "${SOURCES_ADD}ubuntu-ports/ bionic ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-updates ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-backports ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-security ${DEB_UBUNTU}" >/etc/apt/sources.list ;;
+		*bionic*)
+echo "deb ${SOURCES_BF}ubuntu-ports/ bionic ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ bionic-updates ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ bionic-backports ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ bionic-security ${DEB_UBUNTU}" >/etc/apt/sources.list ;;
 		*focal*)
-echo "${SOURCES_ADD}ubuntu-ports/ focal ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ focal-updates ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ focal-backports ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ focal-security ${DEB_UBUNTU}" >/etc/apt/sources.list ;;
+echo "deb ${SOURCES_BF}ubuntu-ports/ focal ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ focal-updates ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ focal-backports ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ focal-security ${DEB_UBUNTU}" >/etc/apt/sources.list ;;
 		*Groovy*)
-echo "${SOURCES_ADD}ubuntu-ports/ groovy ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ groovy-updates ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ groovy-backports ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ groovy-security ${DEB_UBUNTU}" >/etc/apt/sources.list ;;
+echo "deb ${SOURCES_BF}ubuntu-ports/ groovy ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ groovy-updates ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ groovy-backports ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ groovy-security ${DEB_UBUNTU}" >/etc/apt/sources.list ;;
 		*kali*)
-echo "${SOURCES_USTC}kali kali-rolling ${DEB_DEBIAN}
+echo "deb ${SOURCES_USTC}kali kali-rolling ${DEB_DEBIAN}
 deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
 		*strentch*)
-echo "${SOURCES_ADD}debian/ stretch ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ stretch-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ stretch-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security stretch/updates ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
+echo "deb ${SOURCES_BF}debian/ stretch ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian/ stretch-updates ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian/ stretch-backports ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian-security stretch/updates ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
 		*jessie*)
-echo "${SOURCES_ADD}debian/ jessie ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ jessie-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ jessie-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security jessie/updates ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
+echo "deb ${SOURCES_BF}debian/ jessie ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian/ jessie-updates ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian/ jessie-backports ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian-security jessie/updates ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
 		*buster*)
-echo "${SOURCES_ADD}debian/ buster ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ buster-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ buster-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security buster/updates ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
+echo "deb ${SOURCES_BF}debian/ buster ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian/ buster-updates ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian/ buster-backports ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian-security buster/updates ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
 		*bullseye*|*sid*)
-echo "${SOURCES_ADD}debian/ bullseye ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ bullseye-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian/ bullseye-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
+echo "deb ${SOURCES_BF}debian/ bullseye ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian/ bullseye-updates ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian/ bullseye-backports ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian-security bullseye-security ${DEB_DEBIAN}" >/etc/apt/sources.list ;;
 		*)
 echo -e "${RED}未收录你的系统源${RES}"
 sleep 2
 	SOURCES_LIST ;;
 esac
-if grep -q 'ubuntu' "/etc/os-release" ; then
-sed -i "s/http/https/g" /etc/apt/sources.list
-else
+dpkg -l ca-certificates | grep ii
+if [ $? == 1 ]; then
+sed -i "s/https/http/g" /etc/apt/sources.list
 apt update && $sudo_t apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list
 fi
 apt update
@@ -547,8 +489,10 @@ fi
 echo -e "仅支持debian和ubuntu
 1) 修改debian或ubuntu国内源
 2) 更新源列表
-3) 为http修改为https(使用 HTTPS 可以有效避免国内运营商的缓存劫持)${RES}"
-read -r -p "E(exit) M(main)请选择: " input
+3) 为http修改为https(使用 HTTPS 可以有效避免国内运营商的缓存劫持)
+9) 返回
+0) 退出${RES}"
+read -r -p "请选择: " input
 
 case $input in
        	1)
@@ -567,11 +511,11 @@ case $input in
 		sed -i "s/https/http/g" /etc/apt/sources.list 2>/dev/null
 		apt update && $sudo_t apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && apt update && SOURCES_LIST
                 ;;
-	[eE])                    
+	0)                    
 		echo "exit"                       
-		exit
+		exit 0
 		;;
-	[Mm])
+	9)
 		echo "back to main"
 		MAIN
 		;;
@@ -584,7 +528,7 @@ esac
 #######################
 MODIFY_DNS() {
 echo -e "${YELLOW}是否修改DNS${RES}"
-read -r -p "1)是 2)否 E(exit) M(main) " input
+read -r -p "1)是 2)否 9)返回 0)退出 " input
 
 case $input in
 	1|"")
@@ -592,13 +536,13 @@ case $input in
 if [ ! -L "/etc/resolv.conf" ]; then
 	echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" > /etc/resolv.conf
-echo -e "${GREEN}已修改为223.5.5.5;223.6.6.6${RES}"          
+echo -e "${GREEN}已修改为${RES}\n223.5.5.5;223.6.6.6"
 sleep 1
 SETTLE
 elif [ -L "/etc/resolv.conf" ]; then
 	mkdir -p /run/systemd/resolve 2>/dev/null && echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >/run/systemd/resolve/stub-resolv.conf
-echo -e "${GREEN}已修改为223.5.5.5;223.6.6.6${RES}"
+echo -e "${GREEN}已修改为\n223.5.5.5;223.6.6.6${RES}"
 sleep 1
 SETTLE
 else
@@ -613,11 +557,11 @@ fi
 		SETTLE
 		;;
 
-	[eE]) 
+	0) 
 		echo "exit"
 		exit 1
 		;;
-	[Mm])
+	9)
 		echo "back to main"
 		MAIN
 			;;
@@ -632,87 +576,99 @@ ADD_GITHUB() {
 	echo -e "\n${YELLOW}注意，目前仅支持debian(bullseye),建议先安装常用应用\n请在root用户下操作${RES}"
 	CONFIRM
 	CHECK
-	echo -e "${YELLOW}是否添加Github仓库${RES}"
-	read -r -p "1)是 2)否 E(exit) M(main) " input
 
-case $input in
-	1|"")
-		echo "Yes"
-#		curl -1sLf "https://dl.cloudsmith.io/public/debianopt/debianopt/gpg.D215CE5D26AF10D5.key" | apt-key add -
-	$sudo_t apt install gnupg2 -y
-	URL=`curl https://dl.cloudsmith.io/public/debianopt/debianopt/setup.deb.sh | grep \.key | grep \.gpg | sed -n 2p | cut -d '"' -f 2 | cut -d '"' -f 1`
-	curl -1sLf $URL | apt-key add -
+$sudo_t apt install libnss3 unzip wget gnupg2 libxtst-dev apt-transport-https -y
+if [ ! $(command -v electron) ]; then
+mkdir /usr/share/electron
+cd /usr/share/electron
+wget https://registry.npmmirror.com/-/binary/electron/v8.5.5/chromedriver-v8.5.5-linux-arm64.zip
+wget https://registry.npmmirror.com/-/binary/electron/v8.5.5/ffmpeg-v8.5.5-linux-arm64.zip
+wget https://registry.npmmirror.com/-/binary/electron/v8.5.5/electron-v8.5.5-linux-arm64.zip
+echo -e "\e[33m即将解压包，如遇到提示，请输y回车\e[0m"
+read -r -p "确认请回车" input
+unset input
+unzip -n chromedriver-v8.5.5-linux-arm64.zip
+unzip -n ffmpeg-v8.5.5-linux-arm64.zip
+unzip -n electron-v8.5.5-linux-arm64.zip
+ln -s /usr/share/electron/electron /usr/bin/
+curl -1sLf 'https://dl.cloudsmith.io/public/debianopt/debianopt/setup.deb.sh' | sudo -E bash
+if ! grep -q 'Package: electron' /var/lib/dpkg/status; then
+cat >>/var/lib/dpkg/status<<-EOF
+Package: electron
+Version: 8.5.5
+Architecture: arm64
+Status: install ok installed
+Priority: extra
+Section: devel
+Maintainer: coslyk <cos.lyk@gmail.com>
+Installed-Size: 200 MB
+Homepage: https://github.com/electron/electron
+Download-Size: 56.7 MB
+APT-Sources: https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye/main arm64 Packages
+Description: Build cross platform desktop apps with web technologies
+EOF
+touch /var/lib/dpkg/info/electron.list
+fi
+fi
+electron --version --no-sandbox
+apt show electron-netease-cloud-music >/dev/null 2>&1
+if [ $? != 0 ]; then
+	if [ ! -d /etc/apt/sources.list.d ]; then
 	mkdir /etc/apt/sources.list.d
-	echo "deb https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye main
-deb-src https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye main" >/etc/apt/sources.list.d/debianopt-debianopt.list
-: <<\eof
-ID=`grep -w ID=* /etc/os-release | cut -d "=" -f 2`
-CODENAME=`grep -w VERSION_CODENAME=* /etc/os-release | cut -d "=" -f 2`
-echo "deb https://dl.cloudsmith.io/public/debianopt/debianopt/deb/${ID} ${CODENAME} main
-deb-src https://dl.cloudsmith.io/public/debianopt/debianopt/deb/${ID} ${CODENAME} main" >/etc/apt/sources.list.d/debianopt-debianopt.list
+	fi
+	cat >/etc/apt/sources.list.d/debianopt-debianopt.list<<-eof
+deb [signed-by=/usr/share/keyrings/debianopt-debianopt-archive-keyring.gpg] https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye main
+deb-src [signed-by=/usr/share/keyrings/debianopt-debianopt-archive-keyring.gpg] https://dl.cloudsmith.io/public/debianopt/debianopt/deb/debian bullseye main
 eof
-cat >/dev/null<<-eof
-		dpkg -l | grep gnupg -q
-		if [ "$?" != "0" ]; then
-		$sudo_t apt install gnupg2 -y
-		fi
-		echo "deb https://bintray.proxy.ustclug.org/debianopt/debianopt buster main" > /etc/apt/sources.list.d/debianopt.list && curl -L https://bintray.com/user/downloadSubjectPublicKey?username=bintray | apt-key add -
-eof
-		apt update && SETTLE
-		sleep 1
-		;;
-	2)
-		echo "No"
-		SETTLE
-		;;
-
-	[eE])        
-		echo "exit"
-		exit 1
-		;;
-	[Mm])
-		echo "back to main"
-		MAIN
-		;;
-	*)
-		INVALID_INPUT
-		ADD_GITHUB
-		
-		;;
-esac
+#apt show electron|sed -E 's/(^Version: ).*$/\18.5.5/;/Depends/d;/Version/aArchitecture: arm64\nStatus: install ok installed' >>/var/lib/dpkg/status
+fi
+apt update && SETTLE
+sleep 1
 }
 ###################
-XSTARTUP(){
-	sed -i '/rm -rf \/tmp\/.X*/d' /etc/profile
-	sed -i "1i\rm -rf \/tmp\/.X\*" /etc/profile
-if [ ! -e ${HOME}/.vnc ]; then
-                mkdir ${HOME}/.vnc
-        fi
-        echo "#!/bin/bash
-unset SESSION_MANAGER
-unset DBUS_SESSION_BUS_ADDRESS
-#xrdb ${HOME}/.Xresources
-export PULSE_SERVER=127.0.0.1
-export XKL_XMODMAP_DISABLE=1
-#vncconfig -iconic &
-startxfce4 &" >${HOME}/.vnc/xstartup && chmod +x ${HOME}/.vnc -R
-echo -e "${GREEN}请选择使用哪个图形界面${RES}"
-read -r -p "1)xfce4 2)lxde 3)mate " input
-case $input in
-        1) echo -e "done" && sleep 2 ;;
-        2) sed -i "s/startxfce4/startlxde/g" ${HOME}/.vnc/xstartup 
-#		$sudo_t apt purge --allow-change-held-packages gvfs udisks2 -y 2>/dev/null
-		echo -e "done" && sleep 2 ;;
-		3)
+XSESSION(){
+	mkdir -p /etc/X11/xinit/
 echo '#!/usr/bin/env bash
 unset SESSION_MANAGER
 unset DBUS_SESSION_BUS_ADDRESS
-export PULSE_SERVER=127.0.0.1
-export XKL_XMODMAP_DISABLE=1
-x-window-manager
-mate-panel
-mate-session
-thunar' >${HOME}/.vnc/xstartup
+if [[ $(id -u) = 0 ]];then
+	if [ ! -d /tmp/runtime-$(id -u) ]; then
+		#mkdir -pv "/var/run/user/$(id -u)"
+		mkdir -pv /tmp/runtime-$(id -u)
+	fi
+	chmod -R 1777 "/tmp/runtime-$(id -u)"
+#	service dbus start
+else
+	if [ ! -d /tmp/runtime-$(id -u) ]; then
+		sudo mkdir -pv "/tmp/runtime-$(id -u)"
+	fi
+	sudo chmod -R 1777 "/tmp/runtime-$(id -u)"
+#	sudo service dbus start
+fi
+export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
+if [ $(command -v xfce4-session) ]; then
+	dbus-launch xfce4-session
+else
+	dbus-launch startxfce4
+fi' >/etc/X11/xinit/Xsession.bak && chmod +x /etc/X11/xinit/Xsession.bak
+}
+XSTARTUP(){
+if [ ! -e ${HOME}/.vnc ]; then
+	mkdir ${HOME}/.vnc
+fi
+cp /etc/X11/xinit/Xsession.bak ${HOME}/.vnc/xstartup && chmod +x ${HOME}/.vnc -R
+echo -e "${GREEN}请选择使用哪个图形界面${RES}"
+read -r -p "1)xfce4 2)lxde " input
+case $input in
+        1) echo -e "done" && sleep 2 ;;
+        2) sed -i "s/startxfce4/startlxde/g" ${HOME}/.vnc/xstartup
+		sed -i "s/xfce4-session/lxsession/g" ${HOME}/.vnc/xstartup
+#		$sudo_t apt purge --allow-change-held-packages gvfs udisks2 -y 2>/dev/null
+echo -e "done" && sleep 2 ;;
+	3) sed -i "s/xfce4-session/mate-session/g" ${HOME}/.vnc/xstartup
+		sed -i "s/startxfce4/mate-panel/g" ${HOME}/.vnc/xstartup
+
+
 #                $sudo_t apt purge --allow-change-held-packages gvfs udisks2 -y 2>/dev/null
                 echo -e "done" && sleep 2
                 ;;
@@ -724,21 +680,26 @@ VNCSERVER
 }
 ###################
 VNCSERVER(){
-	echo -e "\n1) 安装tightvncserver
-2) 安装tigervncserver (推荐)
-3) 安装vnc4server
-4) 配置vnc的xstartup参数
-5) 设置tigervnc分辨率
-6) 创建另一个VNC启动脚本（推荐 命令easyvnc）
-7) 创建xsdl启动脚本(命令easyxsdl)
-8) 创建局域网vnc连接(命令easyvnc-wifi)\n${RES}"
-read -r -p "E(exit) M(main)请选择: " input
+if [ ! -f /etc/X11/xinit/Xsession.bak ]; then
+	XSESSION
+fi
+	echo -e "\n1)  安装tightvncserver
+2)  安装tigervncserver (推荐)
+3)  安装vnc4server
+4)  配置vnc的xstartup参数
+5)  设置tigervnc分辨率
+6)  创建另一个VNC启动脚本（推荐 命令easyvnc）
+7)  创建xsdl启动脚本(命令easyxsdl)
+8)  创建局域网vnc连接(命令easyvnc-wifi)
+11) 返回
+0)  退出\n${RES}"
+read -r -p "请选择: " input
 case $input in
 	1)
 		echo -e "${YELLOW}安装tightvncserver"
 	$sudo_t apt install tightvncserver -y
 	if [ ! -e "${HOME}/.vnc/passwd" ]; then       
-		echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m" 
+		echo -e "请设置vnc密码,6到8位(输入内容不反显)\n\e[32m输完请按提示输y再设置一遍\e[0m" 
 	       	vncpasswd                           
 fi
 XSTARTUP
@@ -750,7 +711,7 @@ XSTARTUP
 	echo "安装tigervncserver"
 	$sudo_t apt install tigervnc-standalone-server tigervnc-viewer -y
 	if [ ! -e "${HOME}/.vnc/passwd" ]; then     
-		echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m" 
+		echo -e "请设置vnc密码,6到8位(输入内容不反显)\n\e[32m输完请按提示输y再设置一遍\e[0m" 
 	       	vncpasswd                                
 fi
 XSTARTUP
@@ -762,7 +723,7 @@ XSTARTUP
 	echo "安装vnc4server"
 	$sudo_t apt install vnc4server -y
 	if [ ! -e "${HOME}/.vnc/passwd" ]; then    
-   		echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m" 
+		echo -e "请设置vnc密码,6到8位(输入内容不反显)\n\e[32m输完请按提示输y再设置一遍\e[0m" 
 	       	vncpasswd                         
 	fi
 	XSTARTUP
@@ -771,8 +732,11 @@ XSTARTUP
 	INSTALL_SOFTWARE
 	;;
 4) XSTARTUP ;;
-5) echo -n "输入你手机分辨率,例如 2340x1080  resolution: "
+5) echo -n "输入你手机分辨率,例如 2340x1080 (默认请回车) resolution: "
 	read resolution
+	if [ -z $resolution ]; then
+		resolution=1024x768
+	fi
 	ex_resolution=`cat /etc/vnc.conf | grep '^$geometry' | cut -d '=' -f 2`
 	sed -i "s/$ex_resolution/\"${resolution}\"\;/g" /etc/vnc.conf
 	echo "已修改，请重新打开vnc"
@@ -787,67 +751,26 @@ XSTARTUP
 	$sudo_t	apt install tigervnc-standalone-server tigervnc-viewer -y
 	fi
 	if [ ! -e "${HOME}/.vnc/passwd" ]; then
-		echo -e "请设置vnc密码,6到8位\n\e[32m输完请按提示输y再设置一遍\e[0m"
+		echo -e "请设置vnc密码,6到8位(输入内容不反显)\n\e[32m输完请按提示输y再设置一遍\e[0m"
 		vncpasswd
 	fi
-	echo -n "输入你手机分辨率,例如 2340x1080  resolution: "
+	echo -n "输入你手机分辨率,例如 2340x1080 (默认请回车) resolution: "
         read resolution
-	echo '#!/usr/bin/env bash
+	if [ -z $resolution ]; then
+		resolution=1024x768
+	fi
+echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 export USER="$(whoami)"
 export PULSE_SERVER=127.0.0.1
-set -- "${@}" "-ZlibLevel=1"
-set -- "${@}" "-securitytypes" "vncauth,tlsvnc"
-set -- "${@}" "-verbose"
-set -- "${@}" "-ImprovedHextile"
-set -- "${@}" "-CompareFB" "1"
-set -- "${@}" "-br"
-set -- "${@}" "-retro"
-set -- "${@}" "-a" "5"
-set -- "${@}" "-wm"
-set -- "${@}" "-alwaysshared"
-set -- "${@}" "-geometry" '$resolution'
-set -- "${@}" "-once"
-set -- "${@}" "-depth" "16"
-set -- "${@}" "-deferglyphs" "16"
-set -- "${@}" "-rfbauth" "${HOME}/.vnc/passwd"
-set -- "${@}" ":0"
-set -- "Xvnc" "${@}"
-"${@}" &
+Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 1024x768 -once -depth 24 -localhost -securitytypes None :0 &
 export DISPLAY=:0
 . /etc/X11/xinit/Xsession 2>/dev/null &
+am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
 exit 0' >/usr/local/bin/easyvnc && chmod +x /usr/local/bin/easyvnc
-if [ ! -e /etc/X11/xinit/Xsession ]; then
-	mkdir -p /etc/X11/xinit 2>/dev/null
-fi
-echo '#!/usr/bin/env bash
-unset SESSION_MANAGER
-unset DBUS_SESSION_BUS_ADDRESS
-#if [ $(command -v x-terminal-emulator) ]; then
-#x-terminal-emulator &
-#fi
-if [ $(command -v xfce4-session) ]; then
-dbus-launch xfce4-session
-else
-dbus-launch startxfce4
-fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
-cat >/dev/null <<EOF
-echo '#!/usr/bin/env bash
-unset SESSION_MANAGER
-unset DBUS_SESSION_BUS_ADDRESS
-if [ $(command -v x-terminal-emulator) ]; then
-x-terminal-emulator &
-fi
-if [ $(command -v xfce4-session) ]; then
-dbus-launch xfce4-session
-else
-dbus-launch startxfce4
-fi' >${HOME}/.vnc/xstartup
-EOF
+sed -i "s/1024x768/$resolution/" /usr/local/bin/easyvnc
+cp /etc/X11/xinit/Xsession.bak /etc/X11/xinit/Xsession
 #$sudo_t apt purge --allow-change-held-packages gvfs udisks2 -y 2>/dev/null
 U_ID=`id | cut -d '(' -f 2 | cut -d ')' -f 1`
 GROUP_ID=`id | cut -d '(' -f 4 | cut -d ')' -f 1`
@@ -857,19 +780,16 @@ echo -e "${GREEN}请选择你已安装的图形界面${RES}"
 read -r -p "1)xfce4 2)lxde 3)mate " input
 	case $input in
 	1) echo -e "done" && sleep 2 && VNCSERVER ;;
-	2) sed -i "s/startxfce4/startlxde/g" /etc/X11/xinit/Xsession
-		sed -i "s/xfce4-session/lxsession/g" /etc/X11/xinit/Xsession
+	2)
+sed -i "s/startxfce4/startlxde/g" /etc/X11/xinit/Xsession
+sed -i "s/xfce4-session/lxsession/g" /etc/X11/xinit/Xsession
 echo -e "Done\n打开vnc viewer地址输127.0.0.1:0\nvnc的退出，在系统输exit即可"
 sleep 2
 VNCSERVER
 ;;
-3) echo '#!/usr/bin/env bash
-unset SESSION_MANAGER
-unset DBUS_SESSION_BUS_ADDRESS
-x-window-manager
-mate-panel
-mate-session
-thunar' >/etc/X11/xinit/Xsession
+3) 
+sed -i "s/startxfce4/mate-panel/g" /etc/X11/xinit/Xsession
+sed -i "s/xfce4-session/mate-session/g" /etc/X11/xinit/Xsession
 		echo -e "Done\n打开vnc viewer地址输127.0.0.1:0\nvnc的退出，在系统输exit即可"
 		sleep 2
 		VNCSERVER
@@ -887,21 +807,19 @@ esac
 $sudo_t apt install xserver-xorg x11-utils
 echo -e "${YELLOW}请选择你的桌面
 1) startxfce4
-2) startlxde
-3) mate${RES}"
+2) startlxde${RES}"
 read -r -p "请选择: " input
 case $input in
 1) XWIN="x-window-manager & dbus-launch startxfce4" ;;
 2) XWIN="x-window-manager & dbus-launch startlxde" ;;
 3) XWIN="x-window-manager & dbus-launch mate-session" ;;
-*) echo -e "\e[1;31m输入无效，已退出\e[0m" ;;
+*) echo -e "\e[1;31m输入无效，已退出\e[0m"
+	sleep 2
+	VNCSERVER ;;
 esac
 # ip -4 -br -c a | awk '{print $NF}' | cut -d '/' -f 1 | grep -v '127\.0\.0\.1' | sed "s@\$@:5901@"
 echo '#!/usr/bin/env bash
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 export DISPLAY=127.0.0.1:0
 export PULSE_SERVER=tcp:127.0.0.1:4713' >/usr/local/bin/easyxsdl
 echo "$XWIN" >>/usr/local/bin/easyxsdl && chmod +x /usr/local/bin/easyxsdl
@@ -931,12 +849,12 @@ VNCSERVER
 9) $sudo_t apt install xvfb x11vnc -y
 	echo -n "输入你手机分辨率(例如:2340x1080) : "
 	read resolution
+	if [ -z $resolution ]; then
+		resolution=1024x768
+	fi
 cat >/usr/local/bin/easyx11vnc<<-'eof'
 #!/usr/bin/env bash
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 vncserver -kill $DISPLAY 2>/dev/null
 export PULSE_SERVER=127.0.0.1
 export DISPLAY=:233
@@ -949,7 +867,6 @@ set -- "${@}" "+extension" "GLX"
 set -- "${@}" "+render"
 set -- "${@}" "-deferglyphs" "16"
 set -- "${@}" "-br"
-set -- "${@}" "-wm"
 set -- "${@}" "-retro"
 set -- "${@}" "-noreset"
 set -- "Xvfb" "${@}"
@@ -984,13 +901,13 @@ start_xvfb
 start_x11vnc
 ###########
 eof
-sed -i "s/1080x2340/${resolution}/" /usr/local/bin/easyx11vnc
+sed -i "s/1080x2320/${resolution}/" /usr/local/bin/easyx11vnc
 chmod +x /usr/local/bin/easyx11vnc
 echo -e "\n已配置，启动命令${YELLOW}easyx11vnc${RES}\n"
 sleep 1
 INSTALL_SOFTWARE
 	;;
-10) $sudo_t apt install novnc xvfb x11vnc tigervnc-standalone-server tigervnc-viewer -y
+10) $sudo_t apt install novnc xvfb x11vnc tigervnc-standalone-server tigervnc-viewer net-tools -y
 cat >/usr/local/bin/easynovnc<<-'eof'
 read -r -p "是否使用vncviewer密码 1)密码(建议) 2)免密 3)修改密码 :" input
 case $input in
@@ -1008,24 +925,21 @@ PASS="-rfbauth ${HOME}/.vnc/passwd" ;;
 PASS="-SecurityTypes None" ;;
 esac
 vncserver -kill $DISPLAY 2>/dev/null
-pkill -9 Xtightvnc 2>/dev/null
-pkill -9 Xtigertvnc 2>/dev/null
-pkill -9 Xvnc 2>/dev/null
-pkill -9 vncsession 2>/dev/null
+for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 export PULSE_SERVER=tcp:127.0.0.1:4713
 export DISPLAY=:0
-Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -wm -alwaysshared -geometry 2320x1080 -once -depth 32 -deferglyphs 16 $PASS &
+Xvnc -ZlibLevel=1 -securitytypes vncauth,tlsvnc -verbose -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 2320x1080 -once -depth 24 -deferglyphs 16 $PASS &
 . /etc/X11/xinit/Xsession 2>/dev/null &
 bash /usr/share/novnc/utils/launch.sh --vnc localhost:5900 --listen 6080 2>/dev/null
 echo -e "请打开浏览器输\e[33mhttp://localhost:6080/vnc.html\e[0m"
 eof
 chmod 756 /usr/local/bin/easynovnc
 ;;
-[Ee])
+0)
 	echo "exit"
 	exit 1
 	;;
-[Mm])
+11)
 	MAIN
 	;;
 *)
@@ -1040,10 +954,15 @@ WEB_BROWSER() {
 	echo -e "1) 安装谷歌浏览器chromium
 2) 安装火狐浏览器firefox
 3) 安装epiphany-browser浏览器
-4) 安装360浏览器(有一个月使用限制，需向360获取授权码)\n${RES}"
-read -r -p "E(exit) M(main)请选择: " input
+4) 安装360浏览器(有一个月使用限制，需向360获取授权码)
+9) 返回
+0) 退出\n${RES}"
+read -r -p "请选择: " input
 	case $input in
 	1)
+		if [ ! -d /run/shm ]; then
+			mkdir /run/shm
+		fi
 		echo -e "安装谷歌浏览器chromium"
 		if grep -q 'ID=debian' "/etc/os-release"; then
 			$sudo_t apt install chromium -y
@@ -1053,31 +972,19 @@ read -r -p "E(exit) M(main)请选择: " input
 			$sudo_t apt install chromium-browser chromium-codecs-ffmpeg-extra -y
 		elif grep -q 'ID=ubuntu' "/etc/os-release"; then
 			echo -e "${YELLOW}你所使用的ubuntu源装chromium目前有bug${RES}
-1) 临时切换有效的bionic(不建议)
-2) 通过ppa源安装(未完全测试)
+1) 尝试通过ppa源安装(未完全测试)
 0) 返回"
 read -r -p "请选择: " input
 case $input in
-	1) cp /etc/apt/sources.list /etc/apt/sources.list.tmp
-		echo "${SOURCES_ADD}ubuntu-ports/ bionic ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-security ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-updates ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-backports ${DEB_UBUNTU}" >/etc/apt/sources.list
-apt update && $sudo_t apt install chromium-browser chromium-codecs-ffmpeg-extra -y
-PROCESS_CHECK
-sudo echo "chromium-browser hold" | sudo dpkg --set-selections
-sudo echo "chromium-browser-l10n hold" | sudo dpkg --set-selections
-sudo echo "chromium-codecs-ffmpeg-extra hold" | sudo dpkg --set-selections
-mv /etc/apt/sources.list.tmp /etc/apt/sources.list
-apt update ;;
-2) echo "检测到你用的ubuntu系统,将切换ppa源下载,下载过程会比较慢,请留意进度"
+	1) echo "检测到你用的ubuntu系统,将切换ppa源下载,下载过程会比较慢,请留意进度"
 			sleep 2
+			$sudo_t apt install axel -y
 CURL="http://ppa.launchpad.net/xalt7x/chromium-deb-vaapi/ubuntu/pool/main/c/chromium-browser/"
 BRO="$(curl $CURL | grep arm64 | head -n 2 | tail -n 1 | cut -d '"' -f 8)"
-curl -o chromium.deb ${CURL}${BRO}
+axel -o chromium.deb ${CURL}${BRO}
 BRO_FF="$(curl $CURL | grep arm64.deb | grep ffmpeg | tail -n 3 | head -n 1 | cut -d '"' -f 8)"
-curl -o chromium_ffmpeg.deb ${CURL}${BRO_FF}
-curl -o chromium-browser-l10n.deb http://ppa.launchpad.net/xalt7x/chromium-deb-vaapi/ubuntu/pool/main/c/chromium-browser/$(curl http://ppa.launchpad.net/xalt7x/chromium-deb-vaapi/ubuntu/pool/main/c/chromium-browser/ | grep chromium-browser-l10n | awk -F 'href="' '{print $2}' | cut -d '"' -f 1 | tail -n 1)
+axel -o chromium_ffmpeg.deb ${CURL}${BRO_FF}
+axel -o chromium-browser-l10n.deb ${CURL}$(curl ${CURL} | grep chromium-browser-l10n | awk -F 'href="' '{print $2}' | cut -d '"' -f 1 | tail -n 1)
 $sudo_t dpkg -i chromium.deb
 $sudo_t dpkg -i chromium_ffmpeg.deb
 $sudo_t dpkg -i chromium-browser-l10n.deb
@@ -1097,7 +1004,7 @@ sleep 2
 WEB_BROWSER
 fi
 	if [ -e /usr/share/applications/chromium.desktop ]; then
-		sed -i "s/Exec=\/usr\/bin\/chromium %U/Exec=\/usr\/bin\/chromium --no-sandbox \%U/g" /usr/share/applications/chromium.desktop
+		sed -E -i "s/(^Exec=.* )/\1--no-sandbox /g" /usr/share/applications/chromium.desktop
 	elif [ -e /usr/share/applications/chromium-browser.desktop ]; then
 		sed -i "s/Exec=chromium-browser %U/Exec=chromium-browser --no-sandbox \%U/g" /usr/share/applications/chromium-browser.desktop
 		fi
@@ -1157,11 +1064,11 @@ fi
 		WEB_BROWSER
 	fi
 	;;
-	[Ee])
+	0)
 		echo "exit"
 		exit 1
 		;;
-	[Mm])
+	9)
 		MAIN
 		;;
 	*)
@@ -1175,18 +1082,34 @@ DM() {
 	echo -e "安装桌面图形界面
 	1) 安装xfce4
 	2) 安装lxde
-	3) 安装mate(有bug，请勿选)\n"
-	read -r -p "E(exit) M(main)请选择: " input
+	9) 返回
+	0) 退出\n"
+	read -r -p "请选择: " input
 	case $input in
-		1) $sudo_t apt install xfce4 xfce4-terminal ristretto dbus-x11 lxtask -y ;;
-		2) $sudo_t apt install lxde-core lxterminal dbus-x11 -y ;;
+		1) $sudo_t apt install xfce4 xfce4-terminal ristretto dbus-x11 lxtask --no-install-recommends -y
+			VNCSERVER
+			;;
+		2) $sudo_t apt install lxde-core lxterminal dbus-x11 lxdm --no-install-recommends -y
+#			apt purge lxpolkit -y
+	for i in /etc/xdg/autostart/lxpolkit.desktop /usr/bin/lxpolkit; do
+		if [ -f "${i}" ]; then
+			mv -f ${i} ${i}.bak 2>/dev/null
+		fi
+	done
+#	sed -i 's/quick_exec=0/quick_exec=1/' /root/.config/libfm/libfm.conf
+mkdir -p /root/.config/libfm
+echo -e '[config]\nquick_exec=1' >/root/.config/libfm/libfm.conf
+			VNCSERVER
+			;;
 		3) 
 #			$sudo_t apt install mate-desktop-environment mate-terminal -y
-			$sudo_t apt install --no-install-recommends mate-session-manager mate-settings-daemon marco mate-terminal mate-panel dbus-x11 thunar -y && apt purge ^libfprint -y
+#mate-desktop-environment-core
+		$sudo_t apt install --no-install-recommends mate-desktop-environment mate-session-manager mate-settings-daemon marco mate-terminal mate-panel dbus-x11 -y && apt purge ^libfprint -y
+			VNCSERVER
 			;;
-		[eE]) echo "exit"
+		0) echo "exit"
 			exit 1 ;;
-		[Mm]) echo "back to main"
+		9) echo "back to main"
 			MAIN ;;
 		*) INVALID_INPUT
 			DM ;;
@@ -1198,14 +1121,16 @@ DM() {
 #######################
 DM_VNC() {
 	echo -e "\n1) 安装桌面图形界面
-2) 安装VNCSERVER远程服务${RES}\n"
-	read -r -p "E(exit) M(main)请选择: " input
+2) 安装VNCSERVER远程服务
+9) 返回
+0) 退出${RES}\n"
+	read -r -p "请选择: " input
 	case $input in
 		1) DM ;;
 		2) VNCSERVER ;;
-		[eE]) echo "exit"
+		0) echo "exit"
 			exit 1 ;;
-		[Mm]) echo "back to main"
+		9) echo "back to main"
 			MAIN ;;
 		*) INVALID_INPUT
 			DM_VNC ;;
@@ -1214,8 +1139,10 @@ DM_VNC() {
 #######################
 ENTERTAINMENT() {
 	echo -e "\n1) minetest(画面跟我的世界相似，方向是个问题，需键盘操作)
-2) mame街机模拟器(需键盘操作)\n"
-read -r -p "E(exit) M(main)请选择: " input
+2) mame街机模拟器(需键盘操作)
+9) 返回
+0) 退出\n"
+read -r -p "请选择: " input
 case $input in
 	1) echo -e "正在安装minetest"
 	$sudo_t apt install minetest -y
@@ -1223,7 +1150,7 @@ case $input in
 	ln -s /usr/games/minetest /usr/local/bin
 	fi
 	if [ ! -f /usr/share/locale/zh_CN/LC_MESSAGES/minetest.mo ]; then
-	curl -O https://cdn.jsdelivr.net/gh/chungyuhoi/script/MINETEST_MO.tar.gz
+	curl -O https://shell.xb6868.com/ut/files/MINETEST_MO.tar.gz
 	tar zxvf MINETEST_MO.tar.gz && $sudo_t mv minetest.mo /usr/share/locale/zh_CN/LC_MESSAGES/ && rm MINETEST_MO.tar.gz
 	fi
 	echo -e "\n是否中文界面(不建议，默认随系统语言)"
@@ -1250,8 +1177,8 @@ chmod +x /usr/local/bin/m_mame
 		echo -e "${YELLOW}已为你写了使用手册，请直接输指令 m_mame${RES}"
 		sleep 2
 		ENTERTAINMENT ;;
-	[Ee]) exit 1 ;;
-	[Mm]) MAIN ;;
+	0) exit 0 ;;
+	9) MAIN ;;
 	*) INVALID_INPUT
 		ENTERTAINMENT ;;
 esac
@@ -1273,8 +1200,10 @@ echo -e "1)  *安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)
 12) 让本终端成为局域网服务器
 13) 新立得(类软件商店)
 14) linux版qq
-15) 安装默认版本java\n"
-read -r -p "E(exit) M(main)请选择: " input
+15) 安装默认版本java
+16) 返回
+0)  退出\n"
+read -r -p "请选择: " input
 
 case $input in
 	1)
@@ -1289,49 +1218,7 @@ case $input in
 	3)	WEB_BROWSER ;;
 	4)	echo -e "安装Electron\n如果安装不成功，需先添加Githut库"
 		CONFIRM
-		$sudo_t apt update
-		if grep -q bullseye /etc/os-release; then
-		$sudo_t apt install electron -y
-		else
-		$sudo_t	apt install libnss3 unzip wget gnupg2 libxtst-dev -y
-		mkdir /usr/share/electron
-		cd /usr/share/electron
-		wget https://npm.taobao.org/mirrors/electron/10.1.4/chromedriver-v10.1.4-linux-arm64.zip
-		wget https://npm.taobao.org/mirrors/electron/10.1.4/ffmpeg-v10.1.4-linux-arm64.zip
-		wget https://npm.taobao.org/mirrors/electron/10.1.4/electron-v10.1.4-linux-arm64.zip
-        echo -e "\e[33m即将解压包，如遇到提示，请输y回车\e[0m"
-        read -r -p "确认请回车" input
-        case $input in
-        *) ;;
-        esac
-        unzip chromedriver-v10.1.4-linux-arm64.zip
-        unzip ffmpeg-v10.1.4-linux-arm64.zip
-        unzip electron-v10.1.4-linux-arm64.zip
-        ln -s /usr/share/electron/electron /usr/bin/
-        if grep -q 'Package: electron' /var/lib/dpkg/status; then
-        RAW=`cat -n /var/lib/dpkg/status | grep 'Package: electron' | awk '{print $1}'`
-        let RAW_="$RAW+10"
-        sed -i "${RAW},${RAW_}d" /var/lib/dpkg/status
-        fi
-cat >>/var/lib/dpkg/status<<-eof
-Package: electron
-Status: install ok installed
-Priority: extra
-Section: devel
-Installed-Size: 185860
-Maintainer: coslyk <cos.lyk@gmail.com>
-Architecture: arm64
-Version: 10.1.4-1
-Depends: libasound2 (>= 1.0.16), libatk-bridge2.0-0 (>= 2.5.3), libatk1.0-0 (>= 2.2.0), libatspi2.0-0 (>= 2.9.90), libc6 (>= 2.17), libcairo2 (>= 1.6.0), libcups2 (>= 1.7.0), libdbus-1-3 (>= 1.9.14), libdrm2 (>= 2.4.38), libexpat1 (>= 2.0.1), libgbm1 (>= 17.1.0~rc2), libgcc1 (>= 1:4.2), libgdk-pixbuf2.0-0 (>= 2.22.0), libglib2.0-0 (>= 2.39.4), libgtk-3-0 (>= 3.19.12), libnspr4 (>= 2:4.9-2~), libnss3 (>= 2:3.22), libpango-1.0-0 (>= 1.14.0), libpangocairo-1.0-0 (>= 1.14.0), libx11-6 (>= 2:1.4.99.1), libx11-xcb1, libxcb-dri3-0, libxcb1 (>= 1.6), libxcomposite1 (>= 1:0.3-1), libxcursor1 (>> 1.1.2), libxdamage1 (>= 1:1.1), libxext6, libxfixes3, libxi6 (>= 2:1.2.99.4), libxrandr2, libxrender1, libxtst6
-Description: Build cross platform desktop apps with web technologies
-Homepage: https://github.com/electron/electron
-eof
-		fi
-        electron --version --no-sandbox
-        if [ $? == 0 ]; then
-        echo -e "\e[33m安装成功\e[0m"
-	fi
-		sleep 1
+		ADD_GITHUB
 		INSTALL_SOFTWARE
 		;;
 	5)
@@ -1357,8 +1244,10 @@ sleep 1
 INSTALL_SOFTWARE
 ;;
 6) echo -e "\n1) fcitx输入法
-2) ibus输入法\n"
-read -r -p "E(exit) M(main)请选择: " input
+2) ibus输入法
+9) 返回
+0) 退出\n"
+read -r -p "请选择: " input
 case $input in
 	1) echo -e "${YELLOW}安装fcitx输入法${RES}"
 	$sudo_t apt install fcitx*googlepinyin* fcitx-table-wubi fcitx-tools fcitx-config-gtk
@@ -1385,8 +1274,8 @@ fi
 	sleep 1                                             
 	INSTALL_SOFTWARE
         ;;
-[Ee]) exit 2 ;;
-[Mm]) MAIN ;;
+0) exit 2 ;;
+9) MAIN ;;
 *) INVALID_INPUT
 	INSTALL_SOFTWARE ;;
 esac
@@ -1395,12 +1284,12 @@ esac
 	case $input in
 		1)
 	echo "安装mpv播放器"
-	$sudo_t apt install mpv
+	$sudo_t apt install mpv --no-install-recommends -y
 	echo -e "${BLUE}done${RES}"
 		sleep 1 ;;
 		2)
-	echo "安装vlc播放器"
-	$sudo_t apt install vlc
+	echo "安装vlc播放器，播放器"
+	$sudo_t apt install vlc --no-install-recommends -y
 	sed -i 's/geteuid/getppid/' /usr/bin/vlc
 	echo -e "${BLUE}done${RES}"
 		sleep 1 ;;
@@ -1411,14 +1300,18 @@ esac
 		;;
 	8)
 		echo -e "\n1) 安装libreoffice
-2) 安装wps(注意，目前wps在${YELLOW}部分vnc${RES}有bug,如果显示有问题，请尝试用xsdl来传输)\n"
-		read -r -p "E(exit) M(main)请选择: " input
+2) 安装wps(注意，可能存在未知bug)
+9) 返回
+0) 退出\n"
+		read -r -p "请选择: " input
 		case $input in
 			1|"") echo "安装libreoffice"
 		$sudo_t apt install --no-install-recommends libreoffice libreoffice-l10n-zh-cn libreoffice-gtk3 -y 
 		echo -e "${GREEN}中文界面，请打开LibreOffice，左上角Tools-Options-Language settings-languages，User interface选择Chinese${RES}"
 		CONFIRM ;;
-	2) 
+	2)
+#如果出现 Could not load the Qt platform plugin xcb
+#export QT_DEBUG_PLUGINS=1
 		ls /usr/share/applications/ | grep wps -q 2>/dev/null
 		if [ $? != 0 ]; then
 			echo -e "\n正在下载wps"
@@ -1445,21 +1338,15 @@ fi
 mkdir -p ${HOME}/.config/Kingsoft/
 echo '[General]
 languages=zh_CN' >${HOME}/.config/Kingsoft/Office.conf
+echo -e "如果点击没反应，请在终端输/opt/kingsoft/wps-office/office6/wps看是否缺少依赖包"
+CONFIRM
 INSTALL_SOFTWARE
 		;;
-	[Ee]) exit 2 ;;
-	[Mm]) MAIN ;;
+	0) exit 0 ;;
+	9) MAIN ;;
 	*) INVALID_INPUT ;;
 esac
 		INSTALL_SOFTWARE
-		;;
-	[eE])
-		echo "exit"
-		exit 1
-		;;
-	[Mm])
-		echo -e "back to main\n\n"
-		MAIN
 		;;
 	9) DOSBOX ;;
 	10) QEMU_SYSTEM ;;
@@ -1494,7 +1381,9 @@ IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 		密码	${YELLOW}123456${RES}"
 		python3 -m pyftpdlib -u guest -P 123456
 		;;
+	*) echo ""
 	esac
+	INSTALL_SOFTWARE
 	;;
 13) echo -e "正在安装新立得"
 	sleep 2
@@ -1526,6 +1415,14 @@ apt install openjdk- -jdk中间空的选择你要装的版本。
 apt install openjdk-7-jdk
 eof
 ;;
+0)
+	echo "exit"
+	exit 0
+	;;
+16)
+	echo -e "back to main\n\n"
+	MAIN
+	;;
 *) INVALID_INPUT
 		INSTALL_SOFTWARE ;;
 esac
@@ -1533,8 +1430,10 @@ esac
 ##################
 DOSBOX() {
 	echo -e "\n1）安装dosbox
-2）创建dos运行文件目录\n"
-		read -r -p "E(exit) M(main)请选择: " input
+2）创建dos运行文件目录
+9) 返回
+0) 退出\n"
+		read -r -p "请选择: " input
 		case $input in
 			1) echo "安装dosbox"
 				$sudo_t apt install dosbox -y
@@ -1551,9 +1450,9 @@ DOSBOX() {
 		sleep 2
 	fi
 		INSTALL_SOFTWARE ;;
-	[Ee]) 
+	0) 
 		exit 0 ;;
-	[Mm]) MAIN ;;
+	9) MAIN ;;
 	*) INVALID_INPUT
 		INSTALL_SOFTWARE ;;
 esac
@@ -1561,7 +1460,7 @@ esac
 #####################
 INSTALL_PYTHON3() {
 echo -e "${YELLOW}安装python3和pip并配置国内源${RES}"
-read -r -p "1)是 2)否 E(exit) M(main) " input
+read -r -p "1)是 2)否 9)返回 0)退出 " input
 case $input in
 	1|"")
 		echo "yes"
@@ -1575,11 +1474,11 @@ SETTLE
 		echo "no"
 		SETTLE
 		;;
-	[Ee])
+	0)
 		echo "exit"
-		exit 1
+		exit 0
 		;;
-	[Mm])
+	9)
 		echo "back to Main"
 		MAIN
 		;;
@@ -1599,15 +1498,19 @@ esac
 QEMU_SYSTEM() {
 	echo -e "
 1) 使用在线utqemu脚本(功能完善)
-2) 本脚本安装(仅提供安装与目录创建)"
-read -r -p "E(exit) M(main) 请选择: " input
+2) 本脚本安装(仅提供安装与目录创建)
+9) 返回
+0) 退出"
+read -r -p "请选择: " input
 case $input in
 	1)
-	bash -c "$(curl https://cdn.jsdelivr.net/gh/chungyuhoi/script/utqemu.sh)" ;;
+	bash -c "$(curl https://shell.xb6868.com/ut/utqemu.sh)" ;;
 2) echo -e "
 1) 安装qemu-system-x86_64，并联动更新模拟器所需应用
-2) 创建windows镜像目录\n"
-read -r -p "E(exit) M(main)请选择: " input
+2) 创建windows镜像目录
+9) 返回
+0) 退出\n"
+read -r -p "请选择: " input
 case $input in
 1) uname -a | grep 'Android' -q
 	if [ $? == 0 ]; then
@@ -1632,16 +1535,17 @@ else
         CONFIRM
 	QEMU_SYSTEM
         ;;
-	[Ee])
+	0)
 	echo "exit"
-	exit 1 ;;
-	[Mm])
+	exit 0 ;;
+	9)
 	echo "back to Main"
 	MAIN ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
-	esac ;;                                              [Ee]) echo "exit"
+	esac ;;
+0) echo "exit"
 	exit 1 ;;
-	[Mm])
+9)
 	echo "back to Main"
 	MAIN ;;
 	*) INVALID_INPUT && QEMU_SYSTEM ;;
@@ -1656,16 +1560,15 @@ TERMUX() {
 3)  安装常用应用(包括curl tar wget vim proot)
 4)  安装pulseaudio并配置(让termux支持声音输出)
 5)  创建用户系统登录脚本
-6)  下载Debian(buster)系统
-7)  下载Ubuntu(bionic)系统
-8)  下载Debian(bullseye)系统
-9)  qemu-system-x86_64模拟器
-10) 下载x86架构的Debian(buster)系统(qemu模拟)
-11) 备份恢复系统
-12) 修改termux键盘
-13) 设置打开termux等待七秒(别问为什么)
-14) 下载最新版本termux与xsdl\n"
-read -r -p "E(exit) M(main)请选择: " input
+6)  下载Debian(buster,bullseye)系统
+7)  下载Ubuntu(focal,jammy)系统
+8)  qemu-system-x86_64模拟器
+9)  下载x86架构的Debian(buster)系统(qemu模拟)
+10) 备份恢复系统
+11) 修改termux键盘
+12) 下载最新版本termux与xsdl
+0)  退出\n"
+read -r -p "请选择: " input
 case $input in
 	1) echo -e "\n是否一键配置termux
                1) Yes
@@ -1683,9 +1586,9 @@ case $input in
 ]" >${HOME}/.termux/termux.properties
                                echo -e "${GREEN}换北外源,过程中可能会有确认内容,请按回车${RES}"
                                sleep 2
-                               sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list && pkg update
+                               sed -i "s@^\(deb.*stable main\)$@#\1\ndeb ${SOURCES_BF}termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
+sed -i 's@^\(deb.*games stable\)$@#\1\ndeb ${SOURCES_BF}termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
+sed -i 's@^\(deb.*science stable\)$@#\1\ndeb ${SOURCES_BF}termux/science-packages-24 science stable@" $PREFIX/etc/apt/sources.list.d/science.list && pkg update
                                echo -e "${GREEN}安装常用应用${RES}"
                                sleep 1
                                pkg install curl tar wget vim proot unstable-repo x11-repo -y
@@ -1716,19 +1619,19 @@ esac ;;
 		case $input in
 			1) echo -e "正在更换清华源"
 		sleep 1
-		sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list
+		sed -i "s@^\(deb.*stable main\)$@#\1\ndeb ${SOURCES_TUNA}termux/termux-packages-24 stable main@" $PREFIX/etc/apt/sources.list
+sed -i "s@^\(deb.*games stable\)$@#\1\ndeb ${SOURCES_TUNA}termux/game-packages-24 games stable@" $PREFIX/etc/apt/sources.list.d/game.list
+sed -i "s@^\(deb.*science stable\)$@#\1\ndeb ${SOURCES_TUNA}termux/science-packages-24 science stable@" $PREFIX/etc/apt/sources.list.d/science.list
 ;;
 2|"") echo -e "正在更换北外源" 
 	sleep 1
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list
+	sed -i "s@^\(deb.*stable main\)$@#\1\ndeb ${SOURCES_BF}termux/termux-packages-24 stable main@" $PREFIX/etc/apt/sources.list
+sed -i "s@^\(deb.*games stable\)$@#\1\ndeb ${SOURCES_BF}termux/game-packages-24 games stable@" $PREFIX/etc/apt/sources.list.d/game.list
+sed -i "s@^\(deb.*science stable\)$@#\1\ndeb ${SOURCES_BF}termux/science-packages-24 science stable@" $PREFIX/etc/apt/sources.list.d/science.list
 ;;
 3) echo -e "正在更换中科源"
 	sleep 1
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.ustc.edu.cn/termux stable main@' $PREFIX/etc/apt/sources.list
+	sed -i "s@^\(deb.*stable main\)$@#\1\ndeb ${SOURCES_USTC}termux stable main@" $PREFIX/etc/apt/sources.list
 	;;
 4) echo -e "正在更换腾讯源"
 	sleep 1
@@ -1743,12 +1646,12 @@ TERMUX
 	;;
 3)
 	echo "安装常用应用(curl tar vim wget proot)"
-	pkg install curl tar wget vim proot
+	pkg install curl tar wget vim proot -y
 	echo "已安装"
 	TERMUX
 	;;
 4)
-	echo -e "安装并配置pulseaudio\n如果安装失效，请选择另一种安装方式\n1)直接安装\n2)通过setup-audio脚本安装\n3)修复出现([pulseaudio] main.c: ${RED}Daemon startup failed.${RES})提示"
+	echo -e "安装并配置pulseaudio\n1)直接安装\n2)修复出现([pulseaudio] main.c: ${RED}Daemon startup failed.${RES})提示"
 	read -r -p "请选择: " input
 	case $input in
 		1|"") pkg in pulseaudio -y
@@ -1768,17 +1671,7 @@ if grep -q "exit-idle" ${PREFIX}/etc/pulse/daemon.conf ; then
 sed -i '/exit-idle/d' ${PREFIX}/etc/pulse/daemon.conf
 echo "exit-idle-time = -1" >> ${PREFIX}/etc/pulse/daemon.conf
 fi			;;
-		2) wget https://andronixos.sfo2.cdn.digitaloceanspaces.com/OS-Files/setup-audio.sh
-			if [ $? -ne 0 ]; then
-				echo -e "${RED}下载失败，请重试${RES}"
-				sleep 2
-				TERMUX
-				fi
-				chmod +x setup-audio.sh && ./setup-audio.sh
-		echo -e "${GREEN}重新配置待机时长...${RES}"
-        sed -i "s/180/-1/g" ${PREFIX}/etc/pulse/daemon.conf
-	sleep 2 ;;
-		3) unset LD_LIBRARY_PATH
+		2) unset LD_LIBRARY_PATH
 			echo -e "已处理"
 			sleep 1 ;;
 		*) INVALID_INPUT
@@ -1879,40 +1772,54 @@ sleep 2 ;;
 esac
 TERMUX
 ;;
-6) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
+6) 
+	read -r -p "1) bullseye 2)buster 9) 返回 0) 退出 请选择: " input
+	case $input in
+		1) case $(dpkg --print-architecture) in
+			aarch64|arm64) bash -c "$(curl https://shell.xb6868.com/ut/bullseye.sh)"
+			exit 0 ;;
+		*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
+		esac
+		TERMUX ;;
+		2)
+			CODENAME=buster
+			LXC=debian
+	echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
 	CONFIRM
-	if [ -e rootfs.tar.xz ]; then
-		rm -rf rootfs.tar.xz
-	fi
+		rm -rf rootfs.tar.xz 2>/dev/null
 	case $(dpkg --print-architecture) in
 		aarch64|arm64) ;;
 		*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
 		sleep 2  ;;
 	esac
-	echo -e "请选择下载地址
-	1) 清华大学
-	2) 北外大学(推荐)\n"
-	read -r -p "E(exit) M(main) 请选择: " input
-	case $input in                                 
-		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/buster/arm64/default/" ;;
-		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/buster/arm64/default/" ;;
-		[Ee]) exit 0 ;;
-		[Mm]) MAIN ;;
-	esac
-	echo "下载Debian(buster)系统..."                    
+	echo "下载Debian(buster)系统..."
 	sleep 1
-	curl -o rootfs.tar.xz ${CURL_T}
 		SYSTEM_DOWN
 echo "修改为北外源"
-echo "${SOURCES_ADD}debian buster ${DEB_DEBIAN}
-${SOURCES_ADD}debian buster-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian buster-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security buster/updates ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
+echo "deb ${SOURCES_BF}debian buster ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian buster-updates ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian buster-backports ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian-security buster/updates ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
 sleep 2
-		TERMUX
+bash start-$bagname
+exit 0
+	;;
+9) TERMUX ;;
+0) exit 0
+esac
 		;;
 
-	7) echo -e "由于系统包很干净，所以建议进入系统后，再用本脚本安装常用应用"
+	7) read -r -p "1) jammy 2) focal 9) 返回 0) 退出 请选择: " input
+		case $input in
+			1) CODENAME=jammy
+				LXC=ubuntu ;;
+			2) CODENAME=focal
+				LXC=ubuntu ;;
+			9) TERMUX ;;
+			0) exit 0
+		esac
+
+		echo -e "由于系统包很干净，所以建议进入系统后，再用本脚本安装常用应用"
 		CONFIRM
 		if [ -e rootfs.tar.xz ]; then
 			rm -rf rootfs.tar.xz
@@ -1922,68 +1829,20 @@ sleep 2
 			*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
 			sleep 2  ;;
 		esac
-	echo -e "请选择下载地址
-	1) 清华大学
-	2) 北外大学(推荐)\n"
-	read -r -p "E(exit) M(main) 请选择: " input
-	case $input in
-		1) 
-	curl https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ >rootfs.tar.xz
-	CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/" ;;
-		2) 
-	curl https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ >rootfs.tar.xz
-	CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/"
-#	curl https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/ | grep link |tail -n 1 | awk -F '</tr><tr>' '{print $2}' >rootfs.tar.xz
-#	CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/ubuntu/bionic/arm64/default/"
-		;;
-		[Ee]) exit 0 ;;
-		[Mm]) MAIN ;;
-	esac
-	echo "下载Ubuntu(bionic)系统..."                     
+	echo -e "下载Ubuntu($CODENAME)系统..."
 	sleep 1
 #	curl -o rootfs.tar.xz ${CURL_T}
 SYSTEM_DOWN
 echo "修改为北外源"
-echo "${SOURCES_ADD}ubuntu-ports/ bionic ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-security ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-updates ${DEB_UBUNTU}
-${SOURCES_ADD}ubuntu-ports/ bionic-backports ${DEB_UBUNTU}" >$bagname/etc/apt/sources.list
-sleep 2
-TERMUX ;;
+echo "deb ${SOURCES_BF}ubuntu-ports/ $CODENAME ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ $CODENAME-security ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ $CODENAME-updates ${DEB_UBUNTU}
+deb ${SOURCES_BF}ubuntu-ports/ $CODENAME-backports ${DEB_UBUNTU}" >$bagname/etc/apt/sources.list
+bash start-$bagname
+exit 0 ;;
 
-	8) echo -e "由于系统包很干净，所以进入系统后，建议再用本脚本安装常用应用"
-	CONFIRM
-	if [ -e rootfs.tar.xz ]; then
-        rm -rf rootfs.tar.xz
-	fi
-	case $(dpkg --print-architecture) in
-	aarch64|arm64) ;;
-	*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
-	sleep 2  ;;
-	esac
-        echo -e "请选择下载地址
-	1) 清华大学
-	2) 北外大学(推荐)\n"
-	read -r -p "E(exit) M(main)请选择: " input
-	case $input in
-		1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
-		2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/bullseye/arm64/default/" ;;
-        [Ee]) exit 0 ;;
-        [Mm]) MAIN ;;
-        esac
-        echo "下载Debian(bullseye)系统..."
-        sleep 1
-        curl -o rootfs.tar.xz ${CURL_T}
-        SYSTEM_DOWN
-echo "修改为北外源"
-echo "${SOURCES_ADD}debian bullseye ${DEB_DEBIAN}
-${SOURCES_ADD}debian bullseye-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian bullseye-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
-        sleep 2
-        TERMUX ;;
-	9) QEMU_SYSTEM ;;
-	10) echo -e "\n你正在下载的是x86架构的debian(buster),将会通过qemu的模拟方式运行;
+	8) QEMU_SYSTEM ;;
+	9) echo -e "\n你正在下载的是x86架构的debian(buster),将会通过qemu的模拟方式运行;
 由于系统包很干净，所以建议进入系统后，再用本脚本安装常用应用"
                 CONFIRM
 		if [ -e rootfs.tar.xz ]; then
@@ -1994,41 +1853,27 @@ ${SOURCES_ADD}debian-security bullseye-security ${DEB_DEBIAN}" >$bagname/etc/apt
 			*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
 			sleep 2  ;;
 		esac
-        echo -e "请选择下载地址
-        1) 清华大学
-        2) 北外大学(推荐)\n"
-        read -r -p "E(exit) M(main) 请选择: " input
-        case $input in
-                1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/buster/amd64/default/" ;;
-                2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/buster/amd64/default/" ;;
-                [Ee]) exit 0 ;;
-                [Mm]) MAIN ;;
-        esac
-        echo "下载x86的Debian(buster)系统..."
-        sleep 1
-        curl -o rootfs.tar.xz ${CURL_T}
+CODENAME=buster
+LXC=debian
+ARCH_CHANGE=amd64
 SYSTEM_DOWN
 echo "修改为北外源"
-echo "${SOURCES_ADD}debian buster ${DEB_DEBIAN}
-${SOURCES_ADD}debian buster-updates ${DEB_DEBIAN}
-${SOURCES_ADD}debian buster-backports ${DEB_DEBIAN}
-${SOURCES_ADD}debian-security buster/updates ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
+echo "deb ${SOURCES_BF}debian buster ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian buster-updates ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian buster-backports ${DEB_DEBIAN}
+deb ${SOURCES_BF}debian-security buster/updates ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
 sleep 2
 echo "配置qemu"
 sleep 2
-CURL_T=`curl https://mirrors.bfsu.edu.cn/debian/pool/main/q/qemu/ | grep '\.deb' | grep 'qemu-user-static' | grep arm64 | tail -n 1 | cut -d '=' -f 3 | cut -d '"' -f 2`
-curl -o qemu.deb https://mirrors.bfsu.edu.cn/debian/pool/main/q/qemu/$CURL_T
+curl -o qemu.deb ${SOURCES_BF}debian/pool/main/q/qemu/$(curl ${SOURCES_BF}debian/pool/main/q/qemu/ | grep '\.deb' | grep 'qemu-user-static' | grep arm64 | tail -n 1 | cut -d '=' -f 3 | cut -d '"' -f 2)
 mkdir qemu_temp
 dpkg -X qemu.deb ./qemu_temp
 cp qemu_temp/usr/bin/qemu-x86_64-static $bagname/
 echo "删除临时文件"
 sleep 1
 rm -rf qemu_temp qemu.deb
-echo "pkill -9 pulseaudio 2>/dev/null
-pulseaudio --start &
-unset LD_PRELOAD
-proot --kill-on-exit -S $bagname --link2symlink -b $bagname/root:/dev/shm -b $DIRECT -q $bagname/qemu-x86_64-static -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin TERM=xterm-256color LANG=C.UTF-8 TZ=Asia/Shanghai /bin/bash" >$bagname.sh
-echo -e "现在可以用${YELLOW}./$bagname.sh${RES}登录系统"
+sed -i "s/\-w/\-q $bagname\/qemu-x86_64-static \-w/" ${PREFIX}/bin/start-$bagname 
+echo -e "现在可以用${YELLOW}start-$bagname${RES}登录系统"
 sleep 2
 TERMUX ;;
 
@@ -2058,39 +1903,30 @@ cat <<'EOF'
                                              .
 EOF
 echo -e "${RES}"
+sleep 2
 if [ -e rootfs.tar.xz ]; then
 	rm -rf rootfs.tar.xz
 fi
 case $(dpkg --print-architecture) in
-	aarch64|arm64) ;;
+	aarch64|arm64) CODENAME=current
+		LXC=kali ;;
 	*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
 	sleep 2  ;;
 esac
-echo -e "请选择下载地址
-1) 清华大学
-2) 北外大学(推荐)\n"
-read -r -p "E(exit) M(main) 请选择: " input
-case $input in
-	1) CURL_T="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/kali/current/arm64/default/" ;;
-	2) CURL_T="https://mirrors.bfsu.edu.cn/lxc-images/images/kali/current/arm64/default/" ;;
-	[Ee]) exit 0 ;;
-	[Mm]) MAIN ;;
-esac
-echo "下载kali系统..."                                      
-sleep 1
-curl -o rootfs.tar.xz ${CURL_T}
 SYSTEM_DOWN
 echo "修改为中科源"
-echo "${SOURCES_USTC}kali kali-rolling ${DEB_DEBIAN}
-deb-src http://mirrors.ustc.edu.cn/kali kali-rolling ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
+echo "deb ${SOURCES_USTC}kali kali-rolling ${DEB_DEBIAN}
+deb-src ${SOURCES_USTC}kali kali-rolling ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
 sleep 2
-                TERMUX
+                bash start-$bagname
 		;;
-	11)
+	10)
 		echo -e "\n请选择备份或恢复
 		1) 备份
-		2) 恢复\n"
-	read -r -p "E(exit) M(main) 请选择: " input
+		2) 恢复
+		9) 返回
+		0) 退出\n"
+	read -r -p "请选择: " input
 	case $input in
 		1) echo -n "请输入拟备份的系统文件夹名(可含路径)backup: "
 			read backup
@@ -2123,16 +1959,16 @@ elif [ "${backup##*.}" = "gz" ]; then
 	sleep 2
 	unset backup
 	TERMUX ;;
-	[Ee]) echo "exit"
-		exit 1 ;;
-	[Mm]) echo "back to Main"
+	0) echo "exit"
+		exit 0 ;;
+	9) echo "back to Main"
 		unset backup
 		MAIN ;;
 	*) INVALID_INPUT
 		unset backup
 		TERMUX
 	esac ;;
-	12)  echo "修改键盘"
+	11)  echo "修改键盘"
                 if [ -d ${HOME}/.termux ]; then
                         rm -rf ${HOME}/.termux
                 fi
@@ -2153,36 +1989,14 @@ echo "已修改，请重启termux"
 sleep 1
 TERMUX
 ;;
-	13) echo -e "
-		1) 增加等待7秒\n
-		任意键) 取消等待"
+	12) 
+		echo -e "\n1)termux 2)xsdl 3)termux-api 9)返回 0)退出"
 		read -r -p "请选择: " input
-		case $input in
-			1) echo -e "\nwait for 7 seconds"
-cat >>${PREFIX}/etc/bash.bashrc<<-'EOF'
-echo -e "wait for 7 seconds"
-i=0
-while [ $i -le 70 ]
-do
-printf "$ %-7s\r" "$i"
-sleep 0.1
-let i++
-done
-printf "\n"
-EOF
-;;
-			*) echo "取消"
-sed -i '/seconds/,+8d' ${PREFIX}/etc/bash.bashrc ;;
-esac
-TERMUX ;;
-	14) 
-		echo -e "\n1)termux 2)xsdl 3)termux-api"
-		read -r -p "E(exit) M(main)请选择: " input
 	case $input in
 		1) echo -e "\n${YELLOW}检测最新版本${RES}"
 		VERSION=`curl https://f-droid.org/packages/com.termux/ | grep apk | sed -n 2p | cut -d '_' -f 2 | cut -d '"' -f 1`
 		if [ ! -z "$VERSION" ]; then
-		echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION${RES}\n"
+		echo -e "\n下载地址\n${GREEN}${SOURCES_TUNA}fdroid/repo/com.termux_$VERSION${RES}\n"
 	else
 		echo -e "${RED}获取失败，请重试${RES}"
 		sleep 2
@@ -2192,7 +2006,7 @@ TERMUX ;;
 		read -r -p "1)下载 9)返回 " input
 		case $input in
 			1) rm termux.apk 2>/dev/null
-		curl https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/com.termux_$VERSION -o termux.apk
+		curl ${SOURCES_TUNA}fdroid/repo/com.termux_$VERSION -o termux.apk
         mv -v termux.apk ${DIRECT}
 	echo -e "\n已下载至${DIRECT}目录"
 	sleep 2 ;;
@@ -2226,32 +2040,31 @@ TERMUX ;;
 	echo -e "\n${RED}错误，请重试${RES}"
 	fi
 	sleep 2 ;;
-	[Ee]) echo "exit"
+	0) echo "exit"
                 exit 1 ;;
-        [Mm]) echo -e "back to Main\n"
+        9) echo -e "back to Main\n"
                 TERMUX ;;
 	*) INVALID_INPUT ;;
 	esac
         TERMUX ;;
-
-
-	[Ee]) echo "exit"
+	0) echo "exit"
 	exit 1 ;;
-	[Mm]) echo "back to Main"
-	MAIN ;;
 	*) INVALID_INPUT
 	TERMUX ;;
 esac
 }
 #######################
 SYSTEM_DOWN() {
-        VERSION=`cat rootfs.tar.xz | grep href | cut -d '"' -f 4 | tail -n 1`
-                curl -o rootfs.tar.xz ${CURL_T}${VERSION}rootfs.tar.xz
-                if [ $? -ne 0 ]; then
-                        echo -e "${RED}下载失败，请重输${RES}\n"
-                        TERMUX
-                        sleep 2
-                fi
+	case $ARCH_CHANGE in
+		amd64) curl -O ${SOURCES_BF}lxc-images/images/${LXC}/${CODENAME}/amd64/default/$(curl ${SOURCES_BF}lxc-images/images/${LXC}/${CODENAME}/amd64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz ;;
+		*) curl -O ${SOURCES_BF}lxc-images/images/${LXC}/${CODENAME}/arm64/default/$(curl ${SOURCES_BF}lxc-images/images/${LXC}/${CODENAME}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
+	esac
+	if [ ! -f rootfs.tar.xz ]; then
+		echo -e "\e[31m下载错误，请检查网络\e[0m"
+		sleep 1
+		exit 0
+		TERMUX
+	fi
                 echo -n "请给系统文件夹起个名bagname: "
                 read bagname
                 if [ -e $bagname ]; then
@@ -2263,39 +2076,122 @@ SYSTEM_DOWN() {
                 sleep 2
                 echo "修改时区"
                 sed -i "1i\export TZ='Asia/Shanghai'" $bagname/etc/profile
-		if [ ! -f "$bagname/usr/bin/perl" ]; then
-        cp $bagname/usr/bin/perl* $bagname/usr/bin/perl
-	fi
+	echo 'for i in /var/run/dbus/pid /tmp/.X*-lock /tmp/.X11-unix/X*; do if [ -e "${i}" ]; then rm -vf ${i}; fi; done' >>$bagname/etc/profile
 		cat >$bagname/root/firstrun<<-'eof'
-		printf "%b" "\e[33m正常进行首次运行配置\e[0m" && sleep 1 &&apt update
-		if ! grep -q https /etc/apt/sources.list ; then
-		apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list && apt update
+		printf "%b" "\e[33m正常进行首次运行配置\e[0m" && sleep 1
+		if [ ! -f "/usr/bin/perl" ]; then
+			ln -sv /usr/bin/perl* /usr/bin/perl
 		fi
-		apt install curl -y && sed -i "/firstrun/d" .bashrc
+		dpkg -l ca-certificates | grep ii
+		if [ $? == 1 ]; then
+		sed -i "s/https/http/g" /etc/apt/sources.list
+		apt update && $sudo_t apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list
+		apt update
+
+		ln -svf /usr/bin/perl* /usr/bin/perl
+	else
+	apt update
+		fi
+		for i in $(groups 2>/dev/null|sed "s/$(whoami)//"); do if ! grep -q "$i" /etc/group; then echo "$i:x:$i:" >>/etc/group; fi done
+		apt install curl wget vim fonts-wqy-zenhei tar wget procps psmisc busybox pulseaudio -y && sed -i "/firstrun/d" .bashrc
+		sed -i '/zh_CN.UTF/s/#//' /etc/locale.gen
+		if grep -qi ubuntu /etc/os-release; then sed -i '/^SUPPORTED/s/^/#/;/^ALIASES/s/^/#/' /usr/sbin/locale-gen; fi
+		locale-gen || /usr/sbin/locale-gen
+		sed -i '/^export LANG/d' /etc/profile && sed -i '1i\export LANG=zh_CN.UTF-8' /etc/profile && source /etc/profile
+		export LANG=zh_CN.UTF-8
+		if [ ! $(command -v busybox) ]; then
+		echo -e "\e[33m优化部分命令\e[0m"
+		sleep 1
+		mkdir temp
+		cd temp
+		wget -O busybox.apk https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main/aarch64/ | grep busybox | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1)
+	tar zxvf busybox.apk bin 2>/dev/null
+	mv bin/busybox /usr/local/bin/busybox
+	wget -O musl.apk ${URL}/alpine/latest-stable/main/aarch64/$(curl ${URL}/alpine/latest-stable/main/aarch64/ | grep musl | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1)
+	tar zxvf musl.apk lib
+	mv lib/* /usr/lib/
+	cd && rm -rf temp
+	fi
+	mkdir -pv /tmp/runtime-$(id -u)
+	chmod -Rv 1777 "/tmp/runtime-$(id -u)"
+	if [ $(command -v busybox) ]; then
+	for i in ps uptime killall egrep top; do if [ $(command -v $i) ]; then ln -svf $(command -v busybox) $(command -v $i); else ln -svf $(command -v busybox) /usr/bin/$i; fi done
+	fi
+	export LANG=zh_CN.UTF-8
 		eof
-#		echo 'bash firstrun' >>$bagname/etc/profile
-		echo 'bash firstrun' >>$bagname/root/.bashrc
+		echo -e 'bash firstrun' >>$bagname/root/.bashrc
                 echo "配置dns"
 		rm $bagname/etc/resolv.conf 2>/dev/null
 		echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >$bagname/etc/resolv.conf
-echo -e "${GREEN}已修改为223.5.5.5
-223.6.6.6${RES}"
+echo -e "已修改为\n223.5.5.5
+223.6.6.6"
 sleep 1
-if grep -q 'ubuntu' "$bagname/etc/os-release" ; then
-        touch "$bagname/root/.hushlogin"
-fi
-echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$bagname/proc/version
+mkdir $bagname/etc/proc/ -p
+printf ' 52 memory_bandwidth! 53 network_throughput! 54 network_latency! 55 cpu_dma_latency! 56 xt_qtaguid! 57 vndbinder! 58 hwbinder! 59 binder! 60 ashmem!239 uhid!236 device-mapper!223 uinput!  1psaux!200 tun!237 loop-control! 61 lightnvm!228 hpet!229 fuse!242rfkill! 62 ion! 63 vga_arbiter\n' | sed 's/!/\n/g' >$bagname/etc/proc/misc
+printf "%-1s %-1s %-1s %8s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s\n" Node 0, zone DMA 3 2 2 4 3 3 2 1 2 2 0 Node 0, zone DMA321774 851 511 220 67 3 2 0 0 1 0 >$bagname/etc/proc/buddyinfo
+echo "0.03 0.03 0.00 1/116 17521" >$bagname/etc/proc/loadavg
+touch $bagname/etc/proc/kmsg
+echo 'tty0                 -WU (EC p  )    4:7' >$bagname/etc/proc/consoles
+echo '0-0     Linux                   [kernel]' >$bagname/etc/proc/execdomains
+echo '0 EFI VGA' >$bagname/etc/proc/fb
+echo '    0:     9 8/8 3/1000000 27/25000000' >$bagname/etc/proc/key-users
+echo '285490.46 1021963.95' >$bagname/etc/proc/uptime
+echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$bagname/etc/proc/version
+touch $bagname/etc/proc/vmstat
+echo 'Character devices:!  1 mem!  4 /dev/vc/0!  4 tty!  4 ttyS!5 /dev/tty!  5 /dev/console!  5 /dev/ptmx!  7 vcs! 10 misc! 13 input! 21 sg! 29 fb! 81 video4linux!128 ptm!136 pts!180 usb!189 usb_device!202 cpu/msr!203 cpu/cpuid!212 DVB!244 hidraw!245 rpmb!246 usbmon!247 nvme!248 watchdog!249 ptp!250 pps!251 media!252 rtc!253 dax!254 gpiochip!!Block devices:!  1 ramdisk!  7 loop!  8 sd! 11 sr! 65 sd! 66 sd! 67 sd! 68 sd! 69 sd! 70 sd! 71 sd!128 sd!129 sd!130 sd!131 sd!132 sd!133 sd!134 sd!135 sd!179 mmc!253 device-mapper!254 virtblk!259 blkext' | sed 's/!/\n/g' >$bagname/etc/proc/devices
+echo "cpu  0 0 0 0 0 0 0 0 0 0
+cpu0 0 0 0 0 0 0 0 0 0 0
+intr 1
+ctxt 0
+btime 0
+processes 0
+procs_running 1
+procs_blocked 0
+softirq 0 0 0 0 0 0 0 0 0 0 0" >$bagname/etc/proc/stat
+cpus=`cat -n /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | tail -n 1 | awk '{print $1}'`
+if [ -n $cpus ]; then
+	while [[ $cpus -ne 1 ]]
+	do
+		cpus=$(( $cpus-1 ))
+		sed -i "2a cpu${cpus} 0 0 0 0 0 0 0 0 0 0" $bagname/etc/proc/stat
+	done
+	fi
+	sed -i '3i export MOZ_FAKE_NO_SANDBOX=1' $bagname/etc/profile
+echo "#!/usr/bin/env bash
+cd
+
+case \$1 in
+        --purge) echo -e '是否删除容器？确认请输\e[33m y \e[0m回车，任意键退出'
+        read -r -p '' input
+	case \$input in
+                Y|y) rm -rfv \${PREFIX}/bin/start-$bagname
+                rm -rf $bagname
+                        if [ -d $bagname ]; then
+				echo -e '删除失败'
+			else
+				echo -e '已删除'
+				fi
+				sleep 1
+				;;
+			*) echo -e '操作取消'
+		esac
+		exit 0
+esac
+
+pkill -9 pulseaudio 2>/dev/null
+pulseaudio --start --load='module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1' --exit-idle-time=-1
+unset LD_PRELOAD
+proot --kill-on-exit -b $DIRECT:/root$DIRECT -b $DIRECT -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/dalvik-cache -b /data/data/com.termux/cache -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b $bagname/tmp:/dev/shm -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/urandom:/dev/random --sysvipc --link2symlink -S $bagname -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games TZ='Asia/Shanghai' LANG=C.UTF-8 /bin/bash --login" >${PREFIX}/bin/start-$bagname && chmod +x ${PREFIX}/bin/start-$bagname
+for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b $bagname/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-$bagname; fi done
+echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}start-$bagname${RES}\n删除容器${YELLOW}start-$bagname --purge${RES}"
+:<<\eof
 echo "pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start &
 unset LD_PRELOAD
 proot --kill-on-exit -S $bagname --link2symlink -b $DIRECT:/root$DIRECT -b $DIRECT -b $bagname/proc/version:/proc/version -b $bagname/root:/dev/shm -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=C.UTF-8 /bin/bash --login" >$bagname.sh && chmod +x $bagname.sh
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}./$bagname.sh${RES}"
-if [ -e ${PREFIX}/etc/bash.bashrc ]; then
-if ! grep -q 'pulseaudio' ${PREFIX}/etc/bash.bashrc; then
-sed -i "1i\pkill -9 pulseaudio 2>/dev/null" ${PREFIX}/etc/bash.bashrc
-fi
-fi
+eof
 sleep 2
 }
 #########################
@@ -2304,29 +2200,27 @@ MAIN() {
 	ARCH_CHECK
 	uname -a | grep 'Android' -q
 	if [ $? -ne 0 ]; then
-	echo "当前环境为rootfs系统,已自动屏蔽termux相关选项"
 	SUDO_CHECK
 	echo -e "1) 软件安装
 2) 系统相关
-E) exit\n"
-read -r -p "CHOOSE: 1) 2) E(exit) " input
+0) 退出\n"
+read -r -p "请选择: " input
 case $input in
         1) clear 
 		INSTALL_SOFTWARE ;;
 	2) clear
 		SETTLE ;;
-	[Ee]) exit 1 ;;
+	0) exit 1 ;;
 	*) INVALID_INPUT
 		MAIN ;;
 esac
 else
-	echo "当前环境为termux,已自动屏蔽rootfs系统相关选项"
-	echo -e "3) termux相关(包括系统包下载)
-E) exit\n"
-read -r -p "CHOOSE: 3) E(exit) " input
+	echo -e "1) termux相关(包括系统包下载)
+0) 退出\n"
+read -r -p "请选择: " input
 	case $input in
-		3) TERMUX ;;
-		[Ee]) exit 1 ;;
+		1) TERMUX ;;
+		0) exit 0 ;;
 		*) INVALID_INPUT
 			MAIN ;;    
 	esac
