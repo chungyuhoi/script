@@ -4,6 +4,7 @@ cd $(dirname $0)
 #sync && echo 3 >/proc/sys/vm/drop_caches
 #am start -n x.org.server/x.org.server.MainActivity
 #am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
+#am start -n com.google.android.documentsui/com.android.documentsui.files.FilesActivity
 #time echo "scale=5000; 4*a(1)" | bc -l -q
 UPDATE="2022/07/27"
 INFO() {
@@ -212,8 +213,8 @@ sudo_() {
 		sudo="sudo"
 	fi
 ####################
-BF_CUR="https://mirrors.bfsu.edu.cn/lxc-images/images/debian/"
-BF_URL="deb https://mirrors.bfsu.edu.cn/debian"
+BF_CUR="https://mirrors.tuna.tsinghua.edu.cn/lxc-images/images/debian/"
+BF_URL="deb https://mirrors.tuna.tsinghua.edu.cn/debian"
 US_URL="deb https://mirrors.ustc.edu.cn/debian"
 DEB="main contrib non-free"
 ####################
@@ -497,15 +498,15 @@ ${US_URL} buster-updates ${DEB}
 ${US_URL} buster-backports ${DEB}
 ${US_URL}-security buster/updates ${DEB}"|sed 's/https/http/' >$sys_name/etc/apt/sources.list
 esac
-curl https://mirrors.bfsu.edu.cn/debian/pool/main/c/ca-certificates/$(curl https://mirrors.bfsu.edu.cn/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/ca.deb
-curl https://mirrors.bfsu.edu.cn/debian/pool/main/o/openssl/$(curl https://mirrors.bfsu.edu.cn/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/openssl.deb
+curl https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/c/ca-certificates/$(curl https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/ca.deb
+curl https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/o/openssl/$(curl https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o $sys_name/root/openssl.deb
 	if [ ! -f $(pwd)/utqemu.sh ]; then
 	curl https://shell.xb6868.com/ut/utqemu.sh -o $sys_name/root/utqemu.sh 2>/dev/null
 	else
 		cp utqemu.sh $sys_name/root/
 	fi
 	
-echo 'for i in /var/run/dbus/pid  /tmp/.X*-lock /tmp/.X11-unix/X* /tnp/wayland*; do if [ -e "${i}" ]; then rm -vf ${i}; fi; done' >>$sys_name/etc/profile
+echo 'for i in /var/run/dbus/pid /tmp/.X*-lock /tmp/.X11-unix/X* /tnp/wayland*; do if [ -e "${i}" ]; then rm -vf ${i}; fi; done' >>$sys_name/etc/profile
 
 echo -e "\e[33m优化部分命令\e[0m"
 sleep 1
@@ -513,10 +514,10 @@ find $sys_name/ -name busybox
 if [ $? == 0 ]; then
 mkdir qemu_tmp
 cd qemu_tmp
-curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/ | grep busybox | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1) -o busybox.apk
+curl https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main/aarch64/ | grep busybox | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1) -o busybox.apk
 tar zxvf busybox.apk bin 2>/dev/null
 mv bin/busybox ../$sys_name/usr/local/bin 2>/dev/null
-curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.bfsu.edu.cn/alpine/latest-stable/main/aarch64/ | grep musl | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1) -o musl.apk
+curl https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main/aarch64/$(curl https://mirrors.tuna.tsinghua.edu.cn/alpine/latest-stable/main/aarch64/ | grep musl | sed -n 1p | awk -F 'href="' '{print $2}' | cut -d '"' -f 1) -o musl.apk
 tar zxvf musl.apk lib
 mv lib/* ../$sys_name/usr/lib
 cd -
@@ -542,6 +543,7 @@ echo $(uname -a) | sed 's/Android/GNU\/Linux/' >$sys_name/etc/proc/version
 touch $sys_name/etc/proc/vmstat
 echo 'Character devices:!  1 mem!  4 /dev/vc/0!  4 tty!  4 ttyS!  5 /dev/tty!  5 /dev/console!  5 /dev/ptmx!  7 vcs! 10 misc! 13 input! 21 sg! 29 fb! 81 video4linux!128 ptm!136 pts!180 usb!189 usb_device!202 cpu/msr!203 cpu/cpuid!212 DVB!244 hidraw!245 rpmb!246 usbmon!247 nvme!248 watchdog!249 ptp!250 pps!251 media!252 rtc!253 dax!254 gpiochip!!Block devices:!  1 ramdisk!  7 loop!  8 sd! 11 sr! 65 sd! 66 sd! 67 sd! 68 sd! 69 sd! 70 sd! 71 sd!128 sd!129 sd!130 sd!131 sd!132 sd!133 sd!134 sd!135 sd!179 mmc!253 device-mapper!254 virtblk!259 blkext' | sed 's/!/\n/g' >$sys_name/etc/proc/devices
 echo "cpu  0 0 0 0 0 0 0 0 0 0
+cpu0 0 0 0 0 0 0 0 0 0 0
 intr 1
 ctxt 0
 btime 0
@@ -549,6 +551,14 @@ processes 0
 procs_running 1
 procs_blocked 0
 softirq 0 0 0 0 0 0 0 0 0 0 0" >$sys_name/etc/proc/stat
+cpus=`cat -n /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | tail -n 1 | awk '{print $1}'`
+if [ -n $cpus ]; then
+	while [[ $cpus -ne 1 ]]
+	do
+		cpus=$(( $cpus-1 ))
+		sed -i "2a cpu${cpus} 0 0 0 0 0 0 0 0 0 0" .wine-armhf/etc/proc/stat
+	done
+fi
 
 if [ -z $ANDROID_RUNTIME_ROOT ]; then
 export ANDROID_RUNTIME_ROOT=/apex/com.android.runtime
@@ -588,26 +598,21 @@ SYSTEM_CHECK() {
 	if [ ! -e ${HOME}/storage ]; then
 		termux-setup-storage
 	fi
-	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | egrep "mirror.iscas.ac.cn|mirrors.hit.edu.cn|mirrors.aliyun.com|mirrors.nju.edu.cn|mirrors.bfsu.edu.cn|mirrors.pku.edu.cn|mirrors.cqupt.edu.cn|mirrors.tuna.tsinghua.edu.cn|mirrors.dgut.edu.cn|mirrors.ustc.edu.cn" >/dev/null 2>&1; then
+	if grep '^[^#]' ${PREFIX}/etc/apt/sources.list | egrep "mirror.iscas.ac.cn|mirrors.hit.edu.cn|mirrors.aliyun.com|mirrors.nju.edu.cn|mirrors.tuna.tsinghua.edu.cn|mirrors.pku.edu.cn|mirrors.cqupt.edu.cn|mirrors.tuna.tsinghua.edu.cn|mirrors.dgut.edu.cn|mirrors.ustc.edu.cn" >/dev/null 2>&1; then
 		echo ""
 	else
 		echo -e "${YELLOW}检测到你使用的可能为非国内源，为保证正常使用，建议切换为国内源(0.73版termux勿更换)${RES}\n  
 		1) 换国内源
-		2) 不换
-		3) 我的是旧termux版本"
+		2) 不换"
 	read -r -p "是否换国内源: " input   
 	case $input in    
 		1|"") echo "换国内源"
 	if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
-	rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
-	ln -s /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+	ln -sf /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
 	fi
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && yes | pkg update 
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update
-	;;
-		3)
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://termux.org/packages/ stable main@' $PREFIX/etc/apt/sources.list && pkg update
-#	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://packages-cf.termux.org/apt/termux-main/ stable main@' $PREFIX/etc/apt/sources.list
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && yes | pkg update
+	ln -sf /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && yes | pkg update
 	;;
 		*) echo "#utqemucheck" >>${PREFIX}/etc/apt/sources.list ;;  
 	esac                                                    
@@ -1150,7 +1155,7 @@ echo -e "0)  退出\n"
 		echo -e "\n${YELLOW}debian-sid源地址已有qemu7.0可供安装，是否更新版本？(非本脚本安装的容器慎选)${RES}"
 		read -r -p "1)继续使用qemu5.2系统 2)更新为qemu7.0系统 " input
 		case $input in
-			2) echo 'deb https://mirrors.bfsu.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && $sudo apt update ;;
+			2) echo 'deb https://mirrors.tuna.tsinghua.edu.cn/debian/ sid main contrib non-free' >/etc/apt/sources.list && $sudo apt update ;;
 			*) ;;
 		esac
 	fi
@@ -1735,7 +1740,7 @@ eof
 	99) 
 #AMD Phenom(tm) 9550 Quad-Core Processor
 #	CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-de,-lm,-clflush,-clflushopt,-clwb,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt,+npt"
-	CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-lm,,-de,-rdrand,+aes,+pclmulqdq,+3dnowext,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt,+npt"
+	CPU_MODEL="phenom-v1,-fxsr-opt,-syscall,-lm,-de,-rdrand,+aes,+pclmulqdq,+3dnowext,+pdpe1gb,+sse4.1,+sse4.2,+ssse3,+pni,+cr8legacy,+fxsr,+xgetbv1,+xsave,+xsaveopt,+npt"
 	SMP_="4,cores=4,threads=1,sockets=1"
 	MAXCPUS="4,cores=4,threads=1,sockets=2,maxcpus=8" ;;
 	*) case $SYS in
@@ -2956,7 +2961,7 @@ echo -e "1) 换源
 		rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
 		ln -s /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
 	fi
-		sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.bfsu.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update ;;
+		sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update ;;
 	2) if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
 		rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
 		ln -s /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
@@ -2976,6 +2981,7 @@ LOGIN_() {
 	2)  支持qemu5.0以下版本容器(选项内容比较简单，模拟xp建议此版本)
 	3） 支持qemu5.0以上版本容器(选项内容丰富)
 	4)  换源(如果无法安装或登录请尝试此操作)
+	5)  安装linux-bullseye(预安装xfce4 vlc chromium)
 	8)  安装运行轻量版容器+qemu(qemulite)
 	9)  体验box64+box86+wine运行exe(整个容器约2.2g)
 	10) 下载新版termux
@@ -3006,6 +3012,7 @@ LOGIN_() {
 	fi
 		fi ;;
 	4) SOURCE ;;
+	5) bash -c "$(curl https://shell.xb6868.com/ut/bullseye.sh)" ;;
 	8) bash -c "$(curl https://shell.xb6868.com/ut/qemulite.sh)" ;;
 	9) bash -c "$(curl https://shell.xb6868.com/wine/boxwine.sh)" ;;
 	10) echo -e "\n${YELLOW}检测最新版本${RES}"
