@@ -66,11 +66,11 @@ sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/t
 #######################
 TERMUX_CHECK
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20220913${RES}\n"
+${YELLOW}更新日期20221009${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
-	if [ `whoami` == "root" ];then
+	if [ `id -u` == "0" ];then
 	echo -e "${BLUE}当前用户为root${RES}"
 else
 	echo -e "${RED}当前用户为$(whoami)${RES}\n"
@@ -152,7 +152,7 @@ fi
 #####################
 #####################
 SUDO_CHECK() {
-if [ `whoami` != "root" ];then
+if [ `id -u` != "0" ];then
 	sudo_t="sudo"
 else
 	sudo_t=""
@@ -581,6 +581,8 @@ $sudo_t apt install libnss3 unzip wget gnupg2 libxtst-dev apt-transport-https -y
 if [ ! $(command -v electron) ]; then
 mkdir /usr/share/electron
 cd /usr/share/electron
+#最新版本
+#VERSION=`curl https://registry.npmmirror.com/-/binary/electron/|sed 's/name/\n/g'|cut -d '"' -f 3|sed 's/\n//g;s/\///'|grep '^v2'|tail -n 1`; wget https://registry.npmmirror.com/-/binary/electron/${VERSION}/electron-${VERSION}-linux-arm64.zip
 wget https://registry.npmmirror.com/-/binary/electron/v8.5.5/chromedriver-v8.5.5-linux-arm64.zip
 wget https://registry.npmmirror.com/-/binary/electron/v8.5.5/ffmpeg-v8.5.5-linux-arm64.zip
 wget https://registry.npmmirror.com/-/binary/electron/v8.5.5/electron-v8.5.5-linux-arm64.zip
@@ -1842,39 +1844,11 @@ bash start-$bagname
 exit 0 ;;
 
 	8) QEMU_SYSTEM ;;
-	9) echo -e "\n你正在下载的是x86架构的debian(buster),将会通过qemu的模拟方式运行;
+	9) echo -e "\n你正在下载的是x86架构的debian(bullseye),将会通过qemu的模拟方式运行;
 由于系统包很干净，所以建议进入系统后，再用本脚本安装常用应用"
                 CONFIRM
-		if [ -e rootfs.tar.xz ]; then
-			rm -rf rootfs.tar.xz
-		fi
-		case $(dpkg --print-architecture) in
-			aarch64|arm64) ;;
-			*) echo -e "${RED}你用的架构不支持，下载中止${RES}"
-			sleep 2  ;;
-		esac
-CODENAME=buster
-LXC=debian
-ARCH_CHANGE=amd64
-SYSTEM_DOWN
-echo "修改为北外源"
-echo "deb ${SOURCES_BF}debian buster ${DEB_DEBIAN}
-deb ${SOURCES_BF}debian buster-updates ${DEB_DEBIAN}
-deb ${SOURCES_BF}debian buster-backports ${DEB_DEBIAN}
-deb ${SOURCES_BF}debian-security buster/updates ${DEB_DEBIAN}" >$bagname/etc/apt/sources.list
-sleep 2
-echo "配置qemu"
-sleep 2
-curl -o qemu.deb ${SOURCES_BF}debian/pool/main/q/qemu/$(curl ${SOURCES_BF}debian/pool/main/q/qemu/ | grep '\.deb' | grep 'qemu-user-static' | grep arm64 | tail -n 1 | cut -d '=' -f 3 | cut -d '"' -f 2)
-mkdir qemu_temp
-dpkg -X qemu.deb ./qemu_temp
-cp qemu_temp/usr/bin/qemu-x86_64-static $bagname/
-echo "删除临时文件"
-sleep 1
-rm -rf qemu_temp qemu.deb
-sed -i "s/\-w/\-q $bagname\/qemu-x86_64-static \-w/" ${PREFIX}/bin/start-$bagname 
-echo -e "现在可以用${YELLOW}start-$bagname${RES}登录系统"
-sleep 2
+		bash -c "$(curl https://shell.xb6868.com/ut/bullseye-amd64.sh)"
+exit 1
 TERMUX ;;
 
 	[Kk][Aa][Ll][Ii]) echo -e "\n${YELLOW}欢迎进入kali系统的下载安装!(≧∇≦)/\n${RES}"
@@ -2182,7 +2156,7 @@ esac
 pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start --load='module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1' --exit-idle-time=-1
 unset LD_PRELOAD
-proot --kill-on-exit -b $DIRECT:/root$DIRECT -b $DIRECT -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/dalvik-cache -b /data/data/com.termux/cache -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b $bagname/tmp:/dev/shm -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/urandom:/dev/random --sysvipc --link2symlink -S $bagname -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games TZ='Asia/Shanghai' LANG=C.UTF-8 /bin/bash --login" >${PREFIX}/bin/start-$bagname && chmod +x ${PREFIX}/bin/start-$bagname
+proot --kill-on-exit -b $DIRECT:/root$DIRECT -b $DIRECT -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/data/com.termux/cache -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b $bagname/tmp:/dev/shm -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/urandom:/dev/random --sysvipc --link2symlink -S $bagname -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games TZ='Asia/Shanghai' LANG=C.UTF-8 /bin/bash --login" >${PREFIX}/bin/start-$bagname && chmod +x ${PREFIX}/bin/start-$bagname
 for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b $bagname/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-$bagname; fi done
 echo -e "已创建root用户系统登录脚本,登录方式为${YELLOW}start-$bagname${RES}\n删除容器${YELLOW}start-$bagname --purge${RES}"
 :<<\eof

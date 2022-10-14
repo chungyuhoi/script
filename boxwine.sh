@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 
-#https://dl.winehq.org/wine-builds/ubuntu/
-#默认系统盘目录export WINEPREFIX=~/.wine-new
+#常用变量
 #指定内署dll或windows dll，b=builtin，n=native
 #export WINEDLLOVERRIDES=c:\\windows\\system32\\bass=n;bass=n;bass=b
 #WINEDLLOVERRIDES="bass=n;z:\\sdcard\\xinhao\\games\\unplay\\zw\\bass=b"
 #for i in /usr/lib/wine/winepulse.drv.so /usr/lib/wine/fakedlls/winepulse.drv /usr/lib32/wine/fakedlls/winepulse.drv /usr/lib32/wine/winepulse.drv.so; do chmod 000 "$i"; chattr +i "$i"; done
 #Exec=box86 wine explorer /desktop=name,1024x768 /sdcard/xinhao/games/War3/Frozen\ Throne.exe %f
 #QT_SCREEN_SCALE_FACTORS=1
+#BOX86_PATH=
+#BOX86_LD_LIBRARY_PATH=
+#export BOX64_PATH=${HOME}/wine64/bin/
+#export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/
+#默认系统盘目录export WINEPREFIX="${HOME}/.wine"
+#export WINEARCH=win32
+#opengl的驱动路径 LIBGL_DRIVERS_PATH=
+#GALLIUM_DRIVER=llvmpipe,zink
+
 #proot登录方式，可选 STANDER PRO
 PROOT=PRO
 
@@ -15,13 +23,15 @@ PROOT=PRO
 ROOTFS=bullseye
 
 #box安装方式，注意：kali仅能选NOBOX，可选 REPO GIT RELEASE XB6868 NOBOX
-BOX_INSTALL=XB6868
+BOX_INSTALL=NOBOX
 
 #wine安装方式，注意：REPO仅对bullseye可用，可选 REPO PLAYONLINUX XB6868 NOWINE
-WINE_INSTALL=XB6868
+WINE_INSTALL=NOWINE
 
 #wine版本，仅对PLAYONLIUX可用，可选 3.9 6.17 或该网已知版本
 WINE_VERSION=3.9
+
+CONTAINER=".wine-arm64"
 
 case $PROOT in
 PRO)
@@ -65,11 +75,11 @@ sleep 1
 exit 0
 fi
 unset i
-if [ -d .wine-arm64 ]; then echo -e "\n检测已有相关文件夹，是否删除？\n\e[33m1) 删除重装\n2) 删除\n0) 退出\e[0m\n";
+if [ -d ${CONTAINER} ]; then echo -e "\n检测已有相关文件夹，是否删除？\n\e[33m1) 删除重装\n2) 删除\n0) 退出\e[0m\n";
 read -r -p "请选择: " input
 case $input in
-1) rm -rf .wine-arm64 ;;
-2) rm -rf .wine-arm64 ${PREFIX}/bin/start-wine*
+1) rm -rf ${CONTAINER} ;;
+2) rm -rf ${CONTAINER} ${PREFIX}/bin/start-wine*
 	echo -e "\e[33m已御载wine-arm64\e[0m"
 	sleep 1
 	exit 0 ;;
@@ -83,25 +93,25 @@ echo -e "\n检测最新更新的容器${LXC}-${ROOTFS}\e[0m\n"
 sleep 1
 curl -O ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
 if [ ! -f rootfs.tar.xz ]; then echo -e "\e[31m下载错误，请检查网络\e[0m"; sleep 1; exit 0; fi
-mkdir .wine-arm64
-tar xvf rootfs.tar.xz -C .wine-arm64
+mkdir ${CONTAINER}
+tar xvf rootfs.tar.xz -C ${CONTAINER}
 #if [ $? != 0 ]; then echo -e "\e[31m下载错误，请检查网络\e[0m"; sleep 1; exit 0; fi
 rm rootfs.tar.xz
-echo 'for i in /var/run/dbus/pid /tmp/.X*-lock /tmp/.X11-unix/X*; do if [ -e "${i}" ]; then rm -vf ${i}; fi done' >>.wine-arm64/etc/profile
+echo 'for i in /var/run/dbus/pid /tmp/.X*-lock /tmp/.X11-unix/X*; do if [ -e "${i}" ]; then rm -vf ${i}; fi done' >>${CONTAINER}/etc/profile
 #伪proc文件
-mkdir .wine-arm64/etc/proc/ -p
-printf ' 52 memory_bandwidth! 53 network_throughput! 54 network_latency! 55 cpu_dma_latency! 56 xt_qtaguid! 57 vndbinder! 58 hwbinder! 59 binder! 60 ashmem!239 uhid!236 device-mapper!223 uinput!  1 psaux!200 tun!237 loop-control! 61 lightnvm!228 hpet!229 fuse!242 rfkill! 62 ion! 63 vga_arbiter\n' | sed 's/!/\n/g' >.wine-arm64/etc/proc/misc
-printf "%-1s %-1s %-1s %8s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s\n" Node 0, zone DMA 3 2 2 4 3 3 2 1 2 2 0 Node 0, zone DMA32 1774 851 511 220 67 3 2 0 0 1 0 >.wine-arm64/etc/proc/buddyinfo
-echo "0.03 0.03 0.00 1/116 17521" >.wine-arm64/etc/proc/loadavg
-touch .wine-arm64/etc/proc/kmsg
-echo 'tty0                 -WU (EC p  )    4:7' >.wine-arm64/etc/proc/consoles
-echo '0-0     Linux                   [kernel]' >.wine-arm64/etc/proc/execdomains
-echo '0 EFI VGA' >.wine-arm64/etc/proc/fb
-echo '    0:     9 8/8 3/1000000 27/25000000' >.wine-arm64/etc/proc/key-users
-echo '285490.46 1021963.95' >.wine-arm64/etc/proc/uptime
-echo $(uname -a) | sed 's/Android/GNU\/Linux/' >.wine-arm64/etc/proc/version
-touch .wine-arm64/etc/proc/vmstat
-echo 'Character devices:!  1 mem!  4 /dev/vc/0!  4 tty!  4 ttyS!  5 /dev/tty!  5 /dev/console!  5 /dev/ptmx!  7 vcs! 10 misc! 13 input! 21 sg! 29 fb! 81 video4linux!128 ptm!136 pts!180 usb!189 usb_device!202 cpu/msr!203 cpu/cpuid!212 DVB!244 hidraw!245 rpmb!246 usbmon!247 nvme!248 watchdog!249 ptp!250 pps!251 media!252 rtc!253 dax!254 gpiochip!!Block devices:!  1 ramdisk!  7 loop!  8 sd! 11 sr! 65 sd! 66 sd! 67 sd! 68 sd! 69 sd! 70 sd! 71 sd!128 sd!129 sd!130 sd!131 sd!132 sd!133 sd!134 sd!135 sd!179 mmc!253 device-mapper!254 virtblk!259 blkext' | sed 's/!/\n/g' >.wine-arm64/etc/proc/devices
+mkdir ${CONTAINER}/etc/proc/ -p
+printf ' 52 memory_bandwidth! 53 network_throughput! 54 network_latency! 55 cpu_dma_latency! 56 xt_qtaguid! 57 vndbinder! 58 hwbinder! 59 binder! 60 ashmem!239 uhid!236 device-mapper!223 uinput!  1 psaux!200 tun!237 loop-control! 61 lightnvm!228 hpet!229 fuse!242 rfkill! 62 ion! 63 vga_arbiter\n' | sed 's/!/\n/g' >${CONTAINER}/etc/proc/misc
+printf "%-1s %-1s %-1s %8s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s\n" Node 0, zone DMA 3 2 2 4 3 3 2 1 2 2 0 Node 0, zone DMA32 1774 851 511 220 67 3 2 0 0 1 0 >${CONTAINER}/etc/proc/buddyinfo
+echo "0.03 0.03 0.00 1/116 17521" >${CONTAINER}/etc/proc/loadavg
+touch ${CONTAINER}/etc/proc/kmsg
+echo 'tty0                 -WU (EC p  )    4:7' >${CONTAINER}/etc/proc/consoles
+echo '0-0     Linux                   [kernel]' >${CONTAINER}/etc/proc/execdomains
+echo '0 EFI VGA' >${CONTAINER}/etc/proc/fb
+echo '    0:     9 8/8 3/1000000 27/25000000' >${CONTAINER}/etc/proc/key-users
+echo '285490.46 1021963.95' >${CONTAINER}/etc/proc/uptime
+echo $(uname -a) | sed 's/Android/GNU\/Linux/' >${CONTAINER}/etc/proc/version
+touch ${CONTAINER}/etc/proc/vmstat
+echo 'Character devices:!  1 mem!  4 /dev/vc/0!  4 tty!  4 ttyS!  5 /dev/tty!  5 /dev/console!  5 /dev/ptmx!  7 vcs! 10 misc! 13 input! 21 sg! 29 fb! 81 video4linux!128 ptm!136 pts!180 usb!189 usb_device!202 cpu/msr!203 cpu/cpuid!212 DVB!244 hidraw!245 rpmb!246 usbmon!247 nvme!248 watchdog!249 ptp!250 pps!251 media!252 rtc!253 dax!254 gpiochip!!Block devices:!  1 ramdisk!  7 loop!  8 sd! 11 sr! 65 sd! 66 sd! 67 sd! 68 sd! 69 sd! 70 sd! 71 sd!128 sd!129 sd!130 sd!131 sd!132 sd!133 sd!134 sd!135 sd!179 mmc!253 device-mapper!254 virtblk!259 blkext' | sed 's/!/\n/g' >${CONTAINER}/etc/proc/devices
 echo "cpu  0 0 0 0 0 0 0 0 0 0
 cpu0 0 0 0 0 0 0 0 0 0 0
 intr 1
@@ -110,58 +120,58 @@ btime 0
 processes 0
 procs_running 1
 procs_blocked 0
-softirq 0 0 0 0 0 0 0 0 0 0 0" >.wine-arm64/etc/proc/stat
+softirq 0 0 0 0 0 0 0 0 0 0 0" >${CONTAINER}/etc/proc/stat
 cpus=`cat -n /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq | tail -n 1 | awk '{print $1}'`
 if [ -n $cpus ]; then
 while [[ $cpus -ne 1 ]]
 do
 cpus=$(( $cpus-1 ))
-sed -i "2a cpu${cpus} 0 0 0 0 0 0 0 0 0 0" .wine-arm64/etc/proc/stat
+sed -i "2a cpu${cpus} 0 0 0 0 0 0 0 0 0 0" ${CONTAINER}/etc/proc/stat
 done
 fi
 
-sed -i '3i export MOZ_FAKE_NO_SANDBOX=1' .wine-arm64/etc/profile
+sed -i '3i export MOZ_FAKE_NO_SANDBOX=1' ${CONTAINER}/etc/profile
 
-sed -i "/zh_CN.UTF/s/#//" .wine-arm64/etc/locale.gen
-rm .wine-arm64/etc/resolv.conf 2>/dev/null
+sed -i "/zh_CN.UTF/s/#//" ${CONTAINER}/etc/locale.gen
+rm ${CONTAINER}/etc/resolv.conf 2>/dev/null
 echo "nameserver 223.5.5.5
-nameserver 223.6.6.6" >.wine-arm64/etc/resolv.conf
+nameserver 223.6.6.6" >${CONTAINER}/etc/resolv.conf
 case $ROOTFS in
 impish|jammy)
 echo "deb ${URL}/ubuntu-ports/ ${ROOTFS} ${DEB}
 deb ${URL}/ubuntu-ports/ ${ROOTFS}-updates ${DEB}
 deb ${URL}/ubuntu-ports/ ${ROOTFS}-backports ${DEB}
-deb ${URL}/ubuntu-ports/ ${ROOTFS}-security ${DEB}" >.wine-arm64/etc/apt/sources.list
+deb ${URL}/ubuntu-ports/ ${ROOTFS}-security ${DEB}" >${CONTAINER}/etc/apt/sources.list
 ;;
 bullseye|sid)
-echo "deb ${URL}/debian/ ${ROOTFS} ${DEB}" >.wine-arm64/etc/apt/sources.list
+echo "deb ${URL}/debian/ ${ROOTFS} ${DEB}" >${CONTAINER}/etc/apt/sources.list
 case $ROOTFS in
 bullseye)
 echo "deb ${URL}/debian/ bullseye-updates ${DEB}
 deb ${URL}/debian/ bullseye-backports ${DEB}
-deb ${URL}/debian-security bullseye-security ${DEB}" >>.wine-arm64/etc/apt/sources.list
+deb ${URL}/debian-security bullseye-security ${DEB}" >>${CONTAINER}/etc/apt/sources.list
 ;;
 sid)
-curl ${URL}/kali/pool/main/o/openssl/$(curl ${URL}/kali/pool/main/o/openssl/|grep libssl1.1_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o .wine-arm64/root/libssl.deb
+curl ${URL}/kali/pool/main/o/openssl/$(curl ${URL}/kali/pool/main/o/openssl/|grep libssl1.1_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o ${CONTAINER}/root/libssl.deb
 esac
-curl ${URL}/debian/pool/main/c/ca-certificates/$(curl ${URL}/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o .wine-arm64/root/ca.deb
-curl ${URL}/debian/pool/main/o/openssl/$(curl ${URL}/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o .wine-arm64/root/openssl.deb
+curl ${URL}/debian/pool/main/c/ca-certificates/$(curl ${URL}/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o ${CONTAINER}/root/ca.deb
+curl ${URL}/debian/pool/main/o/openssl/$(curl ${URL}/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o ${CONTAINER}/root/openssl.deb
 ;;
 current)
-echo "deb ${URL}/kali kali-rolling ${DEB}" >.wine-arm64/etc/apt/sources.list
-curl ${URL}/debian/pool/main/c/ca-certificates/$(curl ${URL}/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o .wine-arm64/root/ca.deb
-curl ${URL}/debian/pool/main/o/openssl/$(curl ${URL}/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o .wine-arm64/root/openssl.deb
-#curl ${URL}/kali/pool/main/o/openssl/libssl1.1_1.1.1o-1_arm64.deb -o .wine-arm64/root/libssl.deb
-curl ${URL}/kali/pool/main/o/openssl/$(curl ${URL}/kali/pool/main/o/openssl/|grep libssl1.1_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o .wine-arm64/root/libssl.deb
+echo "deb ${URL}/kali kali-rolling ${DEB}" >${CONTAINER}/etc/apt/sources.list
+curl ${URL}/debian/pool/main/c/ca-certificates/$(curl ${URL}/debian/pool/main/c/ca-certificates/|grep all.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o ${CONTAINER}/root/ca.deb
+curl ${URL}/debian/pool/main/o/openssl/$(curl ${URL}/debian/pool/main/o/openssl/|grep openssl_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o ${CONTAINER}/root/openssl.deb
+#curl ${URL}/kali/pool/main/o/openssl/libssl1.1_1.1.1o-1_arm64.deb -o ${CONTAINER}/root/libssl.deb
+curl ${URL}/kali/pool/main/o/openssl/$(curl ${URL}/kali/pool/main/o/openssl/|grep libssl1.1_1.*arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1) -o ${CONTAINER}/root/libssl.deb
 esac
-mkdir .wine-arm64/usr/share/doc/wine/ -p
+mkdir ${CONTAINER}/usr/share/doc/wine/ -p
 
 
-echo -e "\e[33m系统已下载,文件夹名为.wine-arm64\e[0m"
+echo -e "\e[33m系统已下载,文件夹名为${CONTAINER}\e[0m"
 echo -e "登录命令为\e[33m${START}\e[0m"
 sleep 5
 
-cat >.wine-arm64/root/firstrun<<-'eof'
+cat >${CONTAINER}/root/firstrun<<-'eof'
 #!/usr/bin/env bash
 
 URL="https://mirrors.tuna.tsinghua.edu.cn"
@@ -313,7 +323,7 @@ export LANG=zh_CN.UTF-8
 #apt install zenity libstdc++6 libasound* libncurses5 vulkan* *mesa* libmpg123-0 libsdl2-image-2.0-0 -y
 #apt install ubuntu-restricted-extras chromium-codecs-ffmpeg-extra gstreamer1.0-libav gstreamer1.0-plugins-ugly gstreamer1.0-vaapi libavcodec-extra --no-install-recommends
 
-cat >/usr/local/bin/box64wine64<<-'BOXWINE'
+cat >/usr/local/bin/boxwine<<-'BOXWINE'
 #!/usr/bin/env bash
 export WINEDEBUG=-all
 if [[ $(id -u) = 0 ]];then
@@ -341,8 +351,8 @@ box64 wine64 taskmgr
 exit 0
 BOXWINE
 
-cp /usr/local/bin/box64wine64 /usr/local/bin/box64wine64de
-sed -E -i '/trap/d;s/(^box.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/box64wine64de
+cp /usr/local/bin/boxwine /usr/local/bin/boxwinede
+sed -E -i '/trap/d;s/(^box.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/boxwinede
 
 echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
@@ -353,7 +363,7 @@ export DISPLAY=:0
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
 #dbus-launch xfwm4 &
 #onboard &
-box64wine64 >/dev/null 2>wine_log &
+boxwine >/dev/null 2>wine_log &
 am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity 2>/dev/null
 exit 0' >/usr/local/bin/startwine
 rm /usr/local/bin/startvsdl /usr/local/bin/startxsdl 2>/dev/null
@@ -375,7 +385,7 @@ export PULSE_SERVER=127.0.0.1
 export DISPLAY=127.0.0.1:0
 #dbus-launch xfwm4 &
 #onboard &
-box64wine64 >/dev/null 2>wine_log &
+boxwine >/dev/null 2>wine_log &
 #直接启动游戏：box64 wine64 start /unix *.exe
 exit 0' >>/usr/local/bin/startxsdl
 
@@ -391,7 +401,7 @@ sleep 1
 x11vnc -nopw -nocursor -localhost -ncache_cr -xkb -noxrecord -noxdamage -display ${DISPLAY} -forever -bg -rfbport 5900 -noshm -shared -nothreads 2>&1 2>/dev/null &
 #dbus-launch xfwm4 &
 #onboard &
-box64wine64 >/dev/null 2>wine_log &
+boxwine >/dev/null 2>wine_log &
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
 sleep 1
 am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity 2>/dev/null
@@ -419,7 +429,7 @@ FBL
 #关虚拟桌面
 cat >/usr/local/bin/gg<<-'DEG'
 #!/usr/bin/env bash
-sed -i '/Desktop/s/^/#/' /usr/local/bin/box64wine64
+sed -i '/Desktop/s/^/#/' /usr/local/bin/boxwine
 i=0
 pstree | grep -q "services"
 while [ $? == 0 ] && [[ $i -ne 6 ]]
@@ -443,7 +453,7 @@ DEG
 #开虚拟桌面
 cat >/usr/local/bin/kk<<'DEK'
 #!/usr/bin/env bash
-sed -i '/Desktop/s/#//' /usr/local/bin/box64wine64
+sed -i '/Desktop/s/#//' /usr/local/bin/boxwine
 pstree | grep -q "services"
 while [ $? == 0 ] && [[ $i -ne 6 ]]
 do
@@ -576,9 +586,9 @@ case $WINE in
 *6.17*)
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/wine.desktop 2>/dev/null
-sed -i 's/^Exec.*$/Exec=box64wine64de %f/' ${HOME}/Desktop/wine.desktop 2>/dev/null
+sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/Desktop/wine.desktop 2>/dev/null
 cp /usr/share/applications/wine.desktop ${HOME}/桌面/wine.desktop 2>/dev/null
-sed -i 's/^Exec.*$/Exec=box64wine64de %f/' ${HOME}/桌面/wine.desktop 2>/dev/null
+sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/桌面/wine.desktop 2>/dev/null
 ;;
 *)
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
@@ -658,6 +668,7 @@ ABOUTWINE
 
 chmod +x /usr/local/bin/ -R
 apt purge --allow-change-held-packages gvfs udisks2 -y 2>/dev/null
+ln -sf /usr/share/zoneinfo/Etc/GMT-8 /etc/localtime
 sed -i "/zh_CN.UTF/s/#//" /etc/locale.gen
 sed -i '/^SUPPORTED/s/^/#/;/^ALIASES/s/^/#/' /usr/sbin/locale-gen
 locale-gen
@@ -861,7 +872,7 @@ if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [6-7] ]]; then
 export BOX86_DYNAREC=0
 box64 wine64 wineboot 2>/dev/null &
 pkill services
-sed -i "/box64wine64/a sleep 5\npkill services" /usr/local/bin/start*
+sed -i "/boxwine/a sleep 5\npkill services" /usr/local/bin/start*
 else
 box64 wine64 wineboot 2>/dev/null
 fi
@@ -954,7 +965,7 @@ eof
 #If no 'isolated_environment', the following host directories will be available:
 
 
-cat >.wine-arm64/root/undercover<<-'eof'
+cat >${CONTAINER}/root/undercover<<-'eof'
 #!/usr/bin/env bash
 cd
 #精简安装
@@ -1064,9 +1075,9 @@ cp /usr/share/applications/wine.desktop ${HOME}/Desktop/
 sed -i 's/^Exec.*$/Exec=box64 wine64 taskmgr %f/' ${HOME}/Desktop/wine.desktop
 
 if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [6-9] ]]; then
-cp /usr/local/bin/box64wine64 /usr/local/bin/box64wine64de
-sed -E -i '/trap/d;s/(^box.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/box64wine64de
-sed -i 's/^Exec.*$/Exec=box64wine64de %f/' ${HOME}/Desktop/wine.desktop
+cp /usr/local/bin/boxwine /usr/local/bin/boxwinede
+sed -E -i '/trap/d;s/(^box.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/boxwinede
+sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/Desktop/wine.desktop
 rm ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop
 fi
 cp ${HOME}/Desktop/* ${HOME}/桌面/
@@ -1081,19 +1092,19 @@ echo -e "\n\e[33m正在进行自动首次登录...\e[0m"
 startvnc >/dev/null 2>&1
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
 eof
-sed -i "2i WINE_VERSION=$WINE_VERSION" .wine-arm64/root/firstrun
-sed -i "2i ROOTFS=$ROOTFS" .wine-arm64/root/firstrun
-sed -i "2i BOX_INSTALL=$BOX_INSTALL" .wine-arm64/root/firstrun
-sed -i "2i LXC=$LXC" .wine-arm64/root/firstrun
-sed -i "2i WINE_INSTALL=$WINE_INSTALL" .wine-arm64/root/firstrun
-sed -i "2i START=$START" .wine-arm64/root/firstrun
-echo '#!/usr/bin/env bash
+sed -i "2i WINE_VERSION=$WINE_VERSION" ${CONTAINER}/root/firstrun
+sed -i "2i ROOTFS=$ROOTFS" ${CONTAINER}/root/firstrun
+sed -i "2i BOX_INSTALL=$BOX_INSTALL" ${CONTAINER}/root/firstrun
+sed -i "2i LXC=$LXC" ${CONTAINER}/root/firstrun
+sed -i "2i WINE_INSTALL=$WINE_INSTALL" ${CONTAINER}/root/firstrun
+sed -i "2i START=$START" ${CONTAINER}/root/firstrun
+echo "#!/usr/bin/env bash
 cd
 pkill -9 pulseaudio 2>/dev/null
-pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1 
+pulseaudio --start --load='module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1' --exit-idle-time=-1 
 unset LD_PRELOAD
-proot --kill-on-exit -b /sdcard:/root/sdcard -b /sdcard -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/dalvik-cache -b /data/data/com.termux/cache -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b .wine-arm64/tmp:/dev/shm -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/urandom:/dev/random --sysvipc --link2symlink -S .wine-arm64 -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games TZ='Asia/Shanghai' LANG=C.UTF-8 /bin/bash --login' >${PREFIX}/bin/start-wine64 && chmod +x ${PREFIX}/bin/start-wine64
-for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b .wine-arm64/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine64; fi done
+proot --kill-on-exit -b /sdcard:/root/sdcard -b /sdcard -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/data/com.termux/cache -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b ${CONTAINER}/tmp:/dev/shm -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${CONTAINER} -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games TZ='Asia/Shanghai' LANG=C.UTF-8 /bin/bash --login" >${PREFIX}/bin/start-wine64 && chmod +x ${PREFIX}/bin/start-wine64
+for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine64; fi done
 
 #高级proot登录
 case $PROOT in
@@ -1102,7 +1113,7 @@ if [ -z $ANDROID_RUNTIME_ROOT ]; then
 export ANDROID_RUNTIME_ROOT=/apex/com.android.runtime
 fi
 
-cat >>${HOME}/.wine-arm64/etc/profile<<-EOF
+cat >>${HOME}/${CONTAINER}/etc/profile<<-EOF
 export ANDROID_ART_ROOT=${ANDROID_ART_ROOT-}
 export ANDROID_DATA=${ANDROID_DATA-}
 export ANDROID_I18N_ROOT=${ANDROID_I18N_ROOT-}
@@ -1129,13 +1140,13 @@ else
 fi
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
 eof
-sed -i '/=$/d' ${HOME}/.wine-arm64/etc/profile
+sed -i '/=$/d' ${HOME}/${CONTAINER}/etc/profile
 :<<\gcc
-cd ${HOME}/.wine-arm64
+cd ${HOME}/${CONTAINER}
 GCC=$(find -name libgcc_s.so.1 2>/dev/null | sed 's/.//')
 if [ "$GCC" != "/" ]; then
-echo $GCC >>${HOME}/.wine-arm64/etc/ld.so.preload
-chmod 644 "${HOME}/.wine-arm64/etc/ld.so.preload"
+echo $GCC >>${HOME}/${CONTAINER}/etc/ld.so.preload
+chmod 644 "${HOME}/${CONTAINER}/etc/ld.so.preload"
 fi
 cd -
 gcc
@@ -1145,41 +1156,41 @@ cd
 pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1" --exit-idle-time=-1 &
 unset LD_PRELOAD
-proot --kill-on-exit -b /vendor -b /system -b /sdcard -b /sdcard:/root/sdcard -b /data/data/com.termux/files -b /data/data/com.termux/cache -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/dalvik-cache -b .wine-arm64/tmp:/dev/shm -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b /dev/urandom:/dev/random --sysvipc --link2symlink -S .wine-arm64 -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=zh_CN.UTF-8 TZ=Asia/Shanghai TERM=xterm-256color USER=root /bin/bash --login
+proot --kill-on-exit -b /vendor -b /system -b /sdcard -b /sdcard:/root/sdcard -b /data/data/com.termux/files -b /data/data/com.termux/cache -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/dalvik-cache -b ${CONTAINER}/tmp:/dev/shm -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${CONTAINER} -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=zh_CN.UTF-8 TZ=Asia/Shanghai TERM=xterm-256color USER=root /bin/bash --login
 eof
-for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b .wine-arm64/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
+for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
 for i in /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
 
 #for i in /proc/$(ls ./etc/proc/|sed 's/ /\n/g'|grep -v bus); do i=$(echo $i|sed 's@/proc/@@'); if [ ! -r /proc/$i ]; then cp ./etc/proc/$i ${HOME}/${name}/etc/proc/ ;sed -i "s@shm@shm \-b ${HOME}/${name}/etc/proc/$i:/proc/$i@" ${PREFIX}/bin/start-${name}; fi done
 #for i in ./etc/proc/* ; do if [ ! -r /proc/${i##*/} ]; then cp $i ${HOME}/${name}/etc/proc/ ;sed -i "s@shm@shm \-b ${HOME}/${name}/etc/proc/${i##*/}:/proc/${i##*/}@" ${PREFIX}/bin/start-${name}; fi done
 
 chmod a+x ${PREFIX}/bin/start-wine-arm64
-#${HOME}/.wine-arm64/usr/bin/ps
+#${HOME}/${CONTAINER}/usr/bin/ps
 
 :<<\termux_user
-echo "aid_$(id -un):x:$(id -u):$(id -g):Android user:/:/sbin/nologin" >> "${HOME}/.wine-arm64/etc/passwd"
-echo "aid_$(id -un):*:18446:0:99999:7:::" >> "${HOME}/.wine-arm64/etc/shadow"
+echo "aid_$(id -un):x:$(id -u):$(id -g):Android user:/:/sbin/nologin" >> "${HOME}/${CONTAINER}/etc/passwd"
+echo "aid_$(id -un):*:18446:0:99999:7:::" >> "${HOME}/${CONTAINER}/etc/shadow"
 
 :<<\old
 for g in $(id -G); do
-echo "aid_$(id -gn "$g"):x:${g}:root,aid_$(id -un)" >> "${HOME}/.wine-arm64/etc/group"
-if [ -f ".wine-arm64/etc/gshadow" ]; then
-echo "aid_$(id -gn "$g"):*::root,aid_$(id -un)" >> "${HOME}/.wine-arm64/etc/gshadow"
+echo "aid_$(id -gn "$g"):x:${g}:root,aid_$(id -un)" >> "${HOME}/${CONTAINER}/etc/group"
+if [ -f "${CONTAINER}/etc/gshadow" ]; then
+echo "aid_$(id -gn "$g"):*::root,aid_$(id -un)" >> "${HOME}/${CONTAINER}/etc/gshadow"
 fi
 done
 old
 
 #local group_name group_id
 while read -r group_name group_id; do
-echo "aid_${group_name}:x:${group_id}:root,aid_$(id -un)" >> ${HOME}/.wine-arm64/etc/group
-if [ -f ".wine-arm64/etc/gshadow" ]; then
-echo "aid_${group_name}:*::root,aid_$(id -un)" >> ${HOME}/.wine-arm64/etc/gshadow
+echo "aid_${group_name}:x:${group_id}:root,aid_$(id -un)" >> ${HOME}/${CONTAINER}/etc/group
+if [ -f "${CONTAINER}/etc/gshadow" ]; then
+echo "aid_${group_name}:*::root,aid_$(id -un)" >> ${HOME}/${CONTAINER}/etc/gshadow
 fi
 done < <(paste <(id -Gn | tr ' ' '\n') <(id -G | tr ' ' '\n'))
 termux_user
 
 esac
-echo "bash firstrun" >>${HOME}/.wine-arm64/etc/profile
+echo "bash firstrun" >>${HOME}/${CONTAINER}/etc/profile
 proot --help | grep -q sysvipc
 if [ $? == 1 ]; then
 sed -i 's/--sysvipc//' ${PREFIX}/bin/start-wine64

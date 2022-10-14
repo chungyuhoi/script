@@ -94,6 +94,8 @@ sleep 1
 case $CONTAINER in
 debootstrap)
 debootstrap --no-check-gpg --include=passwd,locales,openssl,ca-certificates,libterm-readkey-perl,dialog,dbus,apt-utils,libterm-readkey-perl,netbase,perl,policy-rcd-declarative,policy-rcd-declarative-allow-all bullseye ${HOME}/.t_bullseye ${URL}/debian
+#--components=main contrib non-free
+#--variant=buildd,fakechroot,minbase
 #rm -v ${HOME}/.t_bullseye/usr/lib/tmpfiles.d/systemd.conf
 echo '_apt:x:100:65534::/nonexistent:/usr/sbin/nologin
 pulse:x:106:113:PulseAudio daemon,,,:/var/run/pulse:/usr/sbin/nologin
@@ -325,6 +327,7 @@ mkdir -p /root/.config/libfm
 mkdir -p /data/data/com.termux/files0/home/.config/libfm
 echo -e '[config]\nquick_exec=1' >/root/.config/libfm/libfm.conf
 echo -e '[config]\nquick_exec=1' >/data/data/com.termux/files0/home/.config/libfm/libfm.conf
+ln -sf /usr/share/zoneinfo/Etc/GMT-8 /etc/localtime
 sed -i "/zh_CN.UTF/s/#//" /etc/locale.gen
 locale-gen
 sed -i "/firstrun/d" /etc/profile
