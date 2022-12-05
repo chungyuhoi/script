@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #常用变量
-#指定内署dll或windows dll，b=builtin，n=native
+#指定内署dll或windows dll，b=builtin(wine)，n=native(windows)
 #export WINEDLLOVERRIDES=c:\\windows\\system32\\bass=n;bass=n;bass=b
 #WINEDLLOVERRIDES="bass=n;z:\\sdcard\\xinhao\\games\\unplay\\zw\\bass=b"
 #for i in /usr/lib/wine/winepulse.drv.so /usr/lib/wine/fakedlls/winepulse.drv /usr/lib32/wine/fakedlls/winepulse.drv /usr/lib32/wine/winepulse.drv.so; do chmod 000 "$i"; chattr +i "$i"; done
@@ -13,8 +13,10 @@
 #export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/
 #默认系统盘目录export WINEPREFIX="${HOME}/.wine"
 #export WINEARCH=win32
-#opengl的驱动路径 LIBGL_DRIVERS_PATH=
+#opengl的驱动路径 LIBGL_DRIVERS_PATH=${HOME}/wine/usr/lib/i386-linux-gnu/dri
 #GALLIUM_DRIVER=llvmpipe,zink
+#export LIBGL_ALWAYS_SOFTWARE=1
+#d3d:wined3d_guess_card No card selector a
 
 #proot登录方式，可选 STANDER PRO
 PROOT=PRO
@@ -23,10 +25,10 @@ PROOT=PRO
 ROOTFS=bullseye
 
 #box安装方式，注意：kali仅能选NOBOX，可选 REPO GIT RELEASE XB6868 NOBOX
-BOX_INSTALL=NOBOX
+BOX_INSTALL=XB6868
 
 #wine安装方式，注意：REPO仅对bullseye可用，可选 REPO PLAYONLINUX XB6868 NOWINE
-WINE_INSTALL=NOWINE
+WINE_INSTALL=XB6868
 
 #wine版本，仅对PLAYONLIUX可用，可选 3.9 6.17 或该网已知版本
 WINE_VERSION=3.9
@@ -182,9 +184,9 @@ cd
 if [ ! -f "/usr/bin/perl" ]; then
 ln -sv /usr/bin/perl* /usr/bin/perl
 fi
-DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail"
+DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4"
 
-DEPENDS0="zenity:armhf libegl-mesa0:armhf libgl1-mesa-dri:armhf libglapi-mesa:armhf libglx-mesa0:armhf libasound*:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf sl:armhf -y"
+DEPENDS0="zenity:armhf libegl-mesa0:armhf libgl1-mesa-dri:armhf libglapi-mesa:armhf libglx-mesa0:armhf libasound*:armhf libstdc++6:armhf libtcmalloc-minimal4:armhf gcc-arm-linux-gnueabihf sl:armhf -y"
 
 #zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf libgtk2.0-0:armhf libsdl2-image-2.0-0:armhf gstreamer1.0-plugins-*:armhf
 
@@ -343,7 +345,7 @@ fi
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
 #if [ ! $(command -v box64) ] || [ ! $(command -v box64) ] || [ ! $(command -v wine) ]; then echo -e "\e[33m你尚未安装全应用，中止启动\e[0m"; sleep 1; exit 1; fi
 if ! grep '"SimSun"="wqy-microhei.ttc"' .wine/system.reg; then
-sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="N"\n\n' .wine/user.reg
+sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"\n\n' .wine/user.reg
 sed -i '/FontMapper/i \[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\FontLink\\\\SystemLink\]\n"Arial"="wqy-microhei.ttc"\n"Arial Black"="wqy-microhei.ttc"\n"Lucida Sans Unicode"="wqy-microhei.ttc"\n"MS Sans Serif"="wqy-microhei.ttc"\n"SimSun"="wqy-microhei.ttc"\n"Tahoma"="wqy-microhei.ttc"\n"Tahoma Bold"="wqy-microhei.ttc"\n\n' .wine/system.reg
 fi
 trap "killall Xvnc 2>/dev/null; killall x11vnc 2>/dev/null; killall Xvfb 2>/dev/null; exit" SIGINT EXIT
@@ -686,6 +688,11 @@ sleep 2
 wget https://shell.xb6868.com/wine/box86.tar.gz
 tar zxvf box86.tar.gz -C /
 rm box86.tar.gz
+
+wget https://shell.xb6868.com/wine/box64.tar.gz
+tar zxvf box64.tar.gz -C /
+rm box64.tar.gz
+
 ;;
 REPO)
 #github源安装
@@ -891,7 +898,7 @@ while ! grep Desktops .wine/user.reg
 do
 sleep 1
 
-sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="N"' .wine/user.reg
+sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"' .wine/user.reg
 done
 
 #cp /usr/share/fonts/truetype/wqy/wqy-zenhei.ttc .wine/drive_c/windows/Fonts/
@@ -1084,7 +1091,6 @@ cp ${HOME}/Desktop/* ${HOME}/桌面/
 chmod a+x ${HOME}/Desktop/ -R
 chmod a+x ${HOME}/桌面/ -R
 fi
-gg
 echo -e "\n已安装，启动命令\e[33mstartvnc\e[0m\n\n如果kali-undercover不完整(如桌面时间、部分图标壁纸未显示)，请重新执行本脚本\e[33mbash undercover\e[0m\n如果需要用回ubuntu桌面，请点击：开始--其他--kali-undercover进行切换\e[0m\n"
 read -r -p "确定请回车 " input
 unset input
