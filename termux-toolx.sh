@@ -66,8 +66,9 @@ sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/t
 #######################
 TERMUX_CHECK
 echo -e "${BLUE}welcome to use termux-toolx!\n
-${YELLOW}更新日期20221009${RES}\n"
+${YELLOW}更新日期20221231${RES}\n"
 echo -e "这个脚本是方便使用者自定义安装设置\n包括系统包也是很干净的"
+#echo -e "\n今天的天气\n$(curl -s wttr.in/shenzhen | sed '8,$d')\n"
 uname -a | grep Android -q
 if [ $? != 0 ]; then
 	if [ `id -u` == "0" ];then
@@ -187,7 +188,7 @@ SETTLE() {
 5)  设置时区
 6)  修改国内源地址sources.list(only for debian and ubuntu)
 7)  修改dns
-8)  GitHub资源库(仅支持debian-bullseye)
+8)  electron资源库(仅支持debian-bullseye)
 9)  python3和pip应用
 10) 中文汉化
 11) 安装系统信息显示(neofetch,screenfetch,conky)
@@ -297,6 +298,7 @@ SETTLE ;;
 				SETTLE ;;
 			3) echo "安装conky"
 				$sudo_t apt install conky -y
+#${execi 60 echo "Battery: $(termux-battery-status | grep percentage | awk '{print $2}' | sed 's/,//')%"}
 cat >${HOME}/.conkyrc<<-'eof'
 conky.config = {
     alignment = 'top_right',
@@ -317,6 +319,7 @@ conky.config = {
     gap_y = 60,
     minimum_height = 5,
     minimum_width = 5,
+    maximum_width = 300,
     net_avg_samples = 2,
     no_buffers = true,
     out_to_console = false,
@@ -339,43 +342,61 @@ conky.config = {
 }
 
 conky.text = [[
-${color white}Info:$color ${scroll 32 Goodday $conky_version}
+#${color white}Note:$color ${scroll 32 Goodday $conky_version}
+${texeci 1800 curl wttr.in/shenzhen_0pq.png -so /etc/conky/shenzhen.png}
+${image /etc/conky/shenzhen.png -p 0,0}
+${color white}
+${color white}
+${color white}
+${color white}
 $hr
-${color white}Frequency (in GHz):$color $freq_g
+#${exec cat /etc/conky/moo}
+${color white}Uptime:$color ${execi 8 uptime|cut -d ',' -f1}
+${execi 300 echo "WlanIP:" $(ip -br -4 a | grep -q wlan && ip -br -4 a | grep wlan|awk '{print $3}'||echo none)}
+#${execi 300 echo "WlanIP: $(ip -br -4 a|grep wlan|awk '{print $3}'||echo None)"}
+#${execi 300 echo "Battery: $(termux-battery-status | grep percentage | awk '{print $2}' | sed 's/,//')%"}
+#CpuTemp: ${acpitemp}°C
+#$hr
+#${color white}Frequency (in GHz):$color $freq_g
 ${color white}CPU ${hr 1}
 Frequency: ${alignr}${freq dyn} MHz
+#${color0}${cpugraph cpu0 2 32,0 104E8B ff0000}
+#${color0}Cpu Usage:${color #BBFFFF} ${freq dyn} MHz
+#${alignc}${color0}${cpugraph cpu0 32,280}
 Processes: ${alignr}$processes ($running_processes running)
 ${top name 1}$alignr${top cpu 1}
 ${top name 2}$alignr${top cpu 2}
 ${top name 3}$alignr${top cpu 3}
-${color white}RAM Usage:$color $mem/$memmax - $memperc% ${membar 4}
-${color white}Swap Usage:$color $swap/$swapmax - $swapperc% ${swapbar 4}
-$hr
-${color white}File systems:
- / $color${fs_used /}/${fs_size /} ${fs_bar 6 /}
-$hr
+#${color white}RAM Usage:$color $mem/$memmax - $memperc% ${membar 4}
+#${color white}Swap Usage:$color $swap/$swapmax - $swapperc% ${swapbar 4}
+${color white}PROCESS $hr
 ${color white}Name              PID     CPU%   MEM%
 ${color white} ${top name 1} ${top pid 1} ${top cpu 1} ${top mem 1}
 ${color white} ${top name 2} ${top pid 2} ${top cpu 2} ${top mem 2}
 ${color white} ${top name 3} ${top pid 3} ${top cpu 3} ${top mem 3}
 ${color white} ${top name 4} ${top pid 4} ${top cpu 4} ${top mem 4}
 ${color white}SYSTEM ${hr 1}
+Logname: $alignr$LOGNAME
 Hostname: $alignr$nodename
 Kernel: $alignr$kernel
 Machine:$alignr$machine
-Temp: ${alignr}${acpitemp} °C
-${color white}Date: ${time %Y.%m.%d}
 ${color white}MEMORY ${hr 1}
 Ram ${alignr}$mem / $memmax ($memperc%)
 ${membar 4}
 swap ${alignr}$swap / $swapmax ($swapperc%)
 ${swapbar 4}
-Highest MEM $alignr MEM%
-${top_mem name 1}$alignr ${top_mem mem 1}
-${top_mem name 2}$alignr ${top_mem mem 2}
-${top_mem name 3}$alignr ${top_mem mem 3}
+${color white}File systems:
+$color${fs_used /}/${fs_size /} ${fs_bar 6 /}
+#$hr
+#Highest MEM $alignr MEM%
+#${top_mem name 1}$alignr ${top_mem mem 1}
+#${top_mem name 2}$alignr ${top_mem mem 2}
+#${top_mem name 3}$alignr ${top_mem mem 3}
+#${downspeedgraph eth0 25,107} ${alignr}${upspeedgraph eth0 25,107}
 ]]
 eof
+sed -i "/Goodday/a$(sed -n 1p /etc/os-release|awk -F '"' '{print $2}')" ${HOME}/.conkyrc
+if [ ! -r /sys/class/thermal/thermal_zone0/temp ]; then sed -i '/^Temp/d' ${HOME}/.conkyrc; fi
 			echo -e "${BLUE}done${RES}"
 			SETTLE ;;
 			0) echo "exit"
@@ -781,20 +802,20 @@ sudo -E chown -Rv $U_ID:$GROUP_ID ".ICEauthority" ".Xauthority"
 echo -e "${GREEN}请选择你已安装的图形界面${RES}"
 read -r -p "1)xfce4 2)lxde 3)mate " input
 	case $input in
-	1) echo -e "done" && sleep 2 && VNCSERVER ;;
+	1) echo -e "done" && sleep 2 && INSTALL_SOFTWARE ;;
 	2)
 sed -i "s/startxfce4/startlxde/g" /etc/X11/xinit/Xsession
 sed -i "s/xfce4-session/lxsession/g" /etc/X11/xinit/Xsession
 echo -e "Done\n打开vnc viewer地址输127.0.0.1:0\nvnc的退出，在系统输exit即可"
 sleep 2
-VNCSERVER
+INSTALL_SOFTWARE
 ;;
 3) 
 sed -i "s/startxfce4/mate-panel/g" /etc/X11/xinit/Xsession
 sed -i "s/xfce4-session/mate-session/g" /etc/X11/xinit/Xsession
 		echo -e "Done\n打开vnc viewer地址输127.0.0.1:0\nvnc的退出，在系统输exit即可"
 		sleep 2
-		VNCSERVER
+		INSTALL_SOFTWARE
 		;;
 *) echo -e "${RED}输入无效，已中止${RES}"
 	sleep 2
@@ -827,7 +848,7 @@ export PULSE_SERVER=tcp:127.0.0.1:4713' >/usr/local/bin/easyxsdl
 echo "$XWIN" >>/usr/local/bin/easyxsdl && chmod +x /usr/local/bin/easyxsdl
 echo -e "${YELLOW}已创建，命令easyxsdl${RES}"
 sleep 2
-VNCSERVER
+INSTALL_SOFTWARE
 ;;
 8) echo -e "\n创建局域网vnc连接(命令easyvnc-wifi)"
 	if [ ! -f /usr/local/bin/easyvnc ]; then
@@ -846,7 +867,7 @@ eof
 chmod +x /usr/local/bin/easyvnc-wifi
 echo -e "\n${YELLOW}已配置${RES}"
 sleep 2
-VNCSERVER
+INSTALL_SOFTWARE
 ;;
 9) $sudo_t apt install xvfb x11vnc -y
 	echo -n "输入你手机分辨率(例如:2340x1080) : "
@@ -936,6 +957,7 @@ bash /usr/share/novnc/utils/launch.sh --vnc localhost:5900 --listen 6080 2>/dev/
 echo -e "请打开浏览器输\e[33mhttp://localhost:6080/vnc.html\e[0m"
 eof
 chmod 756 /usr/local/bin/easynovnc
+INSTALL_SOFTWARE
 ;;
 0)
 	echo "exit"
@@ -1142,6 +1164,7 @@ DM_VNC() {
 ENTERTAINMENT() {
 	echo -e "\n1) minetest(画面跟我的世界相似，方向是个问题，需键盘操作)
 2) mame街机模拟器(需键盘操作)
+3) fc模拟器(需键盘操作)
 9) 返回
 0) 退出\n"
 read -r -p "请选择: " input
@@ -1179,6 +1202,12 @@ chmod +x /usr/local/bin/m_mame
 		echo -e "${YELLOW}已为你写了使用手册，请直接输指令 m_mame${RES}"
 		sleep 2
 		ENTERTAINMENT ;;
+	3) $sudo_t apt install fceux -y
+mkdir -p ${HOME}/.fceux/input/keyboard
+echo 'keyboard,default,a:kK,b:kJ,back:kSpace,start:kReturn,dpup:kW,dpdown:kS,dpleft:kA,dpright:kD,turboA:kI,turboB:kU,' >${HOME}/.fceux/input/keyboard/default.txt
+exho 'SDL.VideoDriver = 1' >${HOME}/.fceux/fceux.cfg
+#sed -i '/SDL.VideoDriver/s/0/1/' >${HOME}/.fceux/fceux.cfg
+		;;
 	0) exit 0 ;;
 	9) MAIN ;;
 	*) INVALID_INPUT
@@ -1192,11 +1221,11 @@ echo -e "1)  *安装常用应用(目前包括curl,wget,vim,fonts-wqy-zenhei,tar)
 2)  *桌面图形界面及VNCSERVER远程服务${RES}
 3)  浏览器
 4)  安装Electron(需先安装GitHub仓库)
-5)  安装非官方版electron-netease-cloud-music(需先安装GitHub仓库与Electron)
+5)  安装非官方版electron-netease-cloud-music(需先安装electron)
 6)  中文输入法
 7)  多媒体播放器
 8)  办公office软件
-9)  安装dosbox 并配置dosbox文件目录
+9)  安装dosbox并配置dosbox文件目录
 10) qemu-system-x86_64模拟器
 11) 游戏相关
 12) 让本终端成为局域网服务器
@@ -1229,7 +1258,7 @@ if [ "$?" == '0' ]; then
 echo -e "${BLUE}检测到已安装Electron${RES}"
 sleep 1
 else
-	echo -e "${BLUE}检测到你未安装Electron，需先添加GitHub仓库与安装electron(目前仅支持bullseye)${RES}"
+	echo -e "${BLUE}检测到你未安装electron，需先安装electron(目前仅支持bullseye)${RES}"
 CONFIRM
 SETTLE
 fi
@@ -1253,18 +1282,13 @@ read -r -p "请选择: " input
 case $input in
 	1) echo -e "${YELLOW}安装fcitx输入法${RES}"
 	$sudo_t apt install fcitx*googlepinyin* fcitx-table-wubi fcitx-tools fcitx-config-gtk
+#apt install fcitx fcitx-module-dbus fcitx-module-kimpanel fcitx-module-lua fcitx-module-x11 fcitx5-module-quickphrase-editor aspell-en enchant-2 presage fcitx-googlepinyin fcitx-config-gtk fcitx-frontend-all fcitx-ui-classic im-config fcitx-frontend-qt5 hunspell-en-us qttranslations5-l10n libqt5svg5 qt5-gtk-platformtheme fcitx-frontend-gtk2 fcitx-frontend-gtk3 zenity --no-install-recommends
 #fcitx fcitx-tools fcitx-config-gtk fcitx-googlepinyin
-if ! grep -q 'fcitx' /etc/environment; then
+if ! grep -q 'fcitx' /etc/profile; then
 echo 'export GTK_IM_MODULE=fcitx
 export QT_IM_MODULE=fcitx
 export XMODIFIERS="@im=fcitx"
-export SDL_IM_MODULE=fcitx' >>/etc/environment
-fi
-if ! grep -q 'PATH' /etc/environment; then
-	sed -i '1i\PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin"' /etc/environment
-fi
-if ! grep -q 'environment' /etc/profile; then
-	echo 'source /etc/environment' >>/etc/profile
+export SDL_IM_MODULE=fcitx' >>/etc/profile
 fi
 	echo -e "${YELLOW}done${RES}"
 	sleep 1
@@ -1282,7 +1306,7 @@ fi
 	INSTALL_SOFTWARE ;;
 esac
 ;;
-7) read -r -p "1)mpv播放器 2)vlc播放器 :" input
+7) read -r -p "1)mpv播放器 2)vlc播放器 9) 返回 0)退出 : " input
 	case $input in
 		1)
 	echo "安装mpv播放器"
@@ -1295,6 +1319,8 @@ esac
 	sed -i 's/geteuid/getppid/' /usr/bin/vlc
 	echo -e "${BLUE}done${RES}"
 		sleep 1 ;;
+		0) exit 2 ;;
+		9) MAIN ;;
 		*) INVALID_INPUT
 			;;
 	esac
@@ -1322,7 +1348,12 @@ esac
 		PROCESS_CHECK
 #		sed -i '2i\export XMODIFIERS="@im=fcitx"' /usr/bin/wps /usr/bin/et /usr/bin/wpp 2>/dev/null
 #		sed -i '2i\export QT_IM_MODULE="fcitx"' /usr/bin/wps /usr/bin/et /usr/bin/wpp 2>/dev/null
-	else echo "已安装wps"
+	else 
+		if [ $(command -v wps) ]; then
+			echo "已安装wps"
+		else
+			echo "安装失败"
+		fi
 		sleep 2
 		fi
 		ls /usr/share/fonts/ | grep wps-fonts -q 2>/dev/null
@@ -1393,12 +1424,16 @@ IP=`ip -4 -br a | awk '{print $3}' | cut -d '/' -f 1 | sed -n 2p`
 	echo -e "done"
 	sleep 1
 	INSTALL_SOFTWARE ;;
-14) VERSION=`curl -L https://aur.tuna.tsinghua.edu.cn/packages/linuxqq | grep x86 | cut -d "_" -f 2 | cut -d "_" -f 1`
-	echo -e "${YELLOW}检测到新版本为${VERSION}${RES}"
-	sleep 2
-	rm linuxqq_${VERSION}_arm64.deb 2>/dev/null
-	wget  https://down.qq.com/qqweb/LinuxQQ/linuxqq_${VERSION}_arm64.deb
-	$sudo_t dpkg -i linuxqq_${VERSION}_arm64.deb
+14) 
+#VERSION=`curl -L https://aur.tuna.tsinghua.edu.cn/packages/linuxqq | grep x86 | cut -d "_" -f 2 | cut -d "_" -f 1`
+#	echo -e "${YELLOW}检测到新版本为${VERSION}${RES}"
+#	sleep 2
+	rm linuxqq_*_arm64.deb* 2>/dev/null
+#	wget $(curl https://aur.archlinux.org/packages/linuxqq|grep qqweb|awk -F 'href="' '{print $2}'|awk -F '"' '{print $1}'|sed 's/x86.*$/arm64.deb/')
+	wget $(curl https://aur.archlinux.org/packages/linuxqq|grep arm64|awk -F 'href="' '{print $2}'|cut -d '"' -f 1)
+#	wget  https://down.qq.com/qqweb/LinuxQQ/linuxqq_${VERSION}_arm64.deb
+#	$sudo_t dpkg -i linuxqq_${VERSION}_arm64.deb
+	$sudo_t dpkg -i linuxqq_*_arm64.deb
 	dpkg -l | grep linuxqq -q 2>/dev/null
 	if [ $? == 0 ]; then
 		echo -e "\n${YELLOW}已安装${RES}"
@@ -1615,31 +1650,39 @@ esac ;;
 
 	2) echo -e "\n1) 清华源
 2) 北外源 (推荐)
-3) 中科源
-4) 腾讯源"
+3) 中科源"
 		read -r -p "请选择: " input
 		case $input in
 			1) echo -e "正在更换清华源"
 		sleep 1
-		sed -i "s@^\(deb.*stable main\)$@#\1\ndeb ${SOURCES_TUNA}termux/termux-packages-24 stable main@" $PREFIX/etc/apt/sources.list
-sed -i "s@^\(deb.*games stable\)$@#\1\ndeb ${SOURCES_TUNA}termux/game-packages-24 games stable@" $PREFIX/etc/apt/sources.list.d/game.list
-sed -i "s@^\(deb.*science stable\)$@#\1\ndeb ${SOURCES_TUNA}termux/science-packages-24 science stable@" $PREFIX/etc/apt/sources.list.d/science.list
+		sed -i "s@^\(deb.*stable main\)@#\1\ndeb ${SOURCES_TUNA}termux/termux-packages-24 stable main@" $PREFIX/etc/apt/sources.list
+sed -i "s@^\(deb.*games stable\)@#\1\ndeb ${SOURCES_TUNA}termux/game-packages-24 games stable@" $PREFIX/etc/apt/sources.list.d/game.list
+sed -i "s@^\(deb.*science stable\)@#\1\ndeb ${SOURCES_TUNA}termux/science-packages-24 science stable@" $PREFIX/etc/apt/sources.list.d/science.list
+if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
+	rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+fi
+mkdir /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+cp /data/data/com.termux/files/usr/etc/termux/mirrors/china/mirrors.tuna.tsinghua.edu.cn /data/data/com.termux/files//usr/etc/termux/chosen_mirrors/
 ;;
 2|"") echo -e "正在更换北外源" 
 	sleep 1
-	sed -i "s@^\(deb.*stable main\)$@#\1\ndeb ${SOURCES_BF}termux/termux-packages-24 stable main@" $PREFIX/etc/apt/sources.list
-sed -i "s@^\(deb.*games stable\)$@#\1\ndeb ${SOURCES_BF}termux/game-packages-24 games stable@" $PREFIX/etc/apt/sources.list.d/game.list
-sed -i "s@^\(deb.*science stable\)$@#\1\ndeb ${SOURCES_BF}termux/science-packages-24 science stable@" $PREFIX/etc/apt/sources.list.d/science.list
+	sed -i "s@^\(deb.*stable main\)@#\1\ndeb ${SOURCES_BF}termux/termux-packages-24 stable main@" $PREFIX/etc/apt/sources.list
+sed -i "s@^\(deb.*games stable\)@#\1\ndeb ${SOURCES_BF}termux/game-packages-24 games stable@" $PREFIX/etc/apt/sources.list.d/game.list
+sed -i "s@^\(deb.*science stable\)@#\1\ndeb ${SOURCES_BF}termux/science-packages-24 science stable@" $PREFIX/etc/apt/sources.list.d/science.list
+if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
+	rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+fi
+mkdir /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+cp /data/data/com.termux/files/usr/etc/termux/mirrors/china/mirrors.bfsu.edu.cn /data/data/com.termux/files//usr/etc/termux/chosen_mirrors/
 ;;
-3) echo -e "正在更换中科源"
+*) echo -e "正在更换中科源"
 	sleep 1
-	sed -i "s@^\(deb.*stable main\)$@#\1\ndeb ${SOURCES_USTC}termux stable main@" $PREFIX/etc/apt/sources.list
-	;;
-4) echo -e "正在更换腾讯源"
-	sleep 1
-	sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list
-	sed -i 's@^\(deb.*games stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/game-packages-24 games stable@' $PREFIX/etc/apt/sources.list.d/game.list
-	sed -i 's@^\(deb.*science stable\)$@#\1\ndeb https://mirrors.cloud.tencent.com/termux/science-packages-24 science stable@' $PREFIX/etc/apt/sources.list.d/science.list ;;
+	sed -i "s@^\(deb.*stable main\)@#\1\ndeb ${SOURCES_USTC}termux stable main@" $PREFIX/etc/apt/sources.list
+	if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
+		rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+	fi
+	mkdir /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+	cp /data/data/com.termux/files/usr/etc/termux/mirrors/china/mirrors.ustc.edu.cn /data/data/com.termux/files//usr/etc/termux/chosen_mirrors/
 esac
 apt update && apt upgrade
 echo -e  "已换源"
@@ -1964,7 +2007,7 @@ sleep 1
 TERMUX
 ;;
 	12) 
-		echo -e "\n1)termux 2)xsdl 3)termux-api 9)返回 0)退出"
+		echo -e "\n1)termux 2)xsdl 3)termux-api 4)avnc 9)返回 0)退出"
 		read -r -p "请选择: " input
 	case $input in
 		1) echo -e "\n${YELLOW}检测最新版本${RES}"
@@ -2014,6 +2057,25 @@ TERMUX
 	echo -e "\n${RED}错误，请重试${RES}"
 	fi
 	sleep 2 ;;
+
+	4) 
+	unset VERSION
+	echo -e "\n${YELLOW}检测最新版本${RES}"
+        VERSION=`curl https://f-droid.org/zh_Hant/packages/com.gaurav.avnc/ | awk -F 'repo/' '{print $2}' | grep apk | cut -d '"' -f 1 | sed -n 1p`
+        if [ ! -z "$VERSION" ]; then
+                echo -e "\n下载地址\n${GREEN}https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/$VERSION${RES}\n"
+		rm avnc.apk 2>/dev/null
+		curl https://mirrors.tuna.tsinghua.edu.cn/fdroid/repo/$VERSION -o avnc.apk
+		mv -v avnc.apk ${DIRECT}
+		if [ -f ${DIRECT}/avnc.apk ]; then
+			echo -e "\n已下载至${YELLOW}${DIRECT}${RES}目录"
+			sleep 1
+		fi
+        else
+		echo -e "\n${YELLOW}获取失败${RES}"
+		sleep 2
+	fi
+		;;
 	0) echo "exit"
                 exit 1 ;;
         9) echo -e "back to Main\n"
@@ -2054,7 +2116,8 @@ SYSTEM_DOWN() {
 		cat >$bagname/root/firstrun<<-'eof'
 		printf "%b" "\e[33m正常进行首次运行配置\e[0m" && sleep 1
 		if [ ! -f "/usr/bin/perl" ]; then
-			ln -sv /usr/bin/perl* /usr/bin/perl
+#			ln -sv /usr/bin/perl* /usr/bin/perl
+			ln -sv /usr/bin/perl*aarch64* /usr/bin/perl
 		fi
 		dpkg -l ca-certificates | grep ii
 		if [ $? == 1 ]; then
@@ -2062,7 +2125,8 @@ SYSTEM_DOWN() {
 		apt update && $sudo_t apt install apt-transport-https ca-certificates -y && sed -i "s/http/https/g" /etc/apt/sources.list
 		apt update
 
-		ln -svf /usr/bin/perl* /usr/bin/perl
+#		ln -svf /usr/bin/perl* /usr/bin/perl
+		ln -svf /usr/bin/perl*aarch64* /usr/bin/perl
 	else
 	apt update
 		fi

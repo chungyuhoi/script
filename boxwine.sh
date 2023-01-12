@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 #常用变量
+#WINEDEBUG=fixme-all
 #指定内署dll或windows dll，b=builtin(wine)，n=native(windows)
-#export WINEDLLOVERRIDES=c:\\windows\\system32\\bass=n;bass=n;bass=b
-#WINEDLLOVERRIDES="bass=n;z:\\sdcard\\xinhao\\games\\unplay\\zw\\bass=b"
+#export WINEDLLOVERRIDES="bass=n,z:\\sdcard\\xinhao\\games\\unplay\\zw\\bass=b"
 #for i in /usr/lib/wine/winepulse.drv.so /usr/lib/wine/fakedlls/winepulse.drv /usr/lib32/wine/fakedlls/winepulse.drv /usr/lib32/wine/winepulse.drv.so; do chmod 000 "$i"; chattr +i "$i"; done
 #Exec=box86 wine explorer /desktop=name,1024x768 /sdcard/xinhao/games/War3/Frozen\ Throne.exe %f
 #QT_SCREEN_SCALE_FACTORS=1
@@ -17,6 +17,13 @@
 #GALLIUM_DRIVER=llvmpipe,zink
 #export LIBGL_ALWAYS_SOFTWARE=1
 #d3d:wined3d_guess_card No card selector a
+
+case $(dpkg --print-architecture) in
+        aarch64|arm64) echo "" ;;
+	*) echo -e "\e[31m不支持你的架构\e[0m"
+                sleep 2
+                exit 0
+esac
 
 #proot登录方式，可选 STANDER PRO
 PROOT=PRO
@@ -82,9 +89,9 @@ read -r -p "请选择: " input
 case $input in
 1) rm -rf ${CONTAINER} ;;
 2) rm -rf ${CONTAINER} ${PREFIX}/bin/start-wine*
-	echo -e "\e[33m已御载wine-arm64\e[0m"
-	sleep 1
-	exit 0 ;;
+echo -e "\e[33m已御载wine-arm64\e[0m"
+sleep 1
+exit 0 ;;
 *) exit 0
 esac
 fi
@@ -181,8 +188,21 @@ echo -e "\n\e[33m正在配置首次运行\n安装常用应用\e[0m"
 sleep 1
 export LANG=C.UTF-8
 cd
-if [ ! -f "/usr/bin/perl" ]; then
+if [ ! -f /usr/bin/perl ]; then
+#ln -sv /usr/bin/perl* /usr/bin/perl
+rm perl-base*.deb
+case $ROOTFS in
+	bullseye)
+wget https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/p/perl/$(curl https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/p/perl/|grep arm64|grep base|grep 5.32|awk -F 'title="' '{print $2}'|cut -d '"' -f 1)
+;;
+	current)
+wget https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/p/perl/$(curl https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/p/perl/|grep perl-base|grep arm64|awk -F 'title="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
+;;
+*)
 ln -sv /usr/bin/perl* /usr/bin/perl
+esac
+	dpkg -i perl-base*.deb
+#ln -sv /usr/bin/perl*aarch64* /usr/bin/perl
 fi
 DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4"
 
@@ -327,7 +347,8 @@ export LANG=zh_CN.UTF-8
 
 cat >/usr/local/bin/boxwine<<-'BOXWINE'
 #!/usr/bin/env bash
-export WINEDEBUG=-all
+export WINEDEBUG=fixme-all
+#WINEDEBUG=-all
 if [[ $(id -u) = 0 ]];then
 if [ ! -d /tmp/runtime-$(id -u) ]; then
 #mkdir -pv "/var/run/user/$(id -u)"
@@ -902,7 +923,7 @@ sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n
 done
 
 #cp /usr/share/fonts/truetype/wqy/wqy-zenhei.ttc .wine/drive_c/windows/Fonts/
-cp /usr/share/fonts/truetype/wqy/wqy-microhei.ttc .wine/drive_c/windows/Fonts/
+#cp /usr/share/fonts/truetype/wqy/wqy-microhei.ttc .wine/drive_c/windows/Fonts/
 
 sed -i '/FontMapper/i \[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\FontLink\\\\SystemLink\]\n"Arial"="wqy-microhei.ttc"\n"Arial Black"="wqy-microhei.ttc"\n"Lucida Sans Unicode"="wqy-microhei.ttc"\n"MS Sans Serif"="wqy-microhei.ttc"\n"SimSun"="wqy-microhei.ttc"\n"Tahoma"="wqy-microhei.ttc"\n"Tahoma Bold"="wqy-microhei.ttc"\n\n' .wine/system.reg
 :<<\FONT
@@ -996,7 +1017,7 @@ fi
 if [ ! $(command -v kali-undercover) ]; then
 rm undercover.deb 2>/dev/null
 wget -O undercover.deb https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/k/kali-undercover/$(curl https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/k/kali-undercover/ | grep all.deb | cut -d '"' -f 4)
-apt install ./undercover.deb -y
+apt install ./undercover.deb xfce4-terminal -y
 if [ ! $(command -v kali-undercover) ]; then
 apt --fix-broken install -y
 fi
@@ -1165,7 +1186,14 @@ unset LD_PRELOAD
 proot --kill-on-exit -b /vendor -b /system -b /sdcard -b /sdcard:/root/sdcard -b /data/data/com.termux/files -b /data/data/com.termux/cache -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/dalvik-cache -b ${CONTAINER}/tmp:/dev/shm -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${CONTAINER} -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=zh_CN.UTF-8 TZ=Asia/Shanghai TERM=xterm-256color USER=root /bin/bash --login
 eof
 for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
-for i in /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
+:<<\eof
+if [ ! -r /proc/sys/vm/mmap_min_addr ]; then
+mkdir -p .wine-arm64/etc/proc/sys/vm
+echo 0 >${PREFIX}/${CONTAINER}/etc/proc/sys/vm/mmap_min_addr
+sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/sys/vm/mmap_min_addr:/proc/sys/vm/mmap_min_addr@" ${PREFIX}/bin/start-wine-arm64
+fi
+eof
+for i in /system_ext /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
 
 #for i in /proc/$(ls ./etc/proc/|sed 's/ /\n/g'|grep -v bus); do i=$(echo $i|sed 's@/proc/@@'); if [ ! -r /proc/$i ]; then cp ./etc/proc/$i ${HOME}/${name}/etc/proc/ ;sed -i "s@shm@shm \-b ${HOME}/${name}/etc/proc/$i:/proc/$i@" ${PREFIX}/bin/start-${name}; fi done
 #for i in ./etc/proc/* ; do if [ ! -r /proc/${i##*/} ]; then cp $i ${HOME}/${name}/etc/proc/ ;sed -i "s@shm@shm \-b ${HOME}/${name}/etc/proc/${i##*/}:/proc/${i##*/}@" ${PREFIX}/bin/start-${name}; fi done

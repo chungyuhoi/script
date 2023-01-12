@@ -235,7 +235,10 @@ sleep 1
 #echo -e '#!/usr/bin/sh\nexit 0' >/usr/sbin/policy-rc.d
 dpkg -i /var/cache/apt/archives/pass*.deb 2>/dev/null
 if [ ! -f "/usr/bin/perl" ]; then
-ln -sv /usr/bin/perl* /usr/bin/perl
+rm perl-base*.deb
+wget https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/p/perl/$(curl https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/p/perl/|grep arm64|grep base|grep 5.32|awk -F 'title="' '{print $2}'|cut -d '"' -f 1)
+dpkg -i perl-base*.deb
+#ln -sv /usr/bin/perl* /usr/bin/perl
 fi
 dpkg -l ca-certificates | grep ii
 if [ $? == 1 ]; then
@@ -379,6 +382,47 @@ cp ${HOME}/Desktop /data/data/com.termux/files0/home -r
 cp ${HOME}/桌面 /data/data/com.termux/files0/home -r
 chmod a+x ${HOME}/Desktop ${HOME}/桌面 /data/data/com.termux/files0/home/Desktop /data/data/com.termux/files0/home/桌面 -R
 
+cat >fex<<-'FEX'
+#!/usr/bin/env bash
+echo -e "\e[33m你正在安装windows 32位exe支持\e[0m"
+sleep 2
+if [ ! $(command -v FEXInterpreter) ]; then
+rm fex.deb 2>/dev/null
+wget -O fex.deb https://ppa.launchpadcontent.net/fex-emu/fex/ubuntu/pool/main/f/fex-emu-armv8.2/$(curl https://ppa.launchpadcontent.net/fex-emu/fex/ubuntu/pool/main/f/fex-emu-armv8.2/|grep fex.*f_arm64.deb|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|sed -n 1p)
+cat >/usr/local/bin/startwine<<-'winex'
+#!/usr/bin/env bash
+FEXInterpreter /usr/bin/wine taskmgr
+winex
+chmod a+x /usr/local/bin/startwine
+unset i
+while [ ! $(command -v FEXInterpreter) ] && [[ $i -ne 3 ]]
+do
+i=$(( $i+1 ))
+apt install ./fex.deb --no-install-recommends -y
+done
+fi
+if [ ! $(command -v wine) ]; then
+rm PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz 2>/dev/null
+#axel https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-x86/PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz
+wget https://shell.xb6868.com/wine/PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz
+tar zxvf PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz -C /usr/
+fi
+dpkg --add-architecture i386
+apt update
+unset i
+while [ ! $(command -v sl) ] && [[ $i -ne 3 ]]
+do
+i=$(( $i+1 ))
+apt install --no-install-recommends -y libc6:i386 libegl-mesa0:i386 libgl1-mesa-dri:i386 libglapi-mesa:i386 libglx-mesa0:i386 libasound*:i386 libstdc++6:i386 sl:i386 libgl1:i386 libmpg123-0:i386 libncurses5:i386
+#librust-gstreamer-video-sys-dev:i386
+done
+if [ $(command -v FEXInterpreter) ] && [ -f /usr/bin/wine ]; then
+winex86 wine wineboot
+echo -e "已安装，在桌面虚拟终端输\e[33mstartwine\[0m"
+read
+fi
+FEX
+
 if grep 'LANG=zh_CN' /root/.bashrc; then
 echo "export LANG=zh_CN.UTF-8" >>/root/.bashrc
 fi
@@ -425,6 +469,11 @@ unset LD_PRELOAD
 proot --kill-on-exit -b /vendor -b /system -b /sdcard -b /sdcard:/root/sdcard -b /data/data/com.termux/files -b /data/data/com.termux/files0/home -b /sdcard:/data/data/com.termux/files0/home/sdcard -b /data/data/com.termux/cache -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/null:/proc/sys/kernel/cap_last_cap -b ${HOME}/.t_bullseye/etc/proc/termux-change-repo:/data/data/com.termux/files/usr/bin/termux-change-repo -b /data/dalvik-cache -b ${HOME}/.t_bullseye/tmp:/dev/shm -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${HOME}/.t_bullseye -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=zh_CN.UTF-8 TZ=Asia/Shanghai TERM=xterm-256color USER=root /bin/bash --login
 eof
 for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${HOME}/.t_bullseye/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-bullseye; fi done
+if [ ! -r /etc/proc/bus/pci/devices ]; then
+mkdir -p ${HOME}/.t_bullseye/etc/proc/bus/pci
+touch ${HOME}/.t_bullseye/etc/proc/bus/pci/devices
+sed -E -i "s@(cap_last_cap)@\1 -b ${HOME}/.t_bullseye/etc/proc/bus/pci/devices:/proc/bus/pci/devices@" ${PREFIX}/bin/start-bullseye
+fi
 #/system 存放的是rom的信息
 #/system/app 存放rom本身附带的软件即系统软件
 #/system/data 存放/system/app 中核心系统软件的数据文件信息。
@@ -433,7 +482,7 @@ for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-us
 #/data/data 存放所有软件（包括/system/app 和 /data/app 和 /mnt/asec中装的软件）的一些lib和xml文件等数据信息
 #/data/dalvik-cache 存放程序的缓存文件，这里的文件都是可以删除的。
 
-for i in /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-bullseye; fi done
+for i in /system_ext /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-bullseye; fi done
 cp ${PREFIX}/bin/start-bullseye ${PREFIX}/bin/start-androiduser
 sed -i "s@/bin/bash --login@/bin/su -l $(whoami)@" ${PREFIX}/bin/start-androiduser
 chmod a+x ${PREFIX}/bin/start-bullseye ${PREFIX}/bin/start-androiduser
@@ -479,4 +528,4 @@ if [ $? == 1 ]; then
 sed -i 's/--sysvipc//' ${PREFIX}/bin/start-bullseye
 sed -i 's/--sysvipc//' ${PREFIX}/bin/start-androiduser 
 fi
-bash start-bullseye
+start-bullseye

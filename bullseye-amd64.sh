@@ -310,7 +310,7 @@ vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 export USER="$(whoami)"
 export PULSE_SERVER=127.0.0.1
-Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 1024x768 -once -depth 24 -localhost -securitytypes None :0 &
+Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 1024x768 -once -depth 16 -localhost -securitytypes None :0 &
 export DISPLAY=:0
 . /etc/X11/xinit/Xsession 2>/dev/null &
 am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity
@@ -460,6 +460,13 @@ unset LD_PRELOAD
 proot --kill-on-exit -b /vendor -b /system -b /sdcard -b /sdcard:/root/sdcard -b /data/data/com.termux/files -b /data/data/com.termux/files0/home -b /sdcard:/data/data/com.termux/files0/home/sdcard -b /data/data/com.termux/cache -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/null:/proc/sys/kernel/cap_last_cap -b ${HOME}/${CONTAINER}/etc/proc/termux-change-repo:/data/data/com.termux/files/usr/bin/termux-change-repo -b /data/dalvik-cache -b ${HOME}/${CONTAINER}/tmp:/dev/shm -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b /dev/urandom:/dev/random --link2symlink -S ${HOME}/${CONTAINER} -q ${CONTAINER}/${STATIC} -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=zh_CN.UTF-8 TZ=Asia/Shanghai TERM=xterm-256color USER=root /bin/bash --login
 eof
 for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${HOME}/${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-bullseye-${ARCH}; fi done
+
+if [ ! -r /etc/proc/bus/pci/devices ]; then
+mkdir -p ${HOME}/${CONTAINER}/etc/proc/bus/pci
+touch ${HOME}/${CONTAINER}/etc/proc/bus/pci/devices
+sed -E -i "s@(cap_last_cap)@\1 -b ${HOME}/${CONTAINER}/etc/proc/bus/pci/devices:/proc/bus/pci/devices@" ${PREFIX}/bin/start-bullseye-${ARCH}
+fi
+
 #/system 存放的是rom的信息
 #/system/app 存放rom本身附带的软件即系统软件
 #/system/data 存放/system/app 中核心系统软件的数据文件信息。
@@ -468,7 +475,7 @@ for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-us
 #/data/data 存放所有软件（包括/system/app 和 /data/app 和 /mnt/asec中装的软件）的一些lib和xml文件等数据信息
 #/data/dalvik-cache 存放程序的缓存文件，这里的文件都是可以删除的。
 
-for i in /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-bullseye-${ARCH}; fi done
+for i in /system_ext /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-bullseye-${ARCH}; fi done
 cp ${PREFIX}/bin/start-bullseye-${ARCH} ${PREFIX}/bin/start-androiduser-${ARCH}
 sed -i "s@/bin/bash --login@/bin/su -l $(whoami)@" ${PREFIX}/bin/start-androiduser-${ARCH}
 chmod a+x ${PREFIX}/bin/start-bullseye-${ARCH} ${PREFIX}/bin/start-androiduser-${ARCH}
@@ -510,4 +517,4 @@ sed -i "2i ARCH=$ARCH" ${HOME}/${CONTAINER}/root/firstrun
 echo -e "已创建root用户系统登录脚本,登录方式为\e[33mstart-bullseye-${ARCH}\e[0m\n"
 sleep 2
 echo "bash firstrun" >>${HOME}/${ETC_DIR}/profile
-bash start-bullseye-${ARCH}
+start-bullseye-${ARCH}
