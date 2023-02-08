@@ -13,10 +13,15 @@
 #export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/
 #默认系统盘目录export WINEPREFIX="${HOME}/.wine"
 #export WINEARCH=win32
+#WINEDEBUG=fixme-all
 #opengl的驱动路径 LIBGL_DRIVERS_PATH=${HOME}/wine/usr/lib/i386-linux-gnu/dri
 #GALLIUM_DRIVER=llvmpipe,zink
 #export LIBGL_ALWAYS_SOFTWARE=1
-#d3d:wined3d_guess_card No card selector a
+#SIGILL: 执行了非法指令. 通常是因为可执行文件本身出现错误, 或者试图执行数据段. 堆栈溢出时也有可能产生这个信号。
+#SIGSEGV(Segment fault)意味着指针所对应的地址是无效地址，没有物理内存对应该地址，由于对合法存储地址的非法访问触发的(如访问不属于自己存储空间或只读存储空间)。试图访问未分配给自己的内存, 或试图往没有写权限的内存地址写数据.
+case $1 in
+        *--net*) NET_CHECK=yes
+esac
 
 case $(dpkg --print-architecture) in
         aarch64|arm64) echo "" ;;
@@ -71,11 +76,12 @@ if [ $(uname -o) != Android ]; then echo -e "\e[33m仅适用于termux环境\e[0m
 
 echo -e "\e[33m检测环境..\e[0m"
 sleep 1
-pkg i -y $(for i in curl proot tar pulseaudio; do if [ $(command -v $i) ]; then echo $i; fi done | sed 's/\n/ /g')
+#pkg i -y $(for i in curl proot tar pulseaudio; do if [ $(command -v $i) ]; then echo $i; fi done | sed 's/\n/ /g')
+clear
 unset i
 while [ ! $(command -v proot) ] && [[ $i -ne 3 ]]
 do
-pkg i -y curl proot tar pulseaudio
+pkg up -y && yes|pkg upgrade && pkg i -y curl proot tar pulseaudio
 i=$(( $i+1 ))
 done
 if [ ! $(command -v proot) ]; then
@@ -100,8 +106,17 @@ sleep 3
 rm rootfs.tar.xz 2>/dev/null
 echo -e "\n检测最新更新的容器${LXC}-${ROOTFS}\e[0m\n"
 sleep 1
+case $NET_CHECK in
+yes)
+curl -O ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
+echo -e "\e[33m检测包下载完整性\e[0m"
+if [[ $(du -b rootfs.tar.xz|awk '{print $1}') != $(curl -I ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz|grep -i length|awk '{print $2}'|sed "s/\r//") ]]; then echo -e "\e[31m下载的包并不完整，但不会中止此次操作，如果安装失败，建议切换网络重新执行此脚本，\e[0m"; read -p "回车键继续"; fi
+;;
+*)
 curl -O ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
 if [ ! -f rootfs.tar.xz ]; then echo -e "\e[31m下载错误，请检查网络\e[0m"; sleep 1; exit 0; fi
+esac
+
 mkdir ${CONTAINER}
 tar xvf rootfs.tar.xz -C ${CONTAINER}
 #if [ $? != 0 ]; then echo -e "\e[31m下载错误，请检查网络\e[0m"; sleep 1; exit 0; fi
@@ -190,18 +205,19 @@ export LANG=C.UTF-8
 cd
 if [ ! -f /usr/bin/perl ]; then
 #ln -sv /usr/bin/perl* /usr/bin/perl
-rm perl-base*.deb
+rm perl-base*.deb 2>/dev/null
 case $ROOTFS in
 	bullseye)
-wget https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/p/perl/$(curl https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/p/perl/|grep arm64|grep base|grep 5.32|awk -F 'title="' '{print $2}'|cut -d '"' -f 1)
+curl -O https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/p/perl/$(curl https://mirrors.tuna.tsinghua.edu.cn/debian/pool/main/p/perl/|grep arm64|grep base|grep 5.32|awk -F 'title="' '{print $2}'|cut -d '"' -f 1)
 ;;
 	current)
-wget https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/p/perl/$(curl https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/p/perl/|grep perl-base|grep arm64|awk -F 'title="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
+curl -O https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/p/perl/$(curl https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/p/perl/|grep perl-base|grep arm64|awk -F 'title="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 ;;
 *)
 ln -sv /usr/bin/perl* /usr/bin/perl
 esac
 	dpkg -i perl-base*.deb
+	rm perl-base*.deb 2>/dev/null
 #ln -sv /usr/bin/perl*aarch64* /usr/bin/perl
 fi
 DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4"
@@ -300,7 +316,7 @@ chown root:root /usr/bin/sudo
 chmod 4755 /usr/bin/sudo /usr/bin/sudo
 chmod 4711 /usr/bin/su
 
-case $ROOTFS in
+case $DUMP_ROOTFS in
 impish)
 RUN_VER=`curl ${URL}/debian/pool/main/v/vim/|grep vim-runtime|awk -F 'title="' '{print $2}'|cut -d '"' -f 1|tail -n 1`
 #RUN_VER=`grep "^Pack.*vim-runtime" \/var\/lib\/dpkg\/status -A10 | grep ^Version | awk -F ':' '{print $3}' | awk -F "u" '{print $1}'`
@@ -535,10 +551,10 @@ fi
 if [ ! $(command -v wine) ]; then
 WINE="你尚未安装wine"
 else
-if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [6-9] ]]; then
+if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [4-9] ]]; then
 WINE="安装wine3.9"
 else
-WINE="安装wine6.17(proot运行高版本wine有bug)"
+WINE="安装wine-8.0-rc5"
 fi
 fi
 if grep ^onboard /usr/local/bin/startwine; then
@@ -602,26 +618,34 @@ echo -e "\e[33m处理完成\e[0m"
 exit 0
 ;;
 11)
-echo -e "\e[33m正在检测已安装wine版本并进行清除(仅对/usr目录下的wine文件有效)\e[0m"
+echo -e "\e[33m正在检测已安装wine版本并进行清除(仅对本脚本安装的wine文件有效)\e[0m"
+sleep 3
 for i in $(sed 's@\./@/usr/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
 #for i in $(sed ':a;N;s/\n/ /g;ta' /usr/share/doc/wine/postrm|sed 's@\./@/usr/@g'); do if [ -f "$i" ]; then rm -v $i; fi done
 case $WINE in
-*6.17*)
-wget https://shell.xb6868.com/wine/PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz
+*8.0-rc5*)
+wget https://shell.xb6868.com/wine/wine-8.0-rc5.tar.gz
+tar zxvf wine-8.0-rc5.tar.gz -C / >/usr/share/doc/wine/postrm 2>&1
+rm wine-8.0-rc5.tar.gz 2>/dev/null
+;;
+*)
+for i in $(sed 's@^\.@@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
+wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
+wget https://shell.xb6868.com/wine/box86.tar.gz
+wget https://shell.xb6868.com/wine/box64.tar.gz
+tar zxvf box86.tar.gz -C /
+tar zxvf box64.tar.gz -C /
+tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
+rm PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz box86.tar.gz box64.tar.gz
+esac
+
+rm ${HOME}/桌面/explorer.desktop ${HOME}/Desktop/explorer.desktop 2>/dev/null
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/wine.desktop 2>/dev/null
 sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/Desktop/wine.desktop 2>/dev/null
 cp /usr/share/applications/wine.desktop ${HOME}/桌面/wine.desktop 2>/dev/null
 sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/桌面/wine.desktop 2>/dev/null
-;;
-*)
-wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
-cp /usr/share/applications/wine.desktop ${HOME}/Desktop/wine.desktop 2>/dev/null
-cp /usr/share/applications/wine.desktop ${HOME}/桌面/wine.desktop 2>/dev/null
 
-esac
 chmod a+x ${HOME}/桌面 ${HOME}/Desktop -R 2>/dev/null
-tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
-rm PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz ${HOME}/桌面/explorer.desktop ${HOME}/Desktop/explorer.desktop 2>/dev/null
 
 bash firstrun
 exit 0
@@ -848,23 +872,23 @@ dpkg --add-architecture amd64
 apt update
 apt install libstdc++6:amd64 --no-install-recommends -y
 apt install libstdc++6:i386 --no-install-recommends -y
-axel -o wine-devel-i386.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/|grep wine-devel-i386_7|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
+axel -o wine-devel-i386.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/|grep wine-devel-i386_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 i=0
 while [ ! $(command -v wine) ] && [[ $i -ne 3 ]]
 do
 i=$(( $i+1 ))
 apt --fix-broken install -y && apt install ./wine-devel-i386.deb --no-install-recommends -y
 done
-axel -o wine-devel-amd64.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel-amd64_7|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
+axel -o wine-devel-amd64.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel-amd64_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 i=0
 while [ ! $(command -v wine64) ] && [[ $i -ne 3 ]]
 do
 i=$(( $i+1 ))
 apt --fix-broken install -y && apt install ./wine-devel-amd64.deb --no-install-recommends -y
 done
-axel -o wine-devel.deb  ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel_7|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
+axel -o wine-devel.deb  ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 dpkg -i --force-overwrite wine-devel.deb 
-axel -o winehq-devel.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep winehq-devel_7|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
+axel -o winehq-devel.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep winehq-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 dpkg -i --force-overwrite winehq-devel.deb
 cd && rm -rf wine_tmp
 ;;
@@ -896,7 +920,7 @@ echo -e "\e[33m进行wine初始化配置\e[0m"
 sleep 1
 rm -rf .wine 2>/dev/null
 sleep 5
-if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [6-7] ]]; then
+if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [4-7] ]]; then
 export BOX86_DYNAREC=0
 box64 wine64 wineboot 2>/dev/null &
 pkill services
@@ -1075,19 +1099,21 @@ sed -i 's/^MimeType.*$/Categories=GTK;System;Monitor;/' /usr/share/applications/
 fi
 
 chmod +x /usr/local/bin/startvnc
+
+for i in 16x16 22x22 24x24 32x32 48x48 256x256; do cp -v /usr/share/icons/Windows-10-Icons/$i/apps/utilities-system-monitor.png /usr/share/icons/hicolor/$i/apps ; done
+gtk-update-icon-cache /usr/share/icons/hicolor
+
 sed -i '/exit/s/^/#/' $(command -v kali-undercover)
-sed -E -i 's/(\$USER_PROFILE \])/\1 || grep undercover ~\/.bashrc/' $(command -v kali-undercover)
+#sed -E -i 's/(\$USER_PROFILE \])/\1 || grep undercover ~\/.bashrc/' $(command -v kali-undercover)
 cp $(command -v kali-undercover) /usr/bin/kali-undercover.bak
-sed -i 's/disable_undercover()/disable()/' $(command -v kali-undercover)
-sed -i 's/disable_undercover/enable_undercover/' $(command -v kali-undercover)
+#sed -i 's/disable_undercover()/disable()/' $(command -v kali-undercover)
+#sed -i 's/disable_undercover/enable_undercover/' $(command -v kali-undercover)
 mkdir ${HOME}/Desktop 2>/dev/null
 mkdir ${HOME}/桌面 2>/dev/null
 cp /usr/share/applications/kali-undercover.desktop /etc/xdg/autostart/
-cat >>$(command -v kali-undercover)<<-'kali'
-if [ -f /etc/xdg/autostart/kali-undercover.desktop ]; then
-rm /etc/xdg/autostart/kali-undercover.desktop
+if ! grep -q autostart $(command -v kali-undercover) ; then
+sed -i '2i if [ -f /etc/xdg/autostart/kali-undercover.desktop ]; then rm /etc/xdg/autostart/kali-undercover.desktop; fi' $(command -v kali-undercover) $(command -v kali-undercover.bak)
 fi
-kali
 bash -c "$(sed '/am start/d' /usr/local/bin/startvnc)" >/dev/null 2>&1 &
 sleep 5
 vncserver -kill $DISPLAY 2>/dev/null
@@ -1102,17 +1128,17 @@ sed -E -i 's/Name=File\ Manager/Name=wine资源管理器/;s/(^Exec=).*$/\1box64 
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/
 sed -i 's/^Exec.*$/Exec=box64 wine64 taskmgr %f/' ${HOME}/Desktop/wine.desktop
 
-if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [6-9] ]]; then
+if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [4-7] ]]; then
 cp /usr/local/bin/boxwine /usr/local/bin/boxwinede
 sed -E -i '/trap/d;s/(^box.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/boxwinede
 sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/Desktop/wine.desktop
-rm ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop
+rm ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop 2>/dev/null
 fi
 cp ${HOME}/Desktop/* ${HOME}/桌面/
 chmod a+x ${HOME}/Desktop/ -R
 chmod a+x ${HOME}/桌面/ -R
 fi
-echo -e "\n已安装，启动命令\e[33mstartvnc\e[0m\n\n如果kali-undercover不完整(如桌面时间、部分图标壁纸未显示)，请重新执行本脚本\e[33mbash undercover\e[0m\n如果需要用回ubuntu桌面，请点击：开始--其他--kali-undercover进行切换\e[0m\n"
+echo -e "\n已安装，启动命令\e[33mstartvnc\e[0m\n\n如果kali-undercover安装崩溃，请重新执行本脚本\e[33mbash undercover\e[0m\n如果需要用回xfce4桌面，请点击：开始--其他--kali-undercover进行切换\e[0m\n"
 read -r -p "确定请回车 " input
 unset input
 echo -e "\n\e[33m正在进行自动首次登录...\e[0m"
