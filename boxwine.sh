@@ -220,7 +220,7 @@ esac
 	rm perl-base*.deb 2>/dev/null
 #ln -sv /usr/bin/perl*aarch64* /usr/bin/perl
 fi
-DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4"
+DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4 xserver-xephyr"
 
 DEPENDS0="zenity:armhf libegl-mesa0:armhf libgl1-mesa-dri:armhf libglapi-mesa:armhf libglx-mesa0:armhf libasound*:armhf libstdc++6:armhf libtcmalloc-minimal4:armhf gcc-arm-linux-gnueabihf sl:armhf -y"
 
@@ -427,6 +427,17 @@ export DISPLAY=127.0.0.1:0
 boxwine >/dev/null 2>wine_log &
 #直接启动游戏：box64 wine64 start /unix *.exe
 exit 0' >>/usr/local/bin/startxsdl
+
+:<<\xsdl
+#!/usr/bin/env bash
+vncserver -kill $DISPLAY 2>/dev/null
+for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
+export PULSE_SERVER=127.0.0.1
+export DISPLAY=127.0.0.1:0
+DISPLAY=localhost:0 sudo Xephyr :1 -noreset -fullscreen &
+DISPLAY=:1 boxwine
+exit 0
+xsdl
 
 cat >/usr/local/bin/startxwine<<-'X11'
 #!/usr/bin/env bash
@@ -902,6 +913,8 @@ i=0
 while [ ! -f wine.tar.gz ] && [[ $i -ne 3 ]]
 do
 #axel -o wine.tar.gz https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
+#https://twisteros.com/wine.tgz 5.3_x86
+#https://kgithub.com/Kron4ek/Wine-Builds/releases
 axel -o wine.tar.gz https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-$WINE_VERSION-upstream-linux-amd64.tar.gz
 #tar zxvf /sdcard/BaiduNetdisk/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /usr
 i=$(( i+1 ))
