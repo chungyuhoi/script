@@ -448,7 +448,7 @@ fi
 if [ -e /apex ]; then
 APEX="-b /apex"
 fi
-if [ -e /system_ext]; then
+if [ -e /system_ext ]; then
 SYSTEM_EXT="-b /system_ext"
 fi
 pkill -9 pulseaudio 2>/dev/null
@@ -786,19 +786,25 @@ ${BF_URL}-security buster/updates ${DEB}" >/etc/apt/sources.list
 	2)
 	echo -e "\n${YELLOW}下载的地址来自spice的作者最新版，由于Github速度非常有限，所以这边只提供下载地址，请复制到其他方式下载，如获取失败，请重试${RES}\n"
 	CONFIRM
-	while ( [ "$SPI_URL" != '0' ] && [[ ! $SPI_URL_ =~ apk ]] )
+	while ( [ "$SPI_URL" != '0' ] && [ -z $SPI_URL_ ] )
 do
-	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 6 | cut -d '/' -f 6`
-SPI_URL_=`curl --connect-timeout 5 -m 8 https://github.com/iiordanov/remote-desktop-clients/releases/tag/$SPI_URL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
-	if [[ ! $SPI_URL_ =~ apk ]]; then
+#	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://github.com/iiordanov/remote-desktop-clients | grep tag\/ | cut -d '"' -f 6 | cut -d '/' -f 6`
+	SPI_URL=`curl --connect-timeout 5 -m 8 -s https://kgithub.com/iiordanov/remote-desktop-clients | grep tag\/ | awk -F 'href="' '{print $2}'|awk -F '/' '{print $NF}'|cut -d '"' -f 1`
+#SPI_URL_=`curl --connect-timeout 5 -m 8 https://kgithub.com/iiordanov/remote-desktop-clients/releases/tag/$SPI_URL | grep SPICE | grep apk | tail -n 1 | cut -d '>' -f 2 | cut -d '<' -f 1`
+	while [ -z $SPI_URL_ ]; do
+	i=0
+	SPI_URL_=`curl -LI https://kgithub.com/iiordanov/remote-desktop-clients/releases/download/$SPI_URL/freeaSPICE-${SPI_URL}_$i-final.apk|grep -i length|awk '{print $2}'`
+	if [ -z $SPI_URL_ ]; then
 	read -r -p "获取失败，重试请回车，退出请输0 " input
 	case $input in
 	0) QEMU_ETC ;;
 	*) ;;
 	esac
 	fi
+done
 	done
-	echo -e "\n下载地址\n${GREEN}https://github.com/iiordanov/remote-desktop-clients/releases/download/$SPI_URL/$SPI_URL_${RES}\n"
+#	echo -e "\n下载地址\n${GREEN}https://github.com/iiordanov/remote-desktop-clients/releases/download/$SPI_URL/$SPI_URL_${RES}\n"
+	echo -e "\n下载地址\n${GREEN}https://kgithub.com/iiordanov/remote-desktop-clients/releases/download/$SPI_URL/freeaSPICE-v5.1.2_$i-final.apk${RES}\n"
 	CONFIRM ;;
 	3) VERSION=`curl https://sourceforge.net/projects/libsdl-android/files/apk/XServer-XSDL/ | grep android | grep 'XSDL/XServer' | grep '\.apk/download' | head -n 1 | cut -d '/' -f 9`
 	echo -e "\n下载地址\n${GREEN}https://jaist.dl.sourceforge.net/project/libsdl-android/apk/XServer-XSDL/$VERSION${RES}\n"
@@ -2877,12 +2883,12 @@ echo -e "1) 换源
 	1) if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
 		rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
 		mkdir /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
-		cp /data/data/com.termux/files/usr/etc/termux/mirrors/china/mirrors.bfsu.edu.cn /data/data/com.termux/files//usr/etc/termux/chosen_mirrors/
+		ln -svf /data/data/com.termux/files/usr/etc/termux/mirrors/china/mirrors.bfsu.edu.cn /data/data/com.termux/files//usr/etc/termux/chosen_mirrors
 	fi
 		sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update ;;
 	2) if [ -d /data/data/com.termux/files/usr/etc/termux/mirrors/china ]; then
 		rm -rf /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
-		ln -s /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
+		ln -svf /data/data/com.termux/files/usr/etc/termux/mirrors/china /data/data/com.termux/files/usr/etc/termux/chosen_mirrors
 	fi
 		sed -i 's@^\(deb.*stable main\)$@#\1\ndeb https://mirrors.tuna.tsinghua.edu.cn/termux/termux-packages-24 stable main@' $PREFIX/etc/apt/sources.list && pkg update ;;
 	*) MAIN ;;
