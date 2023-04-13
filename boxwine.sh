@@ -823,8 +823,8 @@ while [ ! $(command -v box86) ] || [ ! $(command -v box64) ] && [[ $i -ne 3 ]]
 do
 rm box64* box86*
 i=$(( i+1 ))
-wget https://raw.githubusercontent.com$(curl https://kgithub.com/Itai-Nelken/weekly-box86-debs/tree/main/debian/pool|grep 'armhf.deb'|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1|sed 's@/blob@@') -o box86.deb
-wget https://raw.githubusercontent.com$(curl https://kgithub.com/ryanfortner/box64-debs/tree/master/debian|grep 'arm64.deb'|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1|sed 's@/blob@@') -o box64.deb
+wget https://raw.githubusercontent.com$(curl https://kgithub.com/Itai-Nelken/weekly-box86-debs/tree/main/debian/pool|grep 'armhf.deb'|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1|sed 's@/blob@@') -O box86.deb
+wget https://raw.githubusercontent.com$(curl https://kgithub.com/ryanfortner/box64-debs/tree/master/debian|grep 'arm64.deb'|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1|sed 's@/blob@@') -O box64.deb
 dpkg -X box64.deb /
 dpkg -X box86.deb /
 done
