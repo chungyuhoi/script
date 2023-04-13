@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 #常用变量
-#WINEDEBUG=fixme-all
 #指定内署dll或windows dll，b=builtin(wine)，n=native(windows)
 #export WINEDLLOVERRIDES="bass=n,z:\\sdcard\\xinhao\\games\\unplay\\zw\\bass=b"
 #for i in /usr/lib/wine/winepulse.drv.so /usr/lib/wine/fakedlls/winepulse.drv /usr/lib32/wine/fakedlls/winepulse.drv /usr/lib32/wine/winepulse.drv.so; do chmod 000 "$i"; chattr +i "$i"; done
@@ -17,6 +16,12 @@
 #opengl的驱动路径 LIBGL_DRIVERS_PATH=${HOME}/wine/usr/lib/i386-linux-gnu/dri
 #GALLIUM_DRIVER=llvmpipe,zink
 #export LIBGL_ALWAYS_SOFTWARE=1
+:<<-eof
+高位色运行低位色
+Xephyr :1 -ac -screen 640x480x16 &
+DISPLAY=:1 openbox &
+DISPLAY=:1 box86 wine start /unix /sdcard/xinhao/games/samurai2/SAMURAI2.EXE
+eof
 #SIGILL: 执行了非法指令. 通常是因为可执行文件本身出现错误, 或者试图执行数据段. 堆栈溢出时也有可能产生这个信号。
 #SIGSEGV(Segment fault)意味着指针所对应的地址是无效地址，没有物理内存对应该地址，由于对合法存储地址的非法访问触发的(如访问不属于自己存储空间或只读存储空间)。试图访问未分配给自己的内存, 或试图往没有写权限的内存地址写数据.
 case $1 in
@@ -67,7 +72,7 @@ kali)
 LXC=kali
 ROOTFS=current
 DEB="main contrib non-free"
-WINE_INSTALL=NOWINE
+WINE_INSTALL=PLAYONLINUX
 esac
 URL="https://mirrors.tuna.tsinghua.edu.cn"
 cd
@@ -76,7 +81,6 @@ if [ $(uname -o) != Android ]; then echo -e "\e[33m仅适用于termux环境\e[0m
 
 echo -e "\e[33m检测环境..\e[0m"
 sleep 1
-#pkg i -y $(for i in curl proot tar pulseaudio; do if [ $(command -v $i) ]; then echo $i; fi done | sed 's/\n/ /g')
 clear
 unset i
 while [ ! $(command -v proot) ] && [[ $i -ne 3 ]]
@@ -106,6 +110,9 @@ sleep 3
 rm rootfs.tar.xz 2>/dev/null
 echo -e "\n检测最新更新的容器${LXC}-${ROOTFS}\e[0m\n"
 sleep 1
+
+#https://kali.download/nethunter-images/current/rootfs/kalifs-arm64-minimal.tar.xz
+
 case $NET_CHECK in
 yes)
 curl -O ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
@@ -126,6 +133,10 @@ echo 'for i in /var/run/dbus/pid /tmp/.X*-lock /tmp/.X11-unix/X*; do if [ -e "${
 mkdir ${CONTAINER}/etc/proc/ -p
 printf ' 52 memory_bandwidth! 53 network_throughput! 54 network_latency! 55 cpu_dma_latency! 56 xt_qtaguid! 57 vndbinder! 58 hwbinder! 59 binder! 60 ashmem!239 uhid!236 device-mapper!223 uinput!  1 psaux!200 tun!237 loop-control! 61 lightnvm!228 hpet!229 fuse!242 rfkill! 62 ion! 63 vga_arbiter\n' | sed 's/!/\n/g' >${CONTAINER}/etc/proc/misc
 printf "%-1s %-1s %-1s %8s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s %6s\n" Node 0, zone DMA 3 2 2 4 3 3 2 1 2 2 0 Node 0, zone DMA32 1774 851 511 220 67 3 2 0 0 1 0 >${CONTAINER}/etc/proc/buddyinfo
+rm ${CONTAINER}/etc/proc/filesystems 2>/dev/null
+for i in sysfs rootfs ramfs bdev proc cpuset cgroup cgroup2 tmpfs configfs debugfs tracefs sockfs dax bpf pipefs devpts fuse fusectl selinuxfs oprofilefs pstore sdcardfs; do echo "nodev	$i" >>${CONTAINER}/etc/proc/filesystems; done
+for i in fuseblk v7 sysv iso9660 msdos vfat squashfs ext2 ext4 ext3; do sed -i "/devpts/a\	$i" ${CONTAINER}/etc/proc/filesystems; done
+
 echo "0.03 0.03 0.00 1/116 17521" >${CONTAINER}/etc/proc/loadavg
 touch ${CONTAINER}/etc/proc/kmsg
 echo 'tty0                 -WU (EC p  )    4:7' >${CONTAINER}/etc/proc/consoles
@@ -156,7 +167,7 @@ fi
 
 sed -i '3i export MOZ_FAKE_NO_SANDBOX=1' ${CONTAINER}/etc/profile
 
-sed -i "/zh_CN.UTF/s/#//" ${CONTAINER}/etc/locale.gen
+sed -i "/#.*zh_CN.UTF-8 UTF-8/s/#//;/#.*zh_TW.UTF-8 UTF-8/s/#//;/#.*ja_JP.UTF-8 UTF-8/s/#//" ${CONTAINER}/etc/locale.gen
 rm ${CONTAINER}/etc/resolv.conf 2>/dev/null
 echo "nameserver 223.5.5.5
 nameserver 223.6.6.6" >${CONTAINER}/etc/resolv.conf
@@ -220,7 +231,7 @@ esac
 	rm perl-base*.deb 2>/dev/null
 #ln -sv /usr/bin/perl*aarch64* /usr/bin/perl
 fi
-DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4 xserver-xephyr"
+DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4 xserver-xephyr mesa-utils"
 
 DEPENDS0="zenity:armhf libegl-mesa0:armhf libgl1-mesa-dri:armhf libglapi-mesa:armhf libglx-mesa0:armhf libasound*:armhf libstdc++6:armhf libtcmalloc-minimal4:armhf gcc-arm-linux-gnueabihf sl:armhf -y"
 
@@ -337,22 +348,6 @@ VERSION_=`grep '^Pack.*vim-runtime' \/var\/lib\/dpkg\/status -A10 | grep ^Versio
 sed -i "s/$VERSION_/$VERSION/g" /var/lib/dpkg/status
 esac
 
-:<<LIBC6
-if dpkg -l libc6:armhf | grep 2.34; then
-echo ""
-else
-sed -i "s@$(grep 'Pack.* locales' /var/lib/dpkg/status -A10|grep '^Version'|awk '{print $2}')@2.34@" /var/lib/dpkg/status
-rm ./*.deb 2>/dev/null
-wget -O libc6.deb ${URL}/debian/pool/main/g/glibc/libc6_2.34-0experimental4_arm64.deb
-wget -O libc6_armhf.deb ${URL}/debian/pool/main/g/glibc/libc6_2.34-0experimental4_armhf.deb
-wget -O libc_bin.deb ${URL}/debian/pool/main/g/glibc/libc-bin_2.34-0experimental4_arm64.deb
-wget ${URL}/debian/pool/main/g/glibc/locales_2.34-0experimental3_all.deb
-wget ${URL}/debian/pool/main/g/glibc/libc-l10n_2.34-0experimental3_all.deb
-dpkg -i libc*.deb
-dpkg -i locales*.deb
-apt --fix-broken install
-fi
-LIBC6
 cd && rm -rf temp
 
 export LANG=zh_CN.UTF-8
@@ -419,7 +414,9 @@ exit 0' >>/usr/local/bin/startvsdl
 #纯xsdl不支持的太多了，不推荐，不过有些游戏还是可以用这个运行。
 echo '#!/usr/bin/env bash
 echo -e "\n\e[33m请先打开xsdl\e[0m\n"
-sleep 3
+sleep 2
+am start -n x.org.server/x.org.server.MainActivity 2>/dev/null
+read -p "已打开请按回车"
 export PULSE_SERVER=127.0.0.1
 export DISPLAY=127.0.0.1:0
 #dbus-launch xfwm4 &
@@ -503,7 +500,7 @@ DEG
 #开虚拟桌面
 cat >/usr/local/bin/kk<<'DEK'
 #!/usr/bin/env bash
-sed -i '/Desktop/s/#//' /usr/local/bin/boxwine
+sed -i '/Desktop/s/#//g' /usr/local/bin/boxwine
 pstree | grep -q "services"
 while [ $? == 0 ] && [[ $i -ne 6 ]]
 do
@@ -548,6 +545,7 @@ yyy
 
 cat >/usr/local/bin/wine_menu<<-'menu'
 #!/usr/bin/env bash
+WINE_MENU(){
 cd
 URL="https://mirrors.tuna.tsinghua.edu.cn"
 export NEWT_COLORS='
@@ -560,12 +558,12 @@ KALI="启动仿windows桌面"
 KALI_UNDERCOVER="startvnc"
 fi
 if [ ! $(command -v wine) ]; then
-WINE="你尚未安装wine"
+WINE="你尚未安装wine，请选执行选项9"
 else
 if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [4-9] ]]; then
 WINE="安装wine3.9"
 else
-WINE="安装wine-8.0-rc5"
+WINE="安装wine-8.5"
 fi
 fi
 if grep ^onboard /usr/local/bin/startwine; then
@@ -578,14 +576,15 @@ list=$(whiptail --title "运行菜单" --menu "请上下滑动选择\n\n" 0 0 0 
 "2" "开启xsdl wine" \
 "3" "使用虚拟桌面" \
 "4" "关闭虚拟桌面" \
-"5" "修改分辨率" \
+"5" "修改分辨率(非仿windows桌面)" \
 "6" "提高程序优先级" \
 "7" "${KALI}" \
 "8" "${KB}" \
 "9" "重新进行首次安装firstrun" \
 "10" "安装gecko，mono" \
 "11" "${WINE}" \
-"12" "安装linux版firefox浏览器和vlc播放器" \
+"12" "安装linux版firefox浏览器、qq和vlc播放器" \
+"13" "32位wine4.0.3(该版本仅配置于仿windows桌面)" \
 "0" "退出" \
 3>&1 1>&2 2>&3)
 if [ -n "$list" ]; then
@@ -601,11 +600,13 @@ exit 0 ;;
 8) kb ;;
 9) bash ${HOME}/firstrun ;;
 10)
-rm *.msi
+rm *.msi 2>/dev/null
+#gecko ie相关
+#mono .net程序相关
 case $WINE in
 	*3.9*)
 #最新版本
-#wget ${URL}/winehq/wine/wine-mono/$(curl ${URL}/winehq/wine/wine-mono/ | grep href | tail -1 | awk -F 'href="' '{print $2}' | cut -d '/' -f 1)/wine-mono-$(curl ${URL}/winehq/wine/wine-mono/ | grep href | tail -1 | awk -F 'href="' '{print $2}' | cut -d '/' -f 1)-x86.msi
+wget ${URL}/winehq/wine/wine-mono/$(curl ${URL}/winehq/wine/wine-mono/ | grep href | tail -1 | awk -F 'href="' '{print $2}' | cut -d '/' -f 1)/wine-mono-$(curl ${URL}/winehq/wine/wine-mono/ | grep href | tail -1 | awk -F 'href="' '{print $2}' | cut -d '/' -f 1)-x86.msi
 wget ${URL}/winehq/wine/wine-gecko/$(curl ${URL}/winehq/wine/wine-gecko/ | grep href | tail -1 | awk -F 'href="' '{print $2}' | cut -d '/' -f 1)/wine-gecko-$(curl ${URL}/winehq/wine/wine-gecko/ | grep href | tail -1 | awk -F 'href="' '{print $2}' | cut -d '/' -f 1)-x86.msi
 wget ${URL}/winehq/wine/wine-gecko/$(curl ${URL}/winehq/wine/wine-gecko/ | grep href | tail -1 | awk -F 'href="' '{print $2}' | cut -d '/' -f 1)/wine-gecko-$(curl ${URL}/winehq/wine/wine-gecko/ | grep href | tail -1 | awk -F 'href="' '{print $2}' | cut -d '/' -f 1)-x86_64.msi
 ;;
@@ -631,21 +632,33 @@ exit 0
 11)
 echo -e "\e[33m正在检测已安装wine版本并进行清除(仅对本脚本安装的wine文件有效)\e[0m"
 sleep 3
+rm PlayOnLinux* wine-8.5.tar.gz* 2>/dev/null
+case $WINE_INSTALL in
+PLAYONLINUX)
+for i in $(sed 's@\./@/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done ;;
+*)
 for i in $(sed 's@\./@/usr/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
+esac
 #for i in $(sed ':a;N;s/\n/ /g;ta' /usr/share/doc/wine/postrm|sed 's@\./@/usr/@g'); do if [ -f "$i" ]; then rm -v $i; fi done
 case $WINE in
-*8.0-rc5*)
-wget https://shell.xb6868.com/wine/wine-8.0-rc5.tar.gz
-tar zxvf wine-8.0-rc5.tar.gz -C / >/usr/share/doc/wine/postrm 2>&1
-rm wine-8.0-rc5.tar.gz 2>/dev/null
+*8.5*)
+
+case $WINE_INSTALL in
+PLAYONLINUX)
+axel https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz
+tar zxvf sdcard/xinhao/PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz -C /usr/ ./lib >/usr/share/doc/wine/postrm 2>&1
+LXC=debian ROOTFS=bullseye WINE_URL="https://dl.winehq.org"; axel -o wine-devel-i386.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/|grep wine-devel-i386_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o wine-devel-amd64.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel-amd64_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o wine-devel.deb  ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o winehq-devel.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep winehq-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); for i in wine-devel-amd64.deb  winehq-devel.deb wine-devel.deb wine-devel-i386.deb; do dpkg -X $i / >>/usr/share/doc/wine/postrm 2>&1; done
+sed -i 's@^./lib@./usr/lib@' /usr/share/doc/wine/postrm
+;;
+*)
+wget https://shell.xb6868.com/wine/wine-8.5.tar.gz
+tar zxvf wine-8.5.tar.gz -C / >/usr/share/doc/wine/postrm 2>&1
+rm wine-8.5.tar.gz 2>/dev/null
+esac
 ;;
 *)
 for i in $(sed 's@^\.@@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
-wget https://shell.xb6868.com/wine/box86.tar.gz
-wget https://shell.xb6868.com/wine/box64.tar.gz
-tar zxvf box86.tar.gz -C /
-tar zxvf box64.tar.gz -C /
 tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
 rm PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz box86.tar.gz box64.tar.gz
 esac
@@ -662,14 +675,33 @@ bash firstrun
 exit 0
 ;;
 12)
+if [ ! $(command -v kali-undercover) ]; then
+echo -e "\e[33m请先安装仿windows桌面\e[0m"
+sleep 3
+WINE_MENU
+fi
 if grep -q ID=ubuntu /etc/os-release ; then
 DEPENDS="firefox firefox-locale-zh-hans"
 else
 DEPENDS="firefox-esr firefox-esr-l10n-zh-cn"
 fi
+apt update
+cd
+rm linuxqq_*_arm64.deb 2>/dev/null
+if [ ! $(command -v qq) ]; then
+echo -e "\e[33m检测最新版本qq\e[0m"
+sleep 1
+wget $(curl https://aur.archlinux.org/packages/linuxqq|grep arm64|cut -d '"' -f2)
+apt install ./linuxqq_*_arm64.deb -y
+if [ $(command -v qq) ]; then
+echo 'export GDK_NATIVE_WINDOWS=true' >>/etc/profile
+cp /usr/share/applications/qq.desktop ${HOME}/Desktop
+cp /usr/share/applications/qq.desktop ${HOME}/桌面
+fi
+fi
 apt install --no-install-recommends vlc $DEPENDS -y
 i=0
-while [ ! $(command -v vlc)  ] && [[ $i -ne 3 ]]
+while [ ! $(command -v vlc) ] || [ ! $(command -v firefox) ] && [[ $i -ne 3 ]]
 do
 echo -e "\e[31m似乎安装出错,重新执行安装\e[0m"
 i=$(( $i+1 ))
@@ -683,33 +715,66 @@ cp /usr/share/applications/firefox*.desktop ${HOME}/桌面
 cp /usr/share/applications/vlc.desktop ${HOME}/桌面
 chmod a+x ${HOME}/桌面 ${HOME}/Desktop -R
 ;;
+13) 
+if [ ! $(command -v kali-undercover) ] || [ ! $(command -v box86) ]; then
+echo -e "你尚未安装box86或仿windows桌面"
+sleep 3
+WINE_MENU
+fi
+read -p "本wine4.0将集中在主目录下一个wine文件夹内，且仅对仿windows桌面进行配置并创建桌面快捷，确认请回车"
+cd && mkdir wine4 2>/dev/null
+rm PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz 2>/dev/null
+
+case $WINE_INSTALL in                                   PLAYONLINUX)                                            axel https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-x86/PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz
+;;
+*)
+wget https://shell.xb6868.com/wine/PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz
+esac
+if [ ! -f PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz ]; then
+echo -e "\e[31m下载失败，请重试\e[0m"
+sleep 3
+WINE_MENU
+fi
+tar zxvf PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz -C wine4
+rm -rf wine4/.wine 2>/dev/null
+WINEDEBUG=fixme-all WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine wineboot
+pstree | grep -q "services"
+while [ $? == 0 ]
+do
+sleep 1
+pstree | grep -q "services"
+done
+cp ${HOME}/Desktop/wine.desktop ${HOME}/Desktop/wine4.desktop
+sed -i 's@Exec.*@Exec=env BOX86_NOPULSE=1 WINEDEBUG=fixme-all WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine explorer /desktop,640x480 taskmgr %f@' ${HOME}/Desktop/wine4.desktop
+sed -i 's/=wine/=wine4/' ${HOME}/Desktop/wine4.desktop
+chmod a+x ${HOME}/Desktop/wine4.desktop
+rm PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz*
+;;
+
 0) exit 0
 esac
 sleep 1.5
-wine_menu
+WINE_MENU
 else
 echo  -e "\e[33m你已取消选择\e[0m"
 sleep 1
 exit 0
 fi
+}
+WINE_MENU "$@"
 menu
+sed -i "4i WINE_INSTALL=$WINE_INSTALL" /usr/local/bin/wine_menu
 
 cat >/usr/local/bin/kb<<-'jp_'
 #!/usr/bin/env bash
 if grep ^onboard /usr/local/bin/startwine; then
 echo -e "\e[33m关闭桌面键盘\e[0m"
 sleep 1
-sed -i '/onboard/s/^/#/;/xfwm4/s/^/#/' /usr/local/bin/startwine
-sed -i '/onboard/s/^/#/;/xfwm4/s/^/#/' /usr/local/bin/startxwine
-sed -i '/onboard/s/^/#/;/xfwm4/s/^/#/' /usr/local/bin/startxsdl
-sed -i '/onboard/s/^/#/;/xfwm4/s/^/#/' /usr/local/bin/startvsdl
+sed -i '/onboard/s/^/#/;/xfwm4/s/^/#/' /usr/local/bin/startwine /usr/local/bin/startxwine /usr/local/bin/startxsdl /usr/local/bin/startvsdl
 else
 echo -e "\e[33m启动桌面键盘\e[0m"
 sleep 1
-sed -i '/onboard/s/#//g;/xfwm4/s/#//g' /usr/local/bin/startwine
-sed -i '/onboard/s/#//g;/xfwm4/s/#//g' /usr/local/bin/startxwine
-sed -i '/onboard/s/#//g;/xfwm4/s/#//g' /usr/local/bin/startxsdl
-sed -i '/onboard/s/#//g;/xfwm4/s/#//g' /usr/local/bin/startvsdl
+sed -i '/onboard/s/#//g;/xfwm4/s/#//g' /usr/local/bin/startwine /usr/local/bin/startxwine /usr/local/bin/startxsdl /usr/local/bin/startvsdl
 fi
 jp_
 
@@ -750,6 +815,20 @@ tar zxvf box64.tar.gz -C /
 rm box64.tar.gz
 
 ;;
+PACKAGE)
+#deb包安装
+rm box64* box86*
+i=0
+while [ ! $(command -v box86) ] || [ ! $(command -v box64) ] && [[ $i -ne 3 ]]
+do
+rm box64* box86*
+i=$(( i+1 ))
+wget https://raw.githubusercontent.com$(curl https://kgithub.com/Itai-Nelken/weekly-box86-debs/tree/main/debian/pool|grep 'armhf.deb'|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1|sed 's@/blob@@') -o box86.deb
+wget https://raw.githubusercontent.com$(curl https://kgithub.com/ryanfortner/box64-debs/tree/master/debian|grep 'arm64.deb'|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1|sed 's@/blob@@') -o box64.deb
+dpkg -X box64.deb /
+dpkg -X box86.deb /
+done
+;;
 REPO)
 #github源安装
 echo -e "\e[33m下载编译box86与box64\e[0m"
@@ -774,9 +853,13 @@ if [ ! -f /etc/apt/sources.list.d/box64.list ]; then
 wget https://ryanfortner.github.io/box64-debs/box64.list -O /etc/apt/sources.list.d/box64.list
 fi
 #wget -qO- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo apt-key add -
-wget -O- https://ryanfortner.github.io/box64-debs/KEY.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/box64-debs-archive-keyring.gpg 2>&1 >/dev/null
-if [ ! -f /usr/share/keyrings/box64-debs-archive ]; then
-wget -O- https://ryanfortner.github.io/box64-debs/KEY.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/box64-debs-archive-keyring.gpg
+#wget -O- https://ryanfortner.github.io/box64-debs/KEY.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/box64-debs-archive-keyring.gpg 2>&1 >/dev/null
+#
+wget -qO- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/box64-debs-archive-keyring.gpg
+#if [ ! -f /usr/share/keyrings/box64-debs-archive ]; then
+if [ ! -f /etc/apt/trusted.gpg.d/box64-debs-archive-keyring.gpg ]; then
+#wget -O- https://ryanfortner.github.io/box64-debs/KEY.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/box64-debs-archive-keyring.gpg
+wget -qO- https://ryanfortner.github.io/box64-debs/KEY.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/box64-debs-archive-keyring.gpg
 fi
 apt update && apt install box64 -y
 done
@@ -905,7 +988,7 @@ cd && rm -rf wine_tmp
 ;;
 
 PLAYONLINUX)
-echo -e "\n\e[33m下载wine 4.0.3版本，如果下载速度慢，请ctrl+c中止下载，并输bash firstrun重新初始化安装\e[0m"
+echo -e "\n\e[33m下载wine 3.9版本，如果下载速度慢，请ctrl+c中止下载，并输bash firstrun重新初始化安装\e[0m"
 sleep 3
 
 rm wine.tar.gz 2>/dev/null
@@ -920,7 +1003,7 @@ axel -o wine.tar.gz https://www.playonlinux.com/wine/binaries/phoenicis/upstream
 i=$(( i+1 ))
 done
 
-tar zxvf wine.tar.gz -C /usr
+tar zxvf wine.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
 ;;
 
 *)
@@ -1019,11 +1102,15 @@ sleep 3
 du -sh ${HOME}/.wine
 pstree | grep -q "wineboot"
 done
+
+#Disable the GUI crash dialog
+sed -i '/X11/i [Software\\Wine\\WineDbg]\n"ShowCrashDialog"=dword:00000000\n' ${HOME}/.wine/user.reg
+
 echo -e "\n\e[33m配置完毕\e[0m\n"
 echo -e "\n如果上面的安装失败,请输\e[33mbash firstrun\e[0m重新安装"
 echo -e "登录容器\e[33m${START}\e[0m\n退出容器,在termux输\e[33mexit\e[0m即可\e[0m\n安装仿windows界面，输\e[33mbash undercover\e[0m\n多功能菜单\e[33mwine_menu\e[0m"
 if [ $(command -v wine) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
-echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartvsdl\e[0m，在xsdl中地址输127.0.0.1:1\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n"
+echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n"
 fi
 eof
 
@@ -1054,6 +1141,7 @@ fi
 if [ ! $(command -v kali-undercover) ]; then
 rm undercover.deb 2>/dev/null
 wget -O undercover.deb https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/k/kali-undercover/$(curl https://mirrors.tuna.tsinghua.edu.cn/kali/pool/main/k/kali-undercover/ | grep all.deb | cut -d '"' -f 4)
+apt update
 apt install ./undercover.deb xfce4-terminal -y
 if [ ! $(command -v kali-undercover) ]; then
 apt --fix-broken install -y
@@ -1091,6 +1179,7 @@ fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
 
 cat >/usr/local/bin/startvnc<<-'eom'
 #!/usr/bin/env bash
+export RUNLEVEL=5
 vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 export PULSE_SERVER=127.0.0.1
@@ -1107,8 +1196,9 @@ rm /usr/share/xfce4/panel/plugins/power-manager-plugin.desktop undercover.deb 2>
 if [ $(command -v wine) ]; then
 sed -i 's/^Exec=wine/Exec=box64 wine64/' /usr/share/applications/wine.desktop
 sed -i 's/^Icon.*$/Icon=utilities-system-monitor/' /usr/share/applications/wine.desktop
-sed -i 's/^Name=Wine Windows Program Loader/Name=wine任务管理器/' /usr/share/applications/wine.desktop
-sed -i 's/^MimeType.*$/Categories=GTK;System;Monitor;/' /usr/share/applications/wine.desktop
+#sed -i 's/^Name=Wine Windows Program Loader/Name=wine任务管理器/' /usr/share/applications/wine.desktop
+sed -i '/^Name=Wine Windows Program Loader/a Name[zh_CN]=wine任务管理器' /usr/share/applications/wine.desktop
+#sed -i 's/^MimeType.*$/Categories=GTK;System;Monitor;/' /usr/share/applications/wine.desktop
 fi
 
 chmod +x /usr/local/bin/startvnc
@@ -1135,9 +1225,11 @@ cp /usr/bin/kali-undercover.bak $(command -v kali-undercover)
 
 if [ $(command -v wine) ]; then
 cp /usr/share/applications/xfce4-terminal.desktop ${HOME}/Desktop/rscreen.desktop
-sed -i 's/xfce4-terminal/xrandr \-s 0/;s/Xfce\ Terminal/恢复屏幕/;/\]=/d;/=T/d;/preferences\]/,$d' ${HOME}/Desktop/rscreen.desktop
+#sed -i 's/xfce4-terminal/xrandr \-s 0/;s/Xfce\ Terminal/恢复屏幕/;/\]=/d;/=T/d;/preferences\]/,$d' ${HOME}/Desktop/rscreen.desktop
+sed -i 's/xfce4-terminal/xrandr \-s 0/;s/Xfce\ Terminal/rscreen/;/\]=/d;/=T/d;/preferences\]/,$d;/rscreen/a Name[zh_CN]=恢复屏幕' ${HOME}/Desktop/rscreen.desktop
 cp /usr/share/applications/xfce4-file-manager.desktop Desktop/explorer.desktop
-sed -E -i 's/Name=File\ Manager/Name=wine资源管理器/;s/(^Exec=).*$/\1box64 wine64 explorer %U/;/\]=/d' Desktop/explorer.desktop
+#sed -E -i 's/Name=File\ Manager/Name=wine资源管理器/;s/(^Exec=).*$/\1box64 wine64 explorer %U/;/\]=/d' ${HOME}/Desktop/explorer.desktop
+sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1box64 wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/
 sed -i 's/^Exec.*$/Exec=box64 wine64 taskmgr %f/' ${HOME}/Desktop/wine.desktop
 
@@ -1170,7 +1262,7 @@ pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start --load='module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1' --exit-idle-time=-1 
 unset LD_PRELOAD
 proot --kill-on-exit -b /sdcard:/root/sdcard -b /sdcard -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/data/com.termux/cache -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b ${CONTAINER}/tmp:/dev/shm -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${CONTAINER} -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games TZ='Asia/Shanghai' LANG=C.UTF-8 /bin/bash --login" >${PREFIX}/bin/start-wine64 && chmod +x ${PREFIX}/bin/start-wine64
-for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine64; fi done
+for i in version misc buddyinfo kmsg consoles execdomains stat fb filesystems loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine64; fi done
 
 #高级proot登录
 case $PROOT in
@@ -1207,6 +1299,7 @@ fi
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
 eof
 sed -i '/=$/d' ${HOME}/${CONTAINER}/etc/profile
+echo 'if [ -d ${HOME}/.wine/drive_c/users/*/Temp/*490 ]; then echo -e "\e[31m注意，有不明文件夹！谨慎中电脑病毒。\e[0m"; fi' >>${HOME}/${CONTAINER}/etc/profile
 :<<\gcc
 cd ${HOME}/${CONTAINER}
 GCC=$(find -name libgcc_s.so.1 2>/dev/null | sed 's/.//')
@@ -1224,7 +1317,7 @@ pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth
 unset LD_PRELOAD
 proot --kill-on-exit -b /vendor -b /system -b /sdcard -b /sdcard:/root/sdcard -b /data/data/com.termux/files -b /data/data/com.termux/cache -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/dalvik-cache -b ${CONTAINER}/tmp:/dev/shm -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${CONTAINER} -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=zh_CN.UTF-8 TZ=Asia/Shanghai TERM=xterm-256color USER=root /bin/bash --login
 eof
-for i in version misc buddyinfo kmsg consoles execdomains stat fb loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
+for i in version misc buddyinfo kmsg consoles execdomains stat fb filesystems loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
 :<<\eof
 if [ ! -r /proc/sys/vm/mmap_min_addr ]; then
 mkdir -p .wine-arm64/etc/proc/sys/vm
