@@ -18,15 +18,12 @@
 #export LIBGL_ALWAYS_SOFTWARE=1
 :<<-eof
 高位色运行低位色
-Xephyr :1 -ac -screen 640x480x16 &
+Xephyr :1 -ac -screen 640x480x16 -reset -terminate &
 DISPLAY=:1 openbox &
 DISPLAY=:1 box86 wine start /unix /sdcard/xinhao/games/samurai2/SAMURAI2.EXE
 eof
 #SIGILL: 执行了非法指令. 通常是因为可执行文件本身出现错误, 或者试图执行数据段. 堆栈溢出时也有可能产生这个信号。
 #SIGSEGV(Segment fault)意味着指针所对应的地址是无效地址，没有物理内存对应该地址，由于对合法存储地址的非法访问触发的(如访问不属于自己存储空间或只读存储空间)。试图访问未分配给自己的内存, 或试图往没有写权限的内存地址写数据.
-case $1 in
-        *--net*) NET_CHECK=yes
-esac
 
 case $(dpkg --print-architecture) in
         aarch64|arm64) echo "" ;;
@@ -38,11 +35,16 @@ esac
 #proot登录方式，可选 STANDER PRO
 PROOT=PRO
 
-#容器，可选 jammy bullseye kali sid
-ROOTFS=bullseye
+#普通用户 TRUE
+NOR_USER=
 
-#box安装方式，注意：kali仅能选NOBOX，可选 REPO GIT RELEASE XB6868 NOBOX
+#容器，可选 jammy bullseye kali sid kali_org
+ROOTFS=kali_org
+
+#box安装方式，可选 REPO GIT RELEASE XB6868 NOBOX
 BOX_INSTALL=REPO
+#box_update box86最后更新时间:20230416
+#box_update box64最后更新时间:20230322
 
 #wine安装方式，注意：REPO仅对bullseye可用，可选 REPO PLAYONLINUX XB6868 NOWINE
 WINE_INSTALL=PLAYONLINUX
@@ -71,6 +73,11 @@ DEB="main contrib non-free"
 kali)
 LXC=kali
 ROOTFS=current
+DEB="main contrib non-free"
+WINE_INSTALL=PLAYONLINUX
+;;
+kali_org)
+LXC=kali
 DEB="main contrib non-free"
 WINE_INSTALL=PLAYONLINUX
 esac
@@ -111,22 +118,26 @@ rm rootfs.tar.xz 2>/dev/null
 echo -e "\n检测最新更新的容器${LXC}-${ROOTFS}\e[0m\n"
 sleep 1
 
-#https://kali.download/nethunter-images/current/rootfs/kalifs-arm64-minimal.tar.xz
+case $ROOTFS in
+kali_org)
+curl https://kali.download/nethunter-images/current/rootfs/kalifs-arm64-minimal.tar.xz -o rootfs.tar.xz
+tar Jxvf rootfs.tar.xz
+mv -v kali-arm64 ${CONTAINER}
+ROOTFS=current
+;;
+*)
+mkdir ${CONTAINER}
 
-case $NET_CHECK in
-yes)
+:<<\eof
+curl -O ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
+if [ ! -f rootfs.tar.xz ]; then echo -e "\e[31m下载错误，请检查网络\e[0m"; sleep 1; exit 0; fi
+eof
 curl -O ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
 echo -e "\e[33m检测包下载完整性\e[0m"
 if [[ $(du -b rootfs.tar.xz|awk '{print $1}') != $(curl -I ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz|grep -i length|awk '{print $2}'|sed "s/\r//") ]]; then echo -e "\e[31m下载的包并不完整，但不会中止此次操作，如果安装失败，建议切换网络重新执行此脚本，\e[0m"; read -p "回车键继续"; fi
-;;
-*)
-curl -O ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/$(curl ${URL}/lxc-images/images/${LXC}/${ROOTFS}/arm64/default/ | grep href | tail -n 2 | cut -d '"' -f 4 | head -n 1)rootfs.tar.xz
-if [ ! -f rootfs.tar.xz ]; then echo -e "\e[31m下载错误，请检查网络\e[0m"; sleep 1; exit 0; fi
-esac
 
-mkdir ${CONTAINER}
 tar xvf rootfs.tar.xz -C ${CONTAINER}
-#if [ $? != 0 ]; then echo -e "\e[31m下载错误，请检查网络\e[0m"; sleep 1; exit 0; fi
+esac
 rm rootfs.tar.xz
 echo 'for i in /var/run/dbus/pid /tmp/.X*-lock /tmp/.X11-unix/X*; do if [ -e "${i}" ]; then rm -vf ${i}; fi done' >>${CONTAINER}/etc/profile
 #伪proc文件
@@ -411,6 +422,7 @@ export DISPLAY=127.0.0.1:0
 xvncviewer &
 exit 0' >>/usr/local/bin/startvsdl
 
+:<<\xsdl
 #纯xsdl不支持的太多了，不推荐，不过有些游戏还是可以用这个运行。
 echo '#!/usr/bin/env bash
 echo -e "\n\e[33m请先打开xsdl\e[0m\n"
@@ -424,17 +436,18 @@ export DISPLAY=127.0.0.1:0
 boxwine >/dev/null 2>wine_log &
 #直接启动游戏：box64 wine64 start /unix *.exe
 exit 0' >>/usr/local/bin/startxsdl
+xsdl
 
-:<<\xsdl
-#!/usr/bin/env bash
+#Exec=env WINEDEBUG=fixme-all bash -c "Xephyr :1 -ac -screen 640x480x16 & { env DISPLAY=:1 box86 wine start /unix /sdcard/xinhao/games/zuma/Zuma.exe & }"
+
+echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 export PULSE_SERVER=127.0.0.1
 export DISPLAY=127.0.0.1:0
-DISPLAY=localhost:0 sudo Xephyr :1 -noreset -fullscreen &
-DISPLAY=:1 boxwine
-exit 0
-xsdl
+DISPLAY=localhost:0 sudo Xephyr :1 -reset -terminate -fullscreen &
+DISPLAY=:1 boxwine >/dev/null 2>wine_log &
+exit 0' >>/usr/local/bin/startxsdl
 
 cat >/usr/local/bin/startxwine<<-'X11'
 #!/usr/bin/env bash
@@ -546,6 +559,7 @@ yyy
 cat >/usr/local/bin/wine_menu<<-'menu'
 #!/usr/bin/env bash
 WINE_MENU(){
+if [[ $(id -u) != 0 ]];then echo -e "\e[33m请使用root用户运行本脚本\e[0m"; sleep 2; exit 0; fi
 cd
 URL="https://mirrors.tuna.tsinghua.edu.cn"
 export NEWT_COLORS='
@@ -585,6 +599,7 @@ list=$(whiptail --title "运行菜单" --menu "请上下滑动选择\n\n" 0 0 0 
 "11" "${WINE}" \
 "12" "安装linux版firefox浏览器、qq和vlc播放器" \
 "13" "32位wine4.0.3(该版本仅配置于仿windows桌面)" \
+"14" "检测更新box86 box64版本" \
 "0" "退出" \
 3>&1 1>&2 2>&3)
 if [ -n "$list" ]; then
@@ -687,18 +702,6 @@ DEPENDS="firefox-esr firefox-esr-l10n-zh-cn"
 fi
 apt update
 cd
-rm linuxqq_*_arm64.deb 2>/dev/null
-if [ ! $(command -v qq) ]; then
-echo -e "\e[33m检测最新版本qq\e[0m"
-sleep 1
-wget $(curl https://aur.archlinux.org/packages/linuxqq|grep arm64|cut -d '"' -f2)
-apt install ./linuxqq_*_arm64.deb -y
-if [ $(command -v qq) ]; then
-echo 'export GDK_NATIVE_WINDOWS=true' >>/etc/profile
-cp /usr/share/applications/qq.desktop ${HOME}/Desktop
-cp /usr/share/applications/qq.desktop ${HOME}/桌面
-fi
-fi
 apt install --no-install-recommends vlc $DEPENDS -y
 i=0
 while [ ! $(command -v vlc) ] || [ ! $(command -v firefox) ] && [[ $i -ne 3 ]]
@@ -713,6 +716,18 @@ cp /usr/share/applications/firefox*.desktop ${HOME}/Desktop
 cp /usr/share/applications/vlc.desktop ${HOME}/Desktop
 cp /usr/share/applications/firefox*.desktop ${HOME}/桌面
 cp /usr/share/applications/vlc.desktop ${HOME}/桌面
+rm linuxqq_*_arm64.deb 2>/dev/null
+if [ ! $(command -v qq) ]; then
+echo -e "\e[33m检测最新版本qq\e[0m"
+sleep 1
+wget $(curl https://aur.archlinux.org/packages/linuxqq|grep arm64|cut -d '"' -f2)
+apt install ./linuxqq_*_arm64.deb -y
+if [ $(command -v qq) ]; then
+echo 'export GDK_NATIVE_WINDOWS=true' >>/etc/profile
+cp /usr/share/applications/qq.desktop ${HOME}/Desktop
+cp /usr/share/applications/qq.desktop ${HOME}/桌面
+fi
+fi
 chmod a+x ${HOME}/桌面 ${HOME}/Desktop -R
 ;;
 13) 
@@ -744,13 +759,38 @@ do
 sleep 1
 pstree | grep -q "services"
 done
+if [ -d /root/wine4/.wine/drive_c ]; then
+mkdir -vp /root/wine4/.wine/drive_c/users/*/Temp
+chmod 0000 -vR /root/wine4/.wine/drive_c/users/*/Temp
+fi
 cp ${HOME}/Desktop/wine.desktop ${HOME}/Desktop/wine4.desktop
 sed -i 's@Exec.*@Exec=env BOX86_NOPULSE=1 WINEDEBUG=fixme-all WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine explorer /desktop,640x480 taskmgr %f@' ${HOME}/Desktop/wine4.desktop
 sed -i 's/=wine/=wine4/' ${HOME}/Desktop/wine4.desktop
 chmod a+x ${HOME}/Desktop/wine4.desktop
 rm PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz*
 ;;
-
+14)
+if [ ! $(command -v box86) ]||[ ! $(command -v box64) ]; then
+echo -e "你尚未安装box86或box64"
+sleep 2
+else
+curl https://shell.xb6868.com/wine/boxwine.sh|grep '^#box_update'|awk '{print $2}'
+echo -e "\n\n你目前版本的时间是\nbox86 $(date -d "$(LANG=c.UTF_8 box86 --version|awk -F ' on ' '{print $2}'|awk '{print $1,$2,$3}')" +%Y%m%d)\nbox64 $(date -d "$(LANG=c.UTF_8 box64 --version|awk -F ' on ' '{print $2}'|awk '{print $1,$2,$3}')" +%Y%m%d)\n\n是否更新安装"
+read -r -p '1) 是 2) 返回: ' input
+case $input in
+1)
+rm box86.tar.gz* box64.tar.gz* 2>/dev/null
+wget https://shell.xb6868.com/wine/box86.tar.gz
+wget https://shell.xb6868.com/wine/box64.tar.gz
+tar zxvf box86.tar.gz -C /
+tar zxvf box64.tar.gz -C /
+box86 --version
+box64 --version
+sleep 3
+esac
+fi
+WINE_MENU
+;;
 0) exit 0
 esac
 sleep 1.5
@@ -800,6 +840,24 @@ sed -i '/LANG=zh_CN.UTF-8/d' /etc/profile && sed -i '2i export LANG=zh_CN.UTF-8'
 sed -i "/firstrun/d" /etc/profile
 sed -i "/return/d" ${HOME}/firstrun
 
+case $NOR_USER in
+TRUE)
+chown root:root /usr/bin/sudo
+chmod 4755 /usr/bin/sudo
+chmod 4711 /usr/bin/su
+echo -e "\e[33m请设置root用户密码(输入内容不会反显)\e[0m\n"
+passwd
+echo -e "\e[33m请设置普通用户密码(输入内容不会反显)，用户名为 $(grep 'Android user' /etc/passwd|cut -d ':' -f 1)\e[0m\n"
+passwd $(grep 'Android user' /etc/passwd|cut -d ':' -f 1)
+sed -i "/\%sudo/a $(grep 'Android user' /etc/passwd|cut -d ':' -f 1) ALL=(ALL:ALL) NOPASSWD:ALL" /etc/sudoers
+cp /etc/skel/.profile /home/*/
+cp /etc/skel/.bashrc /home/*/
+if [ -f /data/data/com.termux/files/usr/etc/motd.sh ]; then
+cat /data/data/com.termux/files/usr/etc/motd.sh|sed '/com.termux/d;s/pkg/apt/' >>/home/*/.bashrc
+sed -i '/TERMUX_APP_PACKAGE_MANAGER/i clear\nTERMUX_VERSION=$(cat /etc/os-release|grep PRETTY | cut -d "=" -f 2)\nclear' /home/*/.bashrc
+fi
+esac
+
 if [ ! $(command -v box64) ] || [ ! $(command -v box86) ]; then
 rm box86.tar.gz box64.tar.gz 2>/dev/null
 case $BOX_INSTALL in
@@ -823,7 +881,12 @@ while [ ! $(command -v box86) ] || [ ! $(command -v box64) ] && [[ $i -ne 3 ]]
 do
 rm box64* box86*
 i=$(( i+1 ))
+date -d "$(LANG=C.UTF_8 box86 --version|awk -F ' on ' '{print $2}'|awk '{print $1,$2,$3}')" +%Y%m%d
+curl https://kgithub.com/Itai-Nelken/weekly-box86-debs/tree/main/debian/pool|grep 'armhf.deb'|awk -F 'href="' '{print $2}'|tail -n 1|cut -d '+' -f2|cut -d '.' -f1
 wget https://raw.githubusercontent.com$(curl https://kgithub.com/Itai-Nelken/weekly-box86-debs/tree/main/debian/pool|grep 'armhf.deb'|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1|sed 's@/blob@@') -O box86.deb
+
+date -d "$(LANG=C.UTF_8 box64 --version|awk -F ' on ' '{print $2}'|awk '{print $1,$2,$3}')" +%Y%m%d
+curl https://kgithub.com/ryanfortner/box64-debs/tree/master/debian|grep 'arm64.deb'|awk -F 'href="' '{print $2}'|tail -n 1|cut -d '+' -f2|cut -d '.' -f1
 wget https://raw.githubusercontent.com$(curl https://kgithub.com/ryanfortner/box64-debs/tree/master/debian|grep 'arm64.deb'|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1|sed 's@/blob@@') -O box64.deb
 dpkg -X box64.deb /
 dpkg -X box86.deb /
@@ -999,7 +1062,6 @@ do
 #https://twisteros.com/wine.tgz 5.3_x86
 #https://kgithub.com/Kron4ek/Wine-Builds/releases
 axel -o wine.tar.gz https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-$WINE_VERSION-upstream-linux-amd64.tar.gz
-#tar zxvf /sdcard/BaiduNetdisk/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /usr
 i=$(( i+1 ))
 done
 
@@ -1044,8 +1106,14 @@ done
 
 #cp /usr/share/fonts/truetype/wqy/wqy-zenhei.ttc .wine/drive_c/windows/Fonts/
 #cp /usr/share/fonts/truetype/wqy/wqy-microhei.ttc .wine/drive_c/windows/Fonts/
+#Disable the GUI crash dialog
+sed -i '/X11/i [Software\\Wine\\WineDbg]\n"ShowCrashDialog"=dword:00000000\n' ${HOME}/.wine/user.reg
 
 sed -i '/FontMapper/i \[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\FontLink\\\\SystemLink\]\n"Arial"="wqy-microhei.ttc"\n"Arial Black"="wqy-microhei.ttc"\n"Lucida Sans Unicode"="wqy-microhei.ttc"\n"MS Sans Serif"="wqy-microhei.ttc"\n"SimSun"="wqy-microhei.ttc"\n"Tahoma"="wqy-microhei.ttc"\n"Tahoma Bold"="wqy-microhei.ttc"\n\n' .wine/system.reg
+if [ -d /root/.wine/drive_c ]; then
+mkdir -vp /root/wine4/.wine/drive_c/users/*/Temp
+chmod 0000 -vR /root/wine4/.wine/drive_c/users/*/Temp
+fi
 :<<\FONT
 cat >wqy.reg<<-'FONTS'
 REGEDIT4
@@ -1083,6 +1151,14 @@ rm -rf box86* box64* wqy.reg wine.tar.gz PlayOnLinux-wine*.tar.gz ca.deb openssl
 if [ ! -f /etc/sysctl.conf ] || ! grep -q vm /etc/sysctl.conf; then
 echo 'vm.mmap_min_addr=0' >>/etc/sysctl.conf
 fi
+
+if [ -f /data/data/com.termux/files/usr/etc/motd.sh ]; then
+if ! grep -q TERMUX_APP_PACKAGE_MANAGER ${HOME}/.bashrc; then
+cat /data/data/com.termux/files/usr/etc/motd.sh|sed '/com.termux/d;s/pkg/apt/' >>${HOME}/.bashrc
+sed -i '/TERMUX_APP_PACKAGE_MANAGER/i clear\nTERMUX_VERSION=$(cat /etc/os-release|grep PRETTY | cut -d "=" -f 2)' ${HOME}/.bashrc
+fi
+fi
+
 if [ -f /usr/lib/wine/winepulse.drv.so ]; then
 mv /usr/lib/wine/winepulse.drv.so /usr/lib/wine/winepulse.drv.so.bak
 fi
@@ -1102,16 +1178,23 @@ sleep 3
 du -sh ${HOME}/.wine
 pstree | grep -q "wineboot"
 done
-
-#Disable the GUI crash dialog
-sed -i '/X11/i [Software\\Wine\\WineDbg]\n"ShowCrashDialog"=dword:00000000\n' ${HOME}/.wine/user.reg
+if [ -d /root/.wine/drive_c ]; then
+mkdir -vp /root/.wine/drive_c/users/*/Temp
+chmod 0000 -vR /root/.wine/drive_c/users/*/Temp
+fi
 
 echo -e "\n\e[33m配置完毕\e[0m\n"
 echo -e "\n如果上面的安装失败,请输\e[33mbash firstrun\e[0m重新安装"
-echo -e "登录容器\e[33m${START}\e[0m\n退出容器,在termux输\e[33mexit\e[0m即可\e[0m\n安装仿windows界面，输\e[33mbash undercover\e[0m\n多功能菜单\e[33mwine_menu\e[0m"
+case $NOR_USER in
+TRUE)
+echo -e "普通用户登录容器\e[33mstart-$(grep 'Android user' /etc/passwd|cut -d ':' -f 1)\e[0m"
+esac
+echo -e "root用户登录容器\e[33m${START}\e[0m\n退出容器,在termux输\e[33mexit\e[0m即可\e[0m\n安装仿windows界面，输\e[33mbash undercover\e[0m\n多功能菜单\e[33mwine_menu\e[0m"
+
 if [ $(command -v wine) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
 echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n"
 fi
+read -p "确认请回车"
 eof
 
 #If no 'isolated_environment', the following host directories will be available:
@@ -1123,7 +1206,7 @@ cd
 #精简安装
 #:<<\eof
 if [ ! $(command -v xfce4-session) ]; then
-apt install xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio xserver-xorg x11-utils python3 tumbler python-gi-dev --no-install-recommends -y
+apt update && apt install xfce4 xfce4-terminal ristretto lxtask dbus-x11 tigervnc-standalone-server tigervnc-viewer pulseaudio xserver-xorg x11-utils python3 tumbler python-gi-dev --no-install-recommends -y
 fi
 i=0
 while [ ! $(command -v xfce4-session) ] && [[ $i -ne 3 ]]
@@ -1256,12 +1339,13 @@ sed -i "2i BOX_INSTALL=$BOX_INSTALL" ${CONTAINER}/root/firstrun
 sed -i "2i LXC=$LXC" ${CONTAINER}/root/firstrun
 sed -i "2i WINE_INSTALL=$WINE_INSTALL" ${CONTAINER}/root/firstrun
 sed -i "2i START=$START" ${CONTAINER}/root/firstrun
+sed -i "2i NOR_USER=$NOR_USER" ${CONTAINER}/root/firstrun
 echo "#!/usr/bin/env bash
 cd
 pkill -9 pulseaudio 2>/dev/null
 pulseaudio --start --load='module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous=1' --exit-idle-time=-1 
 unset LD_PRELOAD
-proot --kill-on-exit -b /sdcard:/root/sdcard -b /sdcard -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/data/com.termux/cache -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b ${CONTAINER}/tmp:/dev/shm -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${CONTAINER} -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games TZ='Asia/Shanghai' LANG=C.UTF-8 /bin/bash --login" >${PREFIX}/bin/start-wine64 && chmod +x ${PREFIX}/bin/start-wine64
+proot --kill-on-exit -b /sdcard:/root/sdcard -b /sdcard -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/data/com.termux/cache -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b ${CONTAINER}/tmp:/dev/shm -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${CONTAINER} -w /root /usr/bin/env -i HOME=/root TERM=$TERM USER=root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games TZ='Asia/Shanghai' LANG=C.UTF-8 /bin/bash --login" >${PREFIX}/bin/start-wine64
 for i in version misc buddyinfo kmsg consoles execdomains stat fb filesystems loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine64; fi done
 
 #高级proot登录
@@ -1330,12 +1414,15 @@ for i in /system_ext /linkerconfig/ld.config.txt /plat_property_contexts /proper
 #for i in /proc/$(ls ./etc/proc/|sed 's/ /\n/g'|grep -v bus); do i=$(echo $i|sed 's@/proc/@@'); if [ ! -r /proc/$i ]; then cp ./etc/proc/$i ${HOME}/${name}/etc/proc/ ;sed -i "s@shm@shm \-b ${HOME}/${name}/etc/proc/$i:/proc/$i@" ${PREFIX}/bin/start-${name}; fi done
 #for i in ./etc/proc/* ; do if [ ! -r /proc/${i##*/} ]; then cp $i ${HOME}/${name}/etc/proc/ ;sed -i "s@shm@shm \-b ${HOME}/${name}/etc/proc/${i##*/}:/proc/${i##*/}@" ${PREFIX}/bin/start-${name}; fi done
 
-chmod a+x ${PREFIX}/bin/start-wine-arm64
 #${HOME}/${CONTAINER}/usr/bin/ps
 
-:<<\termux_user
-echo "aid_$(id -un):x:$(id -u):$(id -g):Android user:/:/sbin/nologin" >> "${HOME}/${CONTAINER}/etc/passwd"
-echo "aid_$(id -un):*:18446:0:99999:7:::" >> "${HOME}/${CONTAINER}/etc/shadow"
+case $NOR_USER in
+TRUE)
+cp ${PREFIX}/bin/start-wine-arm64 ${PREFIX}/bin/start-$(whoami)
+sed -i "s@/bin/bash --login@/bin/su -l $(whoami)@" ${PREFIX}/bin/start-$(whoami)
+mkdir -p "${HOME}/${CONTAINER}/home/$(whoami)"
+echo "$(id -un):x:$(id -u):$(id -g):Android user:/home/$(whoami):/bin/bash" >> "${HOME}/${CONTAINER}/etc/passwd"
+echo "$(id -un):*:18446:0:99999:7:::" >> "${HOME}/${CONTAINER}/etc/shadow"
 
 :<<\old
 for g in $(id -G); do
@@ -1348,20 +1435,21 @@ old
 
 #local group_name group_id
 while read -r group_name group_id; do
-echo "aid_${group_name}:x:${group_id}:root,aid_$(id -un)" >> ${HOME}/${CONTAINER}/etc/group
+echo "${group_name}:x:${group_id}:root,$(id -un)" >> ${HOME}/${CONTAINER}/etc/group
 if [ -f "${CONTAINER}/etc/gshadow" ]; then
-echo "aid_${group_name}:*::root,aid_$(id -un)" >> ${HOME}/${CONTAINER}/etc/gshadow
+echo "${group_name}:*::root,$(id -un)" >> ${HOME}/${CONTAINER}/etc/gshadow
 fi
 done < <(paste <(id -Gn | tr ' ' '\n') <(id -G | tr ' ' '\n'))
-termux_user
+esac
 
 esac
 echo "bash firstrun" >>${HOME}/${CONTAINER}/etc/profile
 proot --help | grep -q sysvipc
 if [ $? == 1 ]; then
-sed -i 's/--sysvipc//' ${PREFIX}/bin/start-wine64
-sed -i 's/--sysvipc//' ${PREFIX}/bin/start-wine-arm64
+sed -i 's/--sysvipc//' ${PREFIX}/bin/start-wine64 ${PREFIX}/bin/start-wine-arm64 ${PREFIX}/bin/start-$(whoami) 2>/dev/null
 fi
+
+chmod a+x ${PREFIX}/bin/start-wine64 ${PREFIX}/bin/start-wine-arm64 ${PREFIX}/bin/start-$(whoami) 2>/dev/null
 case $PROOT in
 PRO)
 . ${PREFIX}/bin/start-wine-arm64
