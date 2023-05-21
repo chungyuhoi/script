@@ -11,12 +11,11 @@
 #export BOX64_PATH=${HOME}/wine64/bin/
 #export BOX64_LD_LIBRARY_PATH=${HOME}/wine64/lib/wine/i386-unix/:${HOME}/wine64/lib/wine/x86_64-unix/:/lib/i386-linux-gnu/:/lib/x86_64-linux-gnu:/lib/aarch64-linux-gnu/
 #默认系统盘目录export WINEPREFIX="${HOME}/.wine"
-#export WINEARCH=win32
-#WINEDEBUG=fixme-all
 #opengl的驱动路径 LIBGL_DRIVERS_PATH=${HOME}/wine/usr/lib/i386-linux-gnu/dri
 #GALLIUM_DRIVER=llvmpipe,zink
 #export LIBGL_ALWAYS_SOFTWARE=1
 #native用的是arm的lib
+#DXVK_ASYNC=1 WINE_FULLSCREEN_FSR=1
 :<<-eof
 高位色运行低位色
 Xephyr :1 -ac -screen 640x480x16 -reset -terminate &
@@ -78,7 +77,7 @@ kali)
 LXC=kali
 ROOTFS=current
 DEB="main contrib non-free"
-WINE_INSTALL=PLAYONLINUX
+WINE_INSTALL=XB6868
 ;;
 kali_org)
 LXC=kali
@@ -261,7 +260,7 @@ esac
 	rm perl-base*.deb 2>/dev/null
 #ln -sv /usr/bin/perl*aarch64* /usr/bin/perl
 fi
-DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4 xserver-xephyr mesa-utils"
+DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4 xserver-xephyr mesa-utils cabextract"
 
 DEPENDS0="zenity:armhf libegl-mesa0:armhf libgl1-mesa-dri:armhf libglapi-mesa:armhf libglx-mesa0:armhf libasound*:armhf libstdc++6:armhf libtcmalloc-minimal4:armhf gcc-arm-linux-gnueabihf sl:armhf -y"
 
@@ -384,13 +383,13 @@ sudo chmod -R 1777 "/tmp/runtime-$(id -u)"
 sudo service dbus start
 fi
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
-#if [ ! $(command -v box64) ] || [ ! $(command -v box64) ] || [ ! $(command -v wine) ]; then echo -e "\e[33m你尚未安装全应用，中止启动\e[0m"; sleep 1; exit 1; fi
+#if [ ! $(command -v box64) ] || [ ! $(command -v box64) ] || [ ! $(command -v wine_original) ]; then echo -e "\e[33m你尚未安装全应用，中止启动\e[0m"; sleep 1; exit 1; fi
 if ! grep '"SimSun"="wqy-microhei.ttc"' .wine/system.reg; then
 sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"\n\n' .wine/user.reg
 sed -i '/FontMapper/i \[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\FontLink\\\\SystemLink\]\n"Arial"="wqy-microhei.ttc"\n"Arial Black"="wqy-microhei.ttc"\n"Lucida Sans Unicode"="wqy-microhei.ttc"\n"MS Sans Serif"="wqy-microhei.ttc"\n"SimSun"="wqy-microhei.ttc"\n"Tahoma"="wqy-microhei.ttc"\n"Tahoma Bold"="wqy-microhei.ttc"\n\n' .wine/system.reg
 fi
 trap "killall Xvnc 2>/dev/null; killall x11vnc 2>/dev/null; killall Xvfb 2>/dev/null; exit" SIGINT EXIT
-box64 wine64 taskmgr
+wine64 taskmgr
 exit 0
 BOXWINE
 
@@ -400,7 +399,7 @@ sed -E -i '/trap/d;s/(^box.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/b
 echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
-Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 800x600 -once -depth 16 -localhost -securitytypes None :0 &
+Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 800x600 -depth 16 -once -localhost -securitytypes None :0 &
 export DISPLAY=:0
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
 #dbus-launch xfwm4 &
@@ -465,15 +464,14 @@ X11
 cat >/usr/local/bin/fbl<<-'FBL'
 #!/usr/bin/env bash
 echo -e "\n\n\e[33m修改分辨率\e[0m\n为适配游戏应用显示，可修改分辨率达最佳显示效果"
-echo -e "你现在的分辨率是\e[33m$(sed -n 's/^Xvnc.*geometry \(.*.\) -once.*/\1/'p /usr/local/bin/startwine)\e[0m\n"
+echo -e "你现在的分辨率是\e[33m$(sed -n 's/^Xvnc.*geometry \(.*.\) -depth.*/\1/'p /usr/local/bin/startwine)\e[0m\n"
 read -r -p "请输长度，例如1080 : " LENGTH
 read -r -p "请输宽度，例如768 : " WIDTH
 #if [ -z "$LENGTH" ] && [ -z "$WIDTH" ]; then
 if [[ "$LENGTH" -gt 0 ]] && [[ "$WIDTH" -gt 0 ]] 2>/dev/null ;then
 echo -e "你输入的分辨率为 \e[33m$LENGTH\e[0m x \e[33m$WIDTH\e[0m"
 sed -i "s/^\"Default.*$/\"Default\"=\"${LENGTH}x${WIDTH}\"/" ${HOME}/.wine/user.reg
-sed -i "s/-geometry .* -once/-geometry ${LENGTH}x${WIDTH} -once/" /usr/local/bin/startwine
-sed -i "s/-geometry .* -once/-geometry ${LENGTH}x${WIDTH} -once/" /usr/local/bin/startvsdl
+sed -i "s/-geometry .* -depth/-geometry ${LENGTH}x${WIDTH} -depth/" /usr/local/bin/startwine /usr/local/bin/startvsdl
 sed -i "s/screen.*x16/screen 0 ${LENGTH}x${WIDTH}x16/" /usr/local/bin/startxwine
 else
 echo -e "输入无效，请重新输用本命令"
@@ -565,10 +563,10 @@ else
 KALI="启动仿windows桌面"
 KALI_UNDERCOVER="startvnc"
 fi
-if [ ! $(command -v wine) ]; then
+if [ ! $(command -v wine_original) ]; then
 WINE="你尚未安装wine，请选执行选项9"
 else
-if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [4-9] ]]; then
+if [[ $(echo "$(wine64 --version)"|tail -1|cut -b 6) == [4-9] ]]; then
 WINE="安装wine3.9"
 else
 WINE="安装wine-8.5"
@@ -628,7 +626,7 @@ esac
 echo -e "\n\e[33m即将安装，请确认已关闭wine\n如长时间没反应，请按回车并通过control确认是否安装成功\n如不成功可自行安装已下载的msi包\e[0m\n"
 read -p "确认请回车" input
 unset input
-for i in ./wine*.msi;do box64 wine64 start /i $i; done
+for i in ./wine*.msi;do wine64 start /i $i; done
 pstree | grep -q "services"
 while [ $? == 0 ]
 do
@@ -644,9 +642,12 @@ sleep 3
 rm PlayOnLinux* wine-8.5.tar.gz* 2>/dev/null
 case $WINE_INSTALL in
 PLAYONLINUX)
-for i in $(sed 's@\./@/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done ;;
+for i in $(sed 's@\./@/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
+rm /opt/wine-devel/bin/wine.*original /usr/bin/wine.*original 2>/dev/null
+;;
 *)
 for i in $(sed 's@\./@/usr/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
+rm /opt/wine-devel/bin/wine.*original /usr/bin/wine.*original 2>/dev/null
 esac
 #for i in $(sed ':a;N;s/\n/ /g;ta' /usr/share/doc/wine/postrm|sed 's@\./@/usr/@g'); do if [ -f "$i" ]; then rm -v $i; fi done
 case $WINE in
@@ -663,25 +664,46 @@ sed -i 's@^./lib@./usr/lib@' /usr/share/doc/wine/postrm
 wget https://shell.xb6868.com/wine/wine-8.5.tar.gz
 tar zxvf wine-8.5.tar.gz -C / >/usr/share/doc/wine/postrm 2>&1
 rm wine-8.5.tar.gz 2>/dev/null
+mv /opt/wine-devel/bin/wineserver /opt/wine-devel/bin/wineserver_original
+echo '#!/bin/sh
+box64 /opt/wine-devel/bin/wineserver_original "$@"' >/opt/wine-devel/bin/wineserver
+mv /opt/wine-devel/bin/wine /opt/wine-devel/bin/wine_original
+echo '#!/bin/sh
+box86 /opt/wine-devel/bin/wine_original "$@"' >/opt/wine-devel/bin/wine
+mv /opt/wine-devel/bin/wine64 /opt/wine-devel/bin/wine64_original
+echo '#!/bin/sh
+box64 /opt/wine-devel/bin/wine64_original "$@"' >/opt/wine-devel/bin/wine64
+chmod a+x /opt/wine-devel/bin/wine /opt/wine-devel/bin/wine64 /opt/wine-devel/bin/wineserver
 esac
 ;;
 *)
 for i in $(sed 's@^\.@@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
+rm /opt/wine-devel/bin/wine.*original /usr/bin/wine.*original 2>/dev/null
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
+mv /usr/bin/wineserver /usr/bin/wineserver_original
+echo '#!/bin/sh                                               box64 /usr/bin/wineserver_original "$@"' >/usr/bin/wineserver
+mv /usr/bin/wine /usr/bin/wine_original
+echo '#!/bin/sh
+box86 /usr/bin/wine_original "$@"' >/usr/bin/wine
+mv /usr/bin/wine64 /usr/bin/wine64_original
+echo '#!/bin/sh
+box64 /usr/bin/wine64_original "$@"' >/usr/bin/wine64
+chmod a+x /usr/bin/wine /usr/bin/wine64 /usr/bin/wineserver
+
 rm PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz box86.tar.gz box64.tar.gz
 esac
 
 rm ${HOME}/桌面/explorer.desktop ${HOME}/Desktop/explorer.desktop 2>/dev/null
 cp /usr/share/applications/xfce4-file-manager.desktop ${HOME}/Desktop/explorer.desktop 2>/dev/null
 cp /usr/share/applications/xfce4-file-manager.desktop ${HOME}/桌面/explorer.desktop 2>/dev/null
-sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1box64 wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop
+sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop
 sed -i 's/^Icon.*$/Icon=utilities-system-monitor/' /usr/share/applications/wine.desktop
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/wine.desktop 2>/dev/null
 sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/Desktop/wine.desktop 2>/dev/null
 cp /usr/share/applications/wine.desktop ${HOME}/桌面/wine.desktop 2>/dev/null
 sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/桌面/wine.desktop 2>/dev/null
-sed -i 's/^Exec=wine/Exec=box64 wine64/' /usr/share/applications/wine.desktop 2>/dev/null
+sed -i 's/^Exec=wine/Exec=wine64/' /usr/share/applications/wine.desktop 2>/dev/null
 chmod a+x ${HOME}/桌面 ${HOME}/Desktop -R 2>/dev/null
 
 bash firstrun
@@ -799,6 +821,9 @@ exit 0
 fi
 }
 WINE_MENU "$@"
+#VERSION=`curl https://kgithub.com/doitsujin/dxvk/releases|grep tag.*Version|sed -n 1p|awk -F 'Version ' '{print $2}'|cut -d '<' -f 1`; wget https://kgithub.com/doitsujin/dxvk/releases/download/v$VERSION/dxvk-$VERSION.tar.gz
+#cp dxvk-2.2/x64/* .wine/drive_c/windows/system32/
+#cp dxvk-2.2/x32/* .wine/drive_c/windows/syswow64/            #sed -i '/DllOverrides/a"d3d10core"="native"\n"d3d11"="native"\n"d3d9"="native"\n"dxgi"="native"' .wine/user.reg
 menu
 sed -i "4i WINE_INSTALL=$WINE_INSTALL" /usr/local/bin/wine_menu
 
@@ -840,6 +865,7 @@ if ! grep -q termux /etc/bash.bashrc; then
 if [ -f /data/data/com.termux/files/usr/etc/motd.sh ]; then
 cat /data/data/com.termux/files/usr/etc/motd.sh|sed '/com.termux/d;s/pkg/apt/' >>/etc/bash.bashrc
 sed -i '/TERMUX_APP_PACKAGE_MANAGER/i clear\nTERMUX_VERSION=$(cat /etc/os-release|grep PRETTY | cut -d "=" -f 2)\nclear' /etc/bash.bashrc
+echo 'if [ -d ${HOME}/.wine/drive_c/users/*/Temp/*490 ]; then echo -e "\e[31m注意，有不明文件夹！谨慎中电脑病毒。\e[0m"; fi' >>/etc/bash.bashrc
 fi
 fi
 case $NOR_USER in
@@ -994,13 +1020,23 @@ fi
 
 cd
 #安装wine
-if [ ! $(command -v wine) ]; then
+if [ ! $(command -v wine_original) ]; then
 rm PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz 2>/dev/null
 case $WINE_INSTALL in
 XB6868)
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 echo -e "解压中"
 tar zxvf PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
+mv /usr/bin/wineserver /usr/bin/wineserver_original
+echo '#!/bin/sh
+box64 /usr/bin/wineserver_original "$@"' >/usr/bin/wineserver
+mv /usr/bin/wine /usr/bin/wine_original
+echo '#!/bin/sh
+box86 /usr/bin/wine_original "$@"' >/usr/bin/wine
+mv /usr/bin/wine64 /usr/bin/wine64_original
+echo '#!/bin/sh
+box64 /usr/bin/wine64_original "$@"' >/usr/bin/wine64
+chmod a+x /usr/bin/wine /usr/bin/wine64 /usr/bin/wineserver
 rm PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 ;;
 REPO)
@@ -1029,14 +1065,14 @@ apt install libstdc++6:amd64 --no-install-recommends -y
 apt install libstdc++6:i386 --no-install-recommends -y
 axel -o wine-devel-i386.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/|grep wine-devel-i386_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 i=0
-while [ ! $(command -v wine) ] && [[ $i -ne 3 ]]
+while [ ! $(command -v wine_original) ] && [[ $i -ne 3 ]]
 do
 i=$(( $i+1 ))
 apt --fix-broken install -y && apt install ./wine-devel-i386.deb --no-install-recommends -y
 done
 axel -o wine-devel-amd64.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel-amd64_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 i=0
-while [ ! $(command -v wine64) ] && [[ $i -ne 3 ]]
+while [ ! $(command -v wine64_original) ] && [[ $i -ne 3 ]]
 do
 i=$(( $i+1 ))
 apt --fix-broken install -y && apt install ./wine-devel-amd64.deb --no-install-recommends -y
@@ -1064,6 +1100,16 @@ i=$(( i+1 ))
 done
 
 tar zxvf wine.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
+mv /usr/bin/wineserver /usr/bin/wineserver_original
+echo '#!/bin/sh
+box64 /usr/bin/wineserver_original "$@"' >/usr/bin/wineserver
+mv /usr/bin/wine /usr/bin/wine_original
+echo '#!/bin/sh
+box86 /usr/bin/wine_original "$@"' >/usr/bin/wine
+mv /usr/bin/wine64 /usr/bin/wine64_original
+echo '#!/bin/sh
+box64 /usr/bin/wine64_original "$@"' >/usr/bin/wine64
+chmod a+x /usr/bin/wine /usr/bin/wine64 /usr/bin/wineserver
 ;;
 
 *)
@@ -1071,18 +1117,28 @@ echo ""
 esac
 fi
 
-if [ $(command -v wine) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
+if [ $(command -v wine_original) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
+if [ ! -f /usr/local/bin/winetricks ]; then
+echo -e "\n下载winetricks\n"
+sleep 1
+curl https://ghproxy.com/https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks -o /usr/local/bin/winetricks
+if [ -f /usr/local/bin/winetricks ]; then
+sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
+sed -i 's/github/kgithub/g' /usr/local/bin/winetricks
+chmod a+x /usr/local/bin/winetricks
+fi
+fi
 echo -e "\e[33m进行wine初始化配置\e[0m"
 sleep 1
 rm -rf .wine 2>/dev/null
 sleep 5
-if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [4-7] ]]; then
+if [[ $(echo "$(wine64 --version)"|tail -1|cut -b 6) == [4-7] ]]; then
 export BOX86_DYNAREC=0
-box64 wine64 wineboot 2>/dev/null &
+wine64 wineboot 2>/dev/null &
 pkill services
 sed -i "/boxwine/a sleep 5\npkill services" /usr/local/bin/start*
 else
-box64 wine64 wineboot 2>/dev/null
+wine64 wineboot 2>/dev/null
 fi
 pstree | grep -q "services"
 while [ $? == 0 ]
@@ -1181,8 +1237,8 @@ echo -e "普通用户登录容器\e[33mstart-$(grep 'Android user' /etc/passwd|c
 esac
 echo -e "root用户登录容器\e[33m${START}\e[0m\n退出容器,在termux输\e[33mexit\e[0m即可\e[0m\n安装仿windows界面，输\e[33mbash undercover\e[0m\n多功能菜单\e[33mwine_menu\e[0m"
 
-if [ $(command -v wine) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
-echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n"
+if [ $(command -v wine_original) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
+echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n使用winetricks(只支持32位exe)\e[33mwinetricks\e[0m\n"
 fi
 read -p "确认请回车"
 eof
@@ -1255,7 +1311,7 @@ cat >/usr/local/bin/startvnc<<-'eom'
 export RUNLEVEL=5
 vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
-Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 1024x768 -once -depth 24 -localhost -securitytypes None :0 &
+Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 1024x768 -depth 24 -once -localhost -securitytypes None :0 &
 export DISPLAY=:0
 . /etc/X11/xinit/Xsession >/dev/null 2>&1 &
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
@@ -1265,8 +1321,8 @@ eom
 
 rm /usr/share/xfce4/panel/plugins/power-manager-plugin.desktop undercover.deb 2>/dev/null
 
-if [ $(command -v wine) ]; then
-sed -i 's/^Exec=wine/Exec=box64 wine64/' /usr/share/applications/wine.desktop
+if [ $(command -v wine_original) ]; then
+sed -i 's/^Exec=wine/Exec=wine64/' /usr/share/applications/wine.desktop 2>/dev/null
 sed -i 's/^Icon.*$/Icon=utilities-system-monitor/' /usr/share/applications/wine.desktop
 #sed -i 's/^Name=Wine Windows Program Loader/Name=wine任务管理器/' /usr/share/applications/wine.desktop
 sed -i '/^Name=Wine Windows Program Loader/a Name[zh_CN]=wine任务管理器' /usr/share/applications/wine.desktop
@@ -1296,17 +1352,17 @@ vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 cp /usr/bin/kali-undercover.bak $(command -v kali-undercover) 
 
-if [ $(command -v wine) ]; then
+if [ $(command -v wine_original) ]; then
 cp /usr/share/applications/xfce4-terminal.desktop ${HOME}/Desktop/rscreen.desktop
 #sed -i 's/xfce4-terminal/xrandr \-s 0/;s/Xfce\ Terminal/恢复屏幕/;/\]=/d;/=T/d;/preferences\]/,$d' ${HOME}/Desktop/rscreen.desktop
 sed -i 's/xfce4-terminal/xrandr \-s 0/;s/Xfce\ Terminal/rscreen/;/\]=/d;/=T/d;/preferences\]/,$d;/rscreen/a Name[zh_CN]=恢复屏幕' ${HOME}/Desktop/rscreen.desktop
 cp /usr/share/applications/xfce4-file-manager.desktop Desktop/explorer.desktop
-#sed -E -i 's/Name=File\ Manager/Name=wine资源管理器/;s/(^Exec=).*$/\1box64 wine64 explorer %U/;/\]=/d' ${HOME}/Desktop/explorer.desktop
-sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1box64 wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop
+#sed -E -i 's/Name=File\ Manager/Name=wine资源管理器/;/\]=/d' ${HOME}/Desktop/explorer.desktop
+sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/
-sed -i 's/^Exec.*$/Exec=box64 wine64 taskmgr %f/' ${HOME}/Desktop/wine.desktop
+sed -i 's/^Exec.*$/Exec=wine64 taskmgr %f/' ${HOME}/Desktop/wine.desktop
 
-if [[ $(echo "$(box64 wine64 --version)"|tail -1|cut -b 6) == [4-7] ]]; then
+if [[ $(echo "$(wine64 --version)"|tail -1|cut -b 6) == [4-7] ]]; then
 cp /usr/local/bin/boxwine /usr/local/bin/boxwinede
 sed -E -i '/trap/d;s/(^box.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/boxwinede
 sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/Desktop/wine.desktop
@@ -1374,7 +1430,6 @@ fi
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
 eof
 sed -i '/=$/d' ${HOME}/${CONTAINER}/etc/profile
-echo 'if [ -d ${HOME}/.wine/drive_c/users/*/Temp/*490 ]; then echo -e "\e[31m注意，有不明文件夹！谨慎中电脑病毒。\e[0m"; fi' >>${HOME}/${CONTAINER}/etc/profile
 :<<\gcc
 cd ${HOME}/${CONTAINER}
 GCC=$(find -name libgcc_s.so.1 2>/dev/null | sed 's/.//')
