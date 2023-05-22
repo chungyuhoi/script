@@ -699,7 +699,8 @@ rm /opt/wine-devel/bin/wine.*original /usr/bin/wine.*original 2>/dev/null
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
 mv /usr/bin/wineserver /usr/bin/wineserver_original
-echo '#!/bin/sh                                               box64 /usr/bin/wineserver_original "$@"' >/usr/bin/wineserver
+echo '#!/bin/sh
+box64 /usr/bin/wineserver_original "$@"' >/usr/bin/wineserver
 mv /usr/bin/wine /usr/bin/wine_original
 echo '#!/bin/sh
 box86 /usr/bin/wine_original "$@"' >/usr/bin/wine
@@ -1141,7 +1142,12 @@ sleep 1
 curl https://ghproxy.com/https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks -o /usr/local/bin/winetricks
 if [ -f /usr/local/bin/winetricks ]; then
 sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
+curl --connect-timeout 5 -m 8 -s https://github.com/Winetricks/ >/dev/null
+if [ $? == 1 ]; then
+echo -e "\e[33m你的网络无法访问github，将为你添加代理\e[0m"
+sleep 2
 sed -i 's/github/kgithub/g' /usr/local/bin/winetricks
+fi
 sed -E -i "s/(latest_version=.*winetricks.*)/#\1\n latest_version=/" /usr/local/bin/winetricks
 chmod a+x /usr/local/bin/winetricks
 mkdir -p ${HOME}/.cache/winetricks/ 2>/dev/null
