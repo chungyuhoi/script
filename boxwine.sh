@@ -1144,6 +1144,8 @@ sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fix
 sed -i 's/github/kgithub/g' /usr/local/bin/winetricks
 sed -E -i "s/(latest_version=.*winetricks.*)/#\1\n latest_version=/" /usr/local/bin/winetricks
 chmod a+x /usr/local/bin/winetricks
+mkdir -p ${HOME}/.cache/winetricks/ 2>/dev/null
+echo 0 >${HOME}/.cache/winetricks/track_usage
 fi
 fi
 echo -e "\e[33m进行wine初始化配置\e[0m"
