@@ -386,6 +386,7 @@ export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
 #if [ ! $(command -v box64) ] || [ ! $(command -v box64) ] || [ ! $(command -v wine_original) ]; then echo -e "\e[33m你尚未安装全应用，中止启动\e[0m"; sleep 1; exit 1; fi
 if ! grep '"SimSun"="wqy-microhei.ttc"' .wine/system.reg; then
 sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"\n\n' .wine/user.reg
+#"GrabFullscreen"="y"
 sed -i '/FontMapper/i \[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\FontLink\\\\SystemLink\]\n"Arial"="wqy-microhei.ttc"\n"Arial Black"="wqy-microhei.ttc"\n"Lucida Sans Unicode"="wqy-microhei.ttc"\n"MS Sans Serif"="wqy-microhei.ttc"\n"SimSun"="wqy-microhei.ttc"\n"Tahoma"="wqy-microhei.ttc"\n"Tahoma Bold"="wqy-microhei.ttc"\n\n' .wine/system.reg
 fi
 trap "killall Xvnc 2>/dev/null; killall x11vnc 2>/dev/null; killall Xvfb 2>/dev/null; exit" SIGINT EXIT
@@ -547,7 +548,23 @@ read -r -p "请输进程树中游戏的关键名(区分大小写): " PID
 renice -18 $(pstree -p | grep $PID | awk -F '(' '{print $2}' | cut -d ')' -f 1)
 yyy
 
-
+#创建winetricks启动脚本
+cat >/usr/local/bin/startricks<<-'tricks'
+#!/usr/bin/env bash
+vncserver -kill $DISPLAY 2>/dev/null
+for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
+gg
+export WINEDEBUG=fixme-all
+Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -background -retro -a 5 -alwaysshared -geometry 1024x768 -depth 16 -once -localhost -securitytypes None :0 &
+export DISPLAY=:0
+echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
+dbus-launch xfwm4 &
+winetricks --gui &
+wine64 explorer &
+am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity 2>/dev/null
+exit 0
+tricks
+chmod a+x /usr/local/bin/startricks
 cat >/usr/local/bin/wine_menu<<-'menu'
 #!/usr/bin/env bash
 WINE_MENU(){
@@ -1119,12 +1136,13 @@ fi
 
 if [ $(command -v wine_original) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
 if [ ! -f /usr/local/bin/winetricks ]; then
-echo -e "\n下载winetricks\n"
+echo -e "\n\e[33m下载 winetricks\e[0m\n"
 sleep 1
 curl https://ghproxy.com/https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks -o /usr/local/bin/winetricks
 if [ -f /usr/local/bin/winetricks ]; then
 sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
 sed -i 's/github/kgithub/g' /usr/local/bin/winetricks
+sed -E -i "s/(latest_version=.*winetricks.*)/#\1\n latest_version=/" /usr/local/bin/winetricks
 chmod a+x /usr/local/bin/winetricks
 fi
 fi
@@ -1156,6 +1174,7 @@ do
 sleep 1
 
 sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"' .wine/user.reg
+#"GrabFullscreen"="y"
 done
 
 #cp /usr/share/fonts/truetype/wqy/wqy-zenhei.ttc .wine/drive_c/windows/Fonts/
@@ -1238,7 +1257,7 @@ esac
 echo -e "root用户登录容器\e[33m${START}\e[0m\n退出容器,在termux输\e[33mexit\e[0m即可\e[0m\n安装仿windows界面，输\e[33mbash undercover\e[0m\n多功能菜单\e[33mwine_menu\e[0m"
 
 if [ $(command -v wine_original) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
-echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n使用winetricks(只支持32位exe)\e[33mwinetricks\e[0m\n"
+echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n使用图形winetricks(只支持32位exe)\e[33mstartricks\e[0m\n"
 fi
 read -p "确认请回车"
 eof
