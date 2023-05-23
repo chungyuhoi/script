@@ -260,7 +260,8 @@ esac
 	rm perl-base*.deb 2>/dev/null
 #ln -sv /usr/bin/perl*aarch64* /usr/bin/perl
 fi
-DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4 xserver-xephyr mesa-utils cabextract"
+DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4 xserver-xephyr mesa-utils cabextract p7zip-full"
+#winbind
 
 DEPENDS0="zenity:armhf libegl-mesa0:armhf libgl1-mesa-dri:armhf libglapi-mesa:armhf libglx-mesa0:armhf libasound*:armhf libstdc++6:armhf libtcmalloc-minimal4:armhf gcc-arm-linux-gnueabihf sl:armhf -y"
 
@@ -383,7 +384,7 @@ sudo chmod -R 1777 "/tmp/runtime-$(id -u)"
 sudo service dbus start
 fi
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
-#if [ ! $(command -v box64) ] || [ ! $(command -v box64) ] || [ ! $(command -v wine_original) ]; then echo -e "\e[33m你尚未安装全应用，中止启动\e[0m"; sleep 1; exit 1; fi
+#if [ ! $(command -v box64) ] || [ ! $(command -v box64) ] || [ ! $(command -v wine) ]; then echo -e "\e[33m你尚未安装全应用，中止启动\e[0m"; sleep 1; exit 1; fi
 if ! grep '"SimSun"="wqy-microhei.ttc"' .wine/system.reg; then
 sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"\n\n' .wine/user.reg
 #"GrabFullscreen"="y"
@@ -580,7 +581,7 @@ else
 KALI="启动仿windows桌面"
 KALI_UNDERCOVER="startvnc"
 fi
-if [ ! $(command -v wine_original) ]; then
+if [ ! -f /opt/wine-devel/bin/wine ] && [ ! -f /root/wine/opt/wine-devel/bin/wine ] && [ ! -f /root/wine/bin/wine ]; then
 WINE="你尚未安装wine，请选执行选项9"
 else
 if [[ $(echo "$(wine64 --version)"|tail -1|cut -b 6) == [4-9] ]]; then
@@ -656,67 +657,56 @@ exit 0
 11)
 echo -e "\e[33m正在检测已安装wine版本并进行清除(仅对本脚本安装的wine文件有效)\e[0m"
 sleep 3
-rm PlayOnLinux* wine-8.5.tar.gz* 2>/dev/null
-case $WINE_INSTALL in
-PLAYONLINUX)
-for i in $(sed 's@\./@/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
-rm /opt/wine-devel/bin/wine.*original /usr/bin/wine.*original 2>/dev/null
-;;
-*)
-for i in $(sed 's@\./@/usr/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
-rm /opt/wine-devel/bin/wine.*original /usr/bin/wine.*original 2>/dev/null
-esac
-#for i in $(sed ':a;N;s/\n/ /g;ta' /usr/share/doc/wine/postrm|sed 's@\./@/usr/@g'); do if [ -f "$i" ]; then rm -v $i; fi done
+rm -rvf PlayOnLinux* wine-8.5.tar.gz* /root/wine /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot 2>/dev/null
+mkdir -v /root/wine
+
 case $WINE in
 *8.5*)
-
 case $WINE_INSTALL in
 PLAYONLINUX)
 axel https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz
-tar zxvf sdcard/xinhao/PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz -C /usr/ ./lib >/usr/share/doc/wine/postrm 2>&1
-LXC=debian ROOTFS=bullseye WINE_URL="https://dl.winehq.org"; axel -o wine-devel-i386.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/|grep wine-devel-i386_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o wine-devel-amd64.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel-amd64_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o wine-devel.deb  ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o winehq-devel.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep winehq-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); for i in wine-devel-amd64.deb  winehq-devel.deb wine-devel.deb wine-devel-i386.deb; do dpkg -X $i / >>/usr/share/doc/wine/postrm 2>&1; done
-sed -i 's@^./lib@./usr/lib@' /usr/share/doc/wine/postrm
+tar zxvf PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz -C /root/wine ./lib 
+LXC=debian ROOTFS=bullseye WINE_URL="https://dl.winehq.org"; axel -o wine-devel-i386.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/|grep wine-devel-i386_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o wine-devel-amd64.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel-amd64_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o wine-devel.deb  ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o winehq-devel.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep winehq-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); for i in wine-devel-amd64.deb  winehq-devel.deb wine-devel.deb wine-devel-i386.deb; do dpkg -X $i /root/wine; done
 ;;
 *)
 wget https://shell.xb6868.com/wine/wine-8.5.tar.gz
-tar zxvf wine-8.5.tar.gz -C / >/usr/share/doc/wine/postrm 2>&1
-rm wine-8.5.tar.gz 2>/dev/null
-mv /opt/wine-devel/bin/wineserver /opt/wine-devel/bin/wineserver_original
-echo '#!/bin/sh
-box64 /opt/wine-devel/bin/wineserver_original "$@"' >/opt/wine-devel/bin/wineserver
-mv /opt/wine-devel/bin/wine /opt/wine-devel/bin/wine_original
-echo '#!/bin/sh
-box86 /opt/wine-devel/bin/wine_original "$@"' >/opt/wine-devel/bin/wine
-mv /opt/wine-devel/bin/wine64 /opt/wine-devel/bin/wine64_original
-echo '#!/bin/sh
-box64 /opt/wine-devel/bin/wine64_original "$@"' >/opt/wine-devel/bin/wine64
-chmod a+x /opt/wine-devel/bin/wine /opt/wine-devel/bin/wine64 /opt/wine-devel/bin/wineserver
+tar zxvf wine-8.5.tar.gz -C /root/wine
 esac
+echo '#!/bin/sh
+box64 /root/wine/opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
+echo '#!/bin/sh
+box86 /root/wine/opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
+echo '#!/bin/sh
+box64 /root/wine/opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
+sed -i 's/exec/exec "box64"/' /root/wine/opt/wine-devel/bin/winecfg /root/wine/opt/wine-devel/bin/wineboot
+ln -s /root/wine/opt/wine-devel/bin/winecfg /usr/local/bin/
+ln -s /root/wine/opt/wine-devel/bin/wineboot /usr/local/bin/
+chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/wineboot
 ;;
 *)
-for i in $(sed 's@^\.@@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
-rm /opt/wine-devel/bin/wine.*original /usr/bin/wine.*original 2>/dev/null
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
-tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
-mv /usr/bin/wineserver /usr/bin/wineserver_original
+tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /root/wine
 echo '#!/bin/sh
-box64 /usr/bin/wineserver_original "$@"' >/usr/bin/wineserver
-mv /usr/bin/wine /usr/bin/wine_original
+box64 /root/wine/bin/wineserver "$@"' >/usr/local/bin/wineserver
 echo '#!/bin/sh
-box86 /usr/bin/wine_original "$@"' >/usr/bin/wine
-mv /usr/bin/wine64 /usr/bin/wine64_original
+box86 /root/wine/bin/wine "$@"' >/usr/local/bin/wine
 echo '#!/bin/sh
-box64 /usr/bin/wine64_original "$@"' >/usr/bin/wine64
-chmod a+x /usr/bin/wine /usr/bin/wine64 /usr/bin/wineserver
+box64 /root/wine/bin/wine64 "$@"' >/usr/local/bin/wine64
+sed -i 's/exec/exec "box64"/' /root/wine/bin/winecfg /root/wine/bin/wineboot
+ln -s /root/wine/bin/winecfg /usr/local/bin
+ln -s /root/wine/bin/wineboot /usr/local/bin
+chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
 
-rm PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz box86.tar.gz box64.tar.gz
 esac
 
-rm ${HOME}/桌面/explorer.desktop ${HOME}/Desktop/explorer.desktop 2>/dev/null
+rm ${HOME}/桌面/explorer.desktop ${HOME}/Desktop/explorer.desktop PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz box86.tar.gz box64.tar.gz 2>/dev/null
 cp /usr/share/applications/xfce4-file-manager.desktop ${HOME}/Desktop/explorer.desktop 2>/dev/null
 cp /usr/share/applications/xfce4-file-manager.desktop ${HOME}/桌面/explorer.desktop 2>/dev/null
-sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop
-sed -i 's/^Icon.*$/Icon=utilities-system-monitor/' /usr/share/applications/wine.desktop
+sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop 2>/dev/null
+cp /root/wine/opt/wine-devel/share/applications/wine.desktop /usr/share/applications 2>/dev/null
+cp /root/wine/usr/share/applications/wine.desktop /usr/share/applications 2>/dev/null
+chmod a+x /usr/share/applications/wine.desktop
+sed -i 's/^Icon.*$/Icon=utilities-system-monitor/' /usr/share/applications/wine.desktop 2>/dev/null
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/wine.desktop 2>/dev/null
 sed -i 's/^Exec.*$/Exec=boxwinede %f/' ${HOME}/Desktop/wine.desktop 2>/dev/null
 cp /usr/share/applications/wine.desktop ${HOME}/桌面/wine.desktop 2>/dev/null
@@ -774,7 +764,7 @@ echo -e "你尚未安装box86或仿windows桌面"
 sleep 3
 WINE_MENU
 fi
-read -p "本wine4.0将集中在主目录下一个wine文件夹内，且仅对仿windows桌面进行配置并创建桌面快捷，确认请回车"
+read -p "本wine4.0将集中在主目录下一个wine4文件夹内，且仅对仿windows桌面进行配置并创建桌面快捷，确认请回车"
 cd && mkdir wine4 2>/dev/null
 rm PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz 2>/dev/null
 
@@ -1038,23 +1028,24 @@ fi
 
 cd
 #安装wine
-if [ ! $(command -v wine_original) ]; then
+mkdir -v /root/wine
+if [ ! -f /opt/wine-devel/bin/wine ] && [ ! -f /root/wine/opt/wine-devel/bin/wine ] && [ ! -f /root/wine/bin/wine ]; then
 rm PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz 2>/dev/null
 case $WINE_INSTALL in
 XB6868)
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 echo -e "解压中"
-tar zxvf PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
-mv /usr/bin/wineserver /usr/bin/wineserver_original
+tar zxvf PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /root/wine
 echo '#!/bin/sh
-box64 /usr/bin/wineserver_original "$@"' >/usr/bin/wineserver
-mv /usr/bin/wine /usr/bin/wine_original
+box64 /root/wine/bin/wineserver "$@"' >/usr/local/bin/wineserver
 echo '#!/bin/sh
-box86 /usr/bin/wine_original "$@"' >/usr/bin/wine
-mv /usr/bin/wine64 /usr/bin/wine64_original
+box86 /root/wine/bin/wine "$@"' >/usr/local/bin/wine
 echo '#!/bin/sh
-box64 /usr/bin/wine64_original "$@"' >/usr/bin/wine64
-chmod a+x /usr/bin/wine /usr/bin/wine64 /usr/bin/wineserver
+box64 /root/wine/bin/wine64 "$@"' >/usr/local/bin/wine64
+sed -i 's/exec/exec "box64"/' /root/wine/bin/winecfg /root/wine/bin/wineboot
+ln -s /root/wine/bin/winecfg /usr/local/bin
+ln -s /root/wine/bin/wineboot /usr/local/bin
+chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
 rm PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 ;;
 REPO)
@@ -1083,14 +1074,14 @@ apt install libstdc++6:amd64 --no-install-recommends -y
 apt install libstdc++6:i386 --no-install-recommends -y
 axel -o wine-devel-i386.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/|grep wine-devel-i386_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 i=0
-while [ ! $(command -v wine_original) ] && [[ $i -ne 3 ]]
+while [ ! $(command -v wine) ] && [[ $i -ne 3 ]]
 do
 i=$(( $i+1 ))
 apt --fix-broken install -y && apt install ./wine-devel-i386.deb --no-install-recommends -y
 done
 axel -o wine-devel-amd64.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel-amd64_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 i=0
-while [ ! $(command -v wine64_original) ] && [[ $i -ne 3 ]]
+while [ ! $(command -v wine64) ] && [[ $i -ne 3 ]]
 do
 i=$(( $i+1 ))
 apt --fix-broken install -y && apt install ./wine-devel-amd64.deb --no-install-recommends -y
@@ -1100,12 +1091,23 @@ dpkg -i --force-overwrite wine-devel.deb
 axel -o winehq-devel.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep winehq-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1)
 dpkg -i --force-overwrite winehq-devel.deb
 cd && rm -rf wine_tmp
+
+echo '#!/bin/sh
+box64 /opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
+echo '#!/bin/sh
+box86 /opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
+echo '#!/bin/sh
+box64 /opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
+sed -i 's/exec/exec "box64"/' /root/wine/bin/winecfg /root/wine/bin/wineboot
+ln -s /opt/wine-devel/bin/winecfg /usr/local/bin
+ln -s /opt/wine-devel/bin/wineboot /usr/local/bin
+chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
 ;;
 
 PLAYONLINUX)
 echo -e "\n\e[33m下载wine 3.9版本，如果下载速度慢，请ctrl+c中止下载，并输bash firstrun重新初始化安装\e[0m"
 sleep 3
-
+mkdir -v /root/wine
 rm wine.tar.gz 2>/dev/null
 i=0
 while [ ! -f wine.tar.gz ] && [[ $i -ne 3 ]]
@@ -1117,17 +1119,17 @@ axel -o wine.tar.gz https://www.playonlinux.com/wine/binaries/phoenicis/upstream
 i=$(( i+1 ))
 done
 
-tar zxvf wine.tar.gz -C /usr >/usr/share/doc/wine/postrm 2>&1
-mv /usr/bin/wineserver /usr/bin/wineserver_original
+tar zxvf wine.tar.gz -C /root/wine
 echo '#!/bin/sh
-box64 /usr/bin/wineserver_original "$@"' >/usr/bin/wineserver
-mv /usr/bin/wine /usr/bin/wine_original
+box64 /root/wine/bin/wineserver "$@"' >/usr/local/bin/wineserver
 echo '#!/bin/sh
-box86 /usr/bin/wine_original "$@"' >/usr/bin/wine
-mv /usr/bin/wine64 /usr/bin/wine64_original
+box86 /root/wine/bin/wine "$@"' >/usr/local/bin/wine
 echo '#!/bin/sh
-box64 /usr/bin/wine64_original "$@"' >/usr/bin/wine64
-chmod a+x /usr/bin/wine /usr/bin/wine64 /usr/bin/wineserver
+box64 /root/wine/bin/wine64 "$@"' >/usr/local/bin/wine64
+sed -i 's/exec/exec "box64"/' /root/wine/bin/winecfg /root/wine/bin/wineboot
+ln -s /root/wine/bin/winecfg /usr/local/bin
+ln -s /root/wine/bin/wineboot /usr/local/bin
+chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
 ;;
 
 *)
@@ -1135,20 +1137,23 @@ echo ""
 esac
 fi
 
-if [ $(command -v wine_original) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
+if [ ! -f /opt/wine-devel/bin/wine ] && [ -f /root/wine/opt/wine-devel/bin/wine ] || [ -f /root/wine/bin/wine ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
 if [ ! -f /usr/local/bin/winetricks ]; then
 echo -e "\n\e[33m下载 winetricks\e[0m\n"
 sleep 1
 curl https://ghproxy.com/https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks -o /usr/local/bin/winetricks
 if [ -f /usr/local/bin/winetricks ]; then
-sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
+#sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
+sed -i '2a export BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
+sed -E -i 's/GitHub.*似乎不是个有效的版本号(.*)/执行文件检测试中\1/' /usr/local/bin/winetricks
 curl --connect-timeout 5 -m 8 -s https://github.com/Winetricks/ >/dev/null
 if [ $? == 1 ]; then
 echo -e "\e[33m你的网络无法访问github，将为你添加代理\e[0m"
 sleep 2
 sed -i 's/github/kgithub/g' /usr/local/bin/winetricks
 fi
-sed -E -i "s/(latest_version=.*winetricks.*)/#\1\n latest_version=/" /usr/local/bin/winetricks
+sed -i "/latest_version=.*winetricks.*/s/^/#/" /usr/local/bin/winetricks
+#sed -E -i "s/(latest_version=.*winetricks.*)/^/#/" /usr/local/bin/winetricks
 chmod a+x /usr/local/bin/winetricks
 mkdir -p ${HOME}/.cache/winetricks/ 2>/dev/null
 echo 0 >${HOME}/.cache/winetricks/track_usage
@@ -1264,7 +1269,7 @@ echo -e "普通用户登录容器\e[33mstart-$(grep 'Android user' /etc/passwd|c
 esac
 echo -e "root用户登录容器\e[33m${START}\e[0m\n退出容器,在termux输\e[33mexit\e[0m即可\e[0m\n安装仿windows界面，输\e[33mbash undercover\e[0m\n多功能菜单\e[33mwine_menu\e[0m"
 
-if [ $(command -v wine_original) ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
+if [ -f /opt/wine-devel/bin/wine ] || [ -f /root/wine/opt/wine-devel/bin/wine ] || [ -f /root/wine/bin/wine ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
 echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n使用图形winetricks(只支持32位exe)\e[33mstartricks\e[0m\n"
 fi
 read -p "确认请回车"
@@ -1348,14 +1353,6 @@ eom
 
 rm /usr/share/xfce4/panel/plugins/power-manager-plugin.desktop undercover.deb 2>/dev/null
 
-if [ $(command -v wine_original) ]; then
-sed -i 's/^Exec=wine/Exec=wine64/' /usr/share/applications/wine.desktop 2>/dev/null
-sed -i 's/^Icon.*$/Icon=utilities-system-monitor/' /usr/share/applications/wine.desktop
-#sed -i 's/^Name=Wine Windows Program Loader/Name=wine任务管理器/' /usr/share/applications/wine.desktop
-sed -i '/^Name=Wine Windows Program Loader/a Name[zh_CN]=wine任务管理器' /usr/share/applications/wine.desktop
-#sed -i 's/^MimeType.*$/Categories=GTK;System;Monitor;/' /usr/share/applications/wine.desktop
-fi
-
 chmod +x /usr/local/bin/startvnc
 
 for i in 16x16 22x22 24x24 32x32 48x48 256x256; do cp -v /usr/share/icons/Windows-10-Icons/$i/apps/utilities-system-monitor.png /usr/share/icons/hicolor/$i/apps ; done
@@ -1379,13 +1376,24 @@ vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 cp /usr/bin/kali-undercover.bak $(command -v kali-undercover) 
 
-if [ $(command -v wine_original) ]; then
+if [ -f /opt/wine-devel/bin/wine ] || [ -f /root/wine/opt/wine-devel/bin/wine ] || [ -f /root/wine/bin/wine ]; then
 cp /usr/share/applications/xfce4-terminal.desktop ${HOME}/Desktop/rscreen.desktop
 #sed -i 's/xfce4-terminal/xrandr \-s 0/;s/Xfce\ Terminal/恢复屏幕/;/\]=/d;/=T/d;/preferences\]/,$d' ${HOME}/Desktop/rscreen.desktop
 sed -i 's/xfce4-terminal/xrandr \-s 0/;s/Xfce\ Terminal/rscreen/;/\]=/d;/=T/d;/preferences\]/,$d;/rscreen/a Name[zh_CN]=恢复屏幕' ${HOME}/Desktop/rscreen.desktop
 cp /usr/share/applications/xfce4-file-manager.desktop Desktop/explorer.desktop
 #sed -E -i 's/Name=File\ Manager/Name=wine资源管理器/;/\]=/d' ${HOME}/Desktop/explorer.desktop
 sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop
+cp /opt/wine-devel/share/applications/wine.desktop /usr/share/applications 2>/dev/null
+cp /root/wine/opt/wine-devel/share/applications/wine.desktop /usr/share/applications 2>/dev/null
+cp /root/wine/usr/share/applications/wine.desktop /usr/share/applications 2>/dev/null
+chmod a+x /usr/share/applications/wine.desktop
+
+sed -i 's/^Exec=wine/Exec=wine64/' /usr/share/applications/wine.desktop 2>/dev/null
+sed -i 's/^Icon.*$/Icon=utilities-system-monitor/' /usr/share/applications/wine.desktop
+#sed -i 's/^Name=Wine Windows Program Loader/Name=wine任务管理器/' /usr/share/applications/wine.desktop
+sed -i '/^Name=Wine Windows Program Loader/a Name[zh_CN]=wine任务管理器' /usr/share/applications/wine.desktop
+#sed -i 's/^MimeType.*$/Categories=GTK;System;Monitor;/' /usr/share/applications/wine.desktop
+
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/
 sed -i 's/^Exec.*$/Exec=wine64 taskmgr %f/' ${HOME}/Desktop/wine.desktop
 
