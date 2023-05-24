@@ -1117,7 +1117,7 @@ echo ""
 esac
 fi
 
-if [ ! -f /opt/wine-devel/bin/wine ] && [ -f /root/wine/opt/wine-devel/bin/wine ] || [ -f /root/wine/bin/wine ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
+if [ -f /opt/wine-devel/bin/wine ] || [ -f /root/wine/opt/wine-devel/bin/wine ] || [ -f /root/wine/bin/wine ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
 if [ ! -f /usr/local/bin/winetricks ]; then
 echo -e "\n\e[33m下载 winetricks\e[0m\n"
 sleep 1
@@ -1126,7 +1126,7 @@ if [ -f /usr/local/bin/winetricks ]; then
 #sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
 sed -i '2a export BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
 #sed -E -i 's/GitHub.*似乎不是个有效的版本号(.*)/执行文件检测试中\1/' /usr/local/bin/winetricks
-sed -E -i "s/(latest_version=).*winetricks.*/\120230212/;/I_run_Wine_as_root.3F/s/w_warn/echo/;/supported upstream/s/w_warn/echo/" /usr/local/bin/winetricks
+sed -E -i "s/(latest_version=).*winetricks.*/\1$(grep WINETRICKS_VERSION= winetricks|cut -d = -f2)/;/I_run_Wine_as_root.3F/s/w_warn/echo/;/supported upstream/s/w_warn/echo/" /usr/local/bin/winetricks
 curl --connect-timeout 5 -m 8 -s https://github.com/Winetricks/ >/dev/null
 if [ $? == 1 ]; then
 echo -e "\e[33m你的网络无法访问github，将为你添加代理\e[0m"
