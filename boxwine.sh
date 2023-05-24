@@ -560,7 +560,7 @@ Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -background -retro -a 5 -
 export DISPLAY=:0
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
 dbus-launch xfwm4 &
-winetricks --gui &
+winetricks -q --gui &
 wine64 explorer &
 am start -n com.realvnc.viewer.android/com.realvnc.viewer.android.app.ConnectionChooserActivity 2>/dev/null
 exit 0
@@ -1036,16 +1036,6 @@ XB6868)
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 echo -e "解压中"
 tar zxvf PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz -C /root/wine
-echo '#!/bin/sh
-box64 /root/wine/bin/wineserver "$@"' >/usr/local/bin/wineserver
-echo '#!/bin/sh
-box86 /root/wine/bin/wine "$@"' >/usr/local/bin/wine
-echo '#!/bin/sh
-box64 /root/wine/bin/wine64 "$@"' >/usr/local/bin/wine64
-sed -i 's/exec/exec "box64"/' /root/wine/bin/winecfg /root/wine/bin/wineboot
-ln -s /root/wine/bin/winecfg /usr/local/bin
-ln -s /root/wine/bin/wineboot /usr/local/bin
-chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
 rm PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 ;;
 REPO)
@@ -1120,16 +1110,6 @@ i=$(( i+1 ))
 done
 
 tar zxvf wine.tar.gz -C /root/wine
-echo '#!/bin/sh
-box64 /root/wine/bin/wineserver "$@"' >/usr/local/bin/wineserver
-echo '#!/bin/sh
-box86 /root/wine/bin/wine "$@"' >/usr/local/bin/wine
-echo '#!/bin/sh
-box64 /root/wine/bin/wine64 "$@"' >/usr/local/bin/wine64
-sed -i 's/exec/exec "box64"/' /root/wine/bin/winecfg /root/wine/bin/wineboot
-ln -s /root/wine/bin/winecfg /usr/local/bin
-ln -s /root/wine/bin/wineboot /usr/local/bin
-chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
 ;;
 
 *)
@@ -1145,20 +1125,37 @@ curl https://ghproxy.com/https://raw.githubusercontent.com/Winetricks/winetricks
 if [ -f /usr/local/bin/winetricks ]; then
 #sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
 sed -i '2a export BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
-sed -E -i 's/GitHub.*似乎不是个有效的版本号(.*)/执行文件检测试中\1/' /usr/local/bin/winetricks
+#sed -E -i 's/GitHub.*似乎不是个有效的版本号(.*)/执行文件检测试中\1/' /usr/local/bin/winetricks
+sed -E -i "s/(latest_version=).*winetricks.*/\120230212/;/I_run_Wine_as_root.3F/s/w_warn/echo/;/supported upstream/s/w_warn/echo/" /usr/local/bin/winetricks
 curl --connect-timeout 5 -m 8 -s https://github.com/Winetricks/ >/dev/null
 if [ $? == 1 ]; then
 echo -e "\e[33m你的网络无法访问github，将为你添加代理\e[0m"
 sleep 2
-sed -i 's/github/kgithub/g' /usr/local/bin/winetricks
+sed -i 's/github/kgithub/g;s@https.*raw.kgithub@https://ghproxy.com/https://raw.github@' /usr/local/bin/winetricks
 fi
-sed -i "/latest_version=.*winetricks.*/s/^/#/" /usr/local/bin/winetricks
+#sed -i "/latest_version=.*winetricks.*/s/^/#/" /usr/local/bin/winetricks
 #sed -E -i "s/(latest_version=.*winetricks.*)/^/#/" /usr/local/bin/winetricks
 chmod a+x /usr/local/bin/winetricks
 mkdir -p ${HOME}/.cache/winetricks/ 2>/dev/null
 echo 0 >${HOME}/.cache/winetricks/track_usage
 fi
 fi
+
+BIN_PATH=$(find /root/wine/ -name wineserver -type f)
+if [ -n $BIN_PATH ]; then
+rm /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot 2>/dev/null
+echo -e "#!/bin/sh
+box64 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
+echo -e "#!/bin/sh
+box86 "${BIN_PATH%/*}"/wine \"\$@\"" >/usr/local/bin/wine
+echo -e "#!/bin/sh
+box64 "${BIN_PATH%/*}"/wine64 \"\$@\"" >/usr/local/bin/wine64
+sed -i 's/exec/exec "box64"/' "${BIN_PATH%/*}"/winecfg "${BIN_PATH%/*}"/wineboot
+ln -s "${BIN_PATH%/*}"/winecfg /usr/local/bin
+ln -s "${BIN_PATH%/*}"/wineboot /usr/local/bin
+chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
+fi
+
 echo -e "\e[33m进行wine初始化配置\e[0m"
 sleep 1
 rm -rf .wine 2>/dev/null
@@ -1486,7 +1483,7 @@ eof
 for i in version misc buddyinfo kmsg consoles execdomains stat fb filesystems loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
 :<<\eof
 if [ ! -r /proc/sys/vm/mmap_min_addr ]; then
-mkdir -p .wine-arm64/etc/proc/sys/vm
+mkdir -p ${CONTAINER}/etc/proc/sys/vm
 echo 0 >${PREFIX}/${CONTAINER}/etc/proc/sys/vm/mmap_min_addr
 sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/sys/vm/mmap_min_addr:/proc/sys/vm/mmap_min_addr@" ${PREFIX}/bin/start-wine-arm64
 fi
