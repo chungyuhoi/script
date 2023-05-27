@@ -55,11 +55,14 @@ WINE_INSTALL=XB6868
 #wine版本，仅对PLAYONLIUX可用，可选 3.9 6.17 或该网已知版本
 WINE_VERSION=3.9
 
-CONTAINER=".wine-arm64"
+#自定义容器名字
+NAME=wine-arm64
+
+CONTAINER=".${NAME}"
 
 case $PROOT in
 PRO)
-START=start-wine-arm64
+START=start-${NAME}
 ;;
 *)
 START=start-wine64
@@ -109,7 +112,7 @@ read -r -p "请选择: " input
 case $input in
 1) rm -rf ${CONTAINER} ;;
 2) rm -rf ${CONTAINER} ${PREFIX}/bin/start-wine*
-echo -e "\e[33m已御载wine-arm64\e[0m"
+echo -e "\e[33m已御载${NAME}\e[0m"
 sleep 1
 exit 0 ;;
 *) exit 0
@@ -367,8 +370,8 @@ export LANG=zh_CN.UTF-8
 
 cat >/usr/local/bin/boxwine<<-'BOXWINE'
 #!/usr/bin/env bash
+cd
 export WINEDEBUG=fixme-all
-#WINEDEBUG=-all
 if [[ $(id -u) = 0 ]];then
 if [ ! -d /tmp/runtime-$(id -u) ]; then
 #mkdir -pv "/var/run/user/$(id -u)"
@@ -384,7 +387,6 @@ sudo chmod -R 1777 "/tmp/runtime-$(id -u)"
 sudo service dbus start
 fi
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
-#if [ ! $(command -v box64) ] || [ ! $(command -v box64) ] || [ ! $(command -v wine) ]; then echo -e "\e[33m你尚未安装全应用，中止启动\e[0m"; sleep 1; exit 1; fi
 if ! grep '"SimSun"="wqy-microhei.ttc"' .wine/system.reg; then
 sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"\n\n' .wine/user.reg
 #"GrabFullscreen"="y"
@@ -396,12 +398,16 @@ exit 0
 BOXWINE
 
 cp /usr/local/bin/boxwine /usr/local/bin/boxwinede
-sed -E -i '/trap/d;s/(^box.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/boxwinede
+sed -E -i '/trap/d;s/(^wine.*$)/\1 \&\nsleep 5\npkill services/' /usr/local/bin/boxwinede
 
 echo '#!/usr/bin/env bash
 vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
-Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 800x600 -depth 16 -once -localhost -securitytypes None :0 &
+DEPTH=16
+case $1 in
+	*32*) DEPTH=24
+esac
+Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 800x600 -depth $DEPTH -once -localhost -securitytypes None :0 &
 export DISPLAY=:0
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
 #dbus-launch xfwm4 &
@@ -1125,8 +1131,8 @@ curl https://ghproxy.com/https://raw.githubusercontent.com/Winetricks/winetricks
 if [ -f /usr/local/bin/winetricks ]; then
 #sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
 sed -i '2a export BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
-#sed -E -i 's/GitHub.*似乎不是个有效的版本号(.*)/执行文件检测试中\1/' /usr/local/bin/winetricks
-sed -E -i "s/(latest_version=).*winetricks.*/\1$(grep WINETRICKS_VERSION= winetricks|cut -d = -f2)/;/I_run_Wine_as_root.3F/s/w_warn/echo/;/supported upstream/s/w_warn/echo/" /usr/local/bin/winetricks
+sed -E -i 's/GitHub.*似乎不是个有效的版本号(.*)/执行文件检测试中\1/' /usr/local/bin/winetricks
+sed -E -i "s/(latest_version=).*winetricks.*/\1$(grep 'WINETRICKS_VERSION=' /usr/local/bin/winetricks|cut -d = -f2)/;/I_run_Wine_as_root.3F/s/w_warn/echo/;/supported upstream/s/w_warn/echo/" /usr/local/bin/winetricks
 curl --connect-timeout 5 -m 8 -s https://github.com/Winetricks/ >/dev/null
 if [ $? == 1 ]; then
 echo -e "\e[33m你的网络无法访问github，将为你添加代理\e[0m"
@@ -1185,6 +1191,10 @@ sleep 1
 
 sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"' .wine/user.reg
 #"GrabFullscreen"="y"
+
+#[Software\\Wine\\X11 Driver]
+#"ScreenDepth"="16"
+
 done
 
 #cp /usr/share/fonts/truetype/wqy/wqy-zenhei.ttc .wine/drive_c/windows/Fonts/
@@ -1338,9 +1348,12 @@ fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
 cat >/usr/local/bin/startvnc<<-'eom'
 #!/usr/bin/env bash
 export RUNLEVEL=5
+LENGTH=1024
+WIDTH=768
+DEPTH=24
 vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
-Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry 1024x768 -depth 24 -once -localhost -securitytypes None :0 &
+Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -br -retro -a 5 -alwaysshared -geometry ${LENGTH}x${WIDTH} -depth ${DEPTH} -once -localhost -securitytypes None :0 &
 export DISPLAY=:0
 . /etc/X11/xinit/Xsession >/dev/null 2>&1 &
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
@@ -1471,7 +1484,7 @@ chmod 644 "${HOME}/${CONTAINER}/etc/ld.so.preload"
 fi
 cd -
 gcc
-cat >${PREFIX}/bin/start-wine-arm64<<eof
+cat >${PREFIX}/bin/start-${NAME}<<eof
 #!/usr/bin/env bash
 cd
 pkill -9 pulseaudio 2>/dev/null
@@ -1480,15 +1493,15 @@ pulseaudio --start --load="module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth
 unset LD_PRELOAD
 proot --kill-on-exit -b /vendor -b /system -b /sdcard -b /sdcard:/root/sdcard -b /data/data/com.termux/files -b /data/data/com.termux/cache -b /data/data/com.termux/files/usr/tmp:/tmp -b /dev/null:/proc/sys/kernel/cap_last_cap -b /data/dalvik-cache -b ${CONTAINER}/tmp:/dev/shm -b /proc/self/fd/2:/dev/stderr -b /proc/self/fd/1:/dev/stdout -b /proc/self/fd/0:/dev/stdin -b /proc/self/fd:/dev/fd -b /dev/urandom:/dev/random --sysvipc --link2symlink -S ${CONTAINER} -w /root /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/games:/usr/local/games LANG=zh_CN.UTF-8 TZ=Asia/Shanghai TERM=xterm-256color USER=root /bin/bash --login
 eof
-for i in version misc buddyinfo kmsg consoles execdomains stat fb filesystems loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
+for i in version misc buddyinfo kmsg consoles execdomains stat fb filesystems loadavg key-users uptime devices vmstat; do if [ ! -r /proc/"${i}" ]; then sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/${i}:/proc/${i}@" ${PREFIX}/bin/start-${NAME}; fi done
 :<<\eof
 if [ ! -r /proc/sys/vm/mmap_min_addr ]; then
 mkdir -p ${CONTAINER}/etc/proc/sys/vm
 echo 0 >${PREFIX}/${CONTAINER}/etc/proc/sys/vm/mmap_min_addr
-sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/sys/vm/mmap_min_addr:/proc/sys/vm/mmap_min_addr@" ${PREFIX}/bin/start-wine-arm64
+sed -E -i "s@(cap_last_cap)@\1 -b ${CONTAINER}/etc/proc/sys/vm/mmap_min_addr:/proc/sys/vm/mmap_min_addr@" ${PREFIX}/bin/start-${NAME}
 fi
 eof
-for i in /system_ext /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-wine-arm64; fi done
+for i in /system_ext /linkerconfig/ld.config.txt /plat_property_contexts /property_contexts /apex; do if [ -e $i ]; then sed -i "s@shm@shm \-b ${i}@" ${PREFIX}/bin/start-${NAME}; fi done
 
 #for i in /proc/$(ls ./etc/proc/|sed 's/ /\n/g'|grep -v bus); do i=$(echo $i|sed 's@/proc/@@'); if [ ! -r /proc/$i ]; then cp ./etc/proc/$i ${HOME}/${name}/etc/proc/ ;sed -i "s@shm@shm \-b ${HOME}/${name}/etc/proc/$i:/proc/$i@" ${PREFIX}/bin/start-${name}; fi done
 #for i in ./etc/proc/* ; do if [ ! -r /proc/${i##*/} ]; then cp $i ${HOME}/${name}/etc/proc/ ;sed -i "s@shm@shm \-b ${HOME}/${name}/etc/proc/${i##*/}:/proc/${i##*/}@" ${PREFIX}/bin/start-${name}; fi done
@@ -1497,7 +1510,7 @@ for i in /system_ext /linkerconfig/ld.config.txt /plat_property_contexts /proper
 
 case $NOR_USER in
 TRUE)
-cp ${PREFIX}/bin/start-wine-arm64 ${PREFIX}/bin/start-$(whoami)
+cp ${PREFIX}/bin/start-${NAME} ${PREFIX}/bin/start-$(whoami)
 sed -i "s@/bin/bash --login@/bin/su -l $(whoami)@" ${PREFIX}/bin/start-$(whoami)
 mkdir -p "${HOME}/${CONTAINER}/home/$(whoami)"
 echo "$(id -un):x:$(id -u):$(id -g):Android user:/home/$(whoami):/bin/bash" >> "${HOME}/${CONTAINER}/etc/passwd"
@@ -1525,13 +1538,13 @@ esac
 echo "bash firstrun" >>${HOME}/${CONTAINER}/etc/profile
 proot --help | grep -q sysvipc
 if [ $? == 1 ]; then
-sed -i 's/--sysvipc//' ${PREFIX}/bin/start-wine64 ${PREFIX}/bin/start-wine-arm64 ${PREFIX}/bin/start-$(whoami) 2>/dev/null
+sed -i 's/--sysvipc//' ${PREFIX}/bin/start-wine64 ${PREFIX}/bin/start-${NAME} ${PREFIX}/bin/start-$(whoami) 2>/dev/null
 fi
 
-chmod a+x ${PREFIX}/bin/start-wine64 ${PREFIX}/bin/start-wine-arm64 ${PREFIX}/bin/start-$(whoami) 2>/dev/null
+chmod a+x ${PREFIX}/bin/start-wine64 ${PREFIX}/bin/start-${NAME} ${PREFIX}/bin/start-$(whoami) 2>/dev/null
 case $PROOT in
 PRO)
-. ${PREFIX}/bin/start-wine-arm64
+. ${PREFIX}/bin/start-${NAME}
 ;;
 *)
 . ${PREFIX}/bin/start-wine64
