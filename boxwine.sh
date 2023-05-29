@@ -371,7 +371,6 @@ export LANG=zh_CN.UTF-8
 cat >/usr/local/bin/boxwine<<-'BOXWINE'
 #!/usr/bin/env bash
 cd
-export WINEDEBUG=fixme-all
 if [[ $(id -u) = 0 ]];then
 if [ ! -d /tmp/runtime-$(id -u) ]; then
 #mkdir -pv "/var/run/user/$(id -u)"
@@ -561,7 +560,6 @@ cat >/usr/local/bin/startricks<<-'tricks'
 vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
 gg
-export WINEDEBUG=fixme-all
 Xvnc -ZlibLevel=1 -quiet -ImprovedHextile -CompareFB 1 -background -retro -a 5 -alwaysshared -geometry 1024x768 -depth 16 -once -localhost -securitytypes None :0 &
 export DISPLAY=:0
 echo -e "\n\e[33m请打开vncviewer输127.0.0.1:0\e[0m\n"
@@ -786,7 +784,7 @@ WINE_MENU
 fi
 tar zxvf PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz -C wine4
 rm -rf wine4/.wine 2>/dev/null
-WINEDEBUG=fixme-all WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine wineboot
+WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine wineboot
 pstree | grep -q "services"
 while [ $? == 0 ]
 do
@@ -794,7 +792,7 @@ sleep 1
 pstree | grep -q "services"
 done
 cp ${HOME}/Desktop/wine.desktop ${HOME}/Desktop/wine4.desktop
-sed -i 's@Exec.*@Exec=env BOX86_NOPULSE=1 WINEDEBUG=fixme-all WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine explorer /desktop,640x480 taskmgr %f@' ${HOME}/Desktop/wine4.desktop
+sed -i 's@Exec.*@Exec=env BOX86_NOPULSE=1 WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine explorer /desktop,640x480 taskmgr %f@' ${HOME}/Desktop/wine4.desktop
 sed -i 's/=wine/=wine4/' ${HOME}/Desktop/wine4.desktop
 chmod a+x ${HOME}/Desktop/wine4.desktop
 rm PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz*
@@ -895,6 +893,7 @@ cp /etc/skel/.bashrc /home/*/
 esac
 
 if [ ! $(command -v box64) ] || [ ! $(command -v box86) ]; then
+sed -i '2iexport BOX86_LOG=0 BOX86_NOBANNER=1 BOX64_LOG=0 BOX64_NOBANNER=1 WINEDEBUG=fixme-all' /etc/profile
 rm box86.tar.gz box64.tar.gz 2>/dev/null
 case $BOX_INSTALL in
 XB6868)
@@ -1128,7 +1127,6 @@ sleep 1
 curl https://ghproxy.com/https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks -o /usr/local/bin/winetricks
 if [ -f /usr/local/bin/winetricks ]; then
 #sed -i '2a export WINEARCH=win32 BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
-sed -i '2a export BOX64_NOBANNER=1 BOX86_NOBANNER=1 WINEDEBUG=fixme-all' /usr/local/bin/winetricks
 sed -E -i 's/GitHub.*似乎不是个有效的版本号(.*)/执行文件检测试中\1/' /usr/local/bin/winetricks
 sed -E -i "s/(latest_version=).*winetricks.*/\1$(grep 'WINETRICKS_VERSION=' /usr/local/bin/winetricks|cut -d = -f2)/;/I_run_Wine_as_root.3F/s/w_warn/echo/;/supported upstream/s/w_warn/echo/" /usr/local/bin/winetricks
 curl --connect-timeout 5 -m 8 -s https://github.com/Winetricks/ >/dev/null
@@ -1271,6 +1269,7 @@ pstree | grep -q "wineboot"
 done
 #wget https://www.7-zip.org/$(curl https://www.7-zip.org/download.html|grep '7z.*-x64.exe'|head -n1|sed 's/-x64//'|awk -F 'href="' '{print $2}'|cut -d '"' -f1)
 #wget https://www.7-zip.org/$(curl https://www.7-zip.org/download.html|grep '7z.*-x64.exe'|head -n1|awk -F 'href="' '{print $2}'|cut -d '"' -f1)
+export BOX86_LOG=0 BOX86_NOBANNER=1 BOX64_LOG=0 BOX64_NOBANNER=1 WINEDEBUG=fixme-all
 echo -e "\n\e[33m配置完毕\e[0m\n"
 echo -e "\n如果上面的安装失败,请输\e[33mbash firstrun\e[0m重新安装"
 case $NOR_USER in
