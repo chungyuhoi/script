@@ -679,11 +679,11 @@ wget https://shell.xb6868.com/wine/wine-8.5.tar.gz
 tar zxvf wine-8.5.tar.gz -C /root/wine
 esac
 echo '#!/bin/sh
-BOX64_LOG=0 box64 /root/wine/opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
+BOX64_LOG=0 BOX64_NOBANNER=1 box64 /root/wine/opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
 echo '#!/bin/sh
-box86 /root/wine/opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
+BOX86_NOBANNER=1 box86 /root/wine/opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
 echo '#!/bin/sh
-BOX64_LOG=0 box64 /root/wine/opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
+BOX64_LOG=0 BOX64_NOBANNER=1 box64 /root/wine/opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
 ln -s /root/wine/opt/wine-devel/bin/winecfg /usr/local/bin/
 ln -s /root/wine/opt/wine-devel/bin/wineboot /usr/local/bin/
 chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/wineboot
@@ -692,11 +692,11 @@ chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /u
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /root/wine
 echo '#!/bin/sh
-BOX64_LOG=0 box64 /root/wine/bin/wineserver "$@"' >/usr/local/bin/wineserver
+BOX64_LOG=0 BOX64_NOBANNER=1 box64 /root/wine/bin/wineserver "$@"' >/usr/local/bin/wineserver
 echo '#!/bin/sh
-box86 /root/wine/bin/wine "$@"' >/usr/local/bin/wine
+BOX86_NOBANNER=1 box86 /root/wine/bin/wine "$@"' >/usr/local/bin/wine
 echo '#!/bin/sh
-BOX64_LOG=0 box64 /root/wine/bin/wine64 "$@"' >/usr/local/bin/wine64
+BOX64_LOG=0 BOX64_NOBANNER=1 box64 /root/wine/bin/wine64 "$@"' >/usr/local/bin/wine64
 ln -s /root/wine/bin/winecfg /usr/local/bin
 ln -s /root/wine/bin/wineboot /usr/local/bin
 chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
@@ -1088,11 +1088,11 @@ dpkg -i --force-overwrite winehq-devel.deb
 cd && rm -rf wine_tmp
 
 echo '#!/bin/sh
-BOX64_LOG=0 box64 /opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
+BOX64_LOG=0 BOX64_NOBANNER=1 box64 /opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
 echo '#!/bin/sh
-box86 /opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
+BOX86_NOBANNER=1 box86 /opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
 echo '#!/bin/sh
-BOX64_LOG=0 box64 /opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
+BOX64_LOG=0 BOX64_NOBANNER=1 box64 /opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
 ln -s /opt/wine-devel/bin/winecfg /usr/local/bin
 ln -s /opt/wine-devel/bin/wineboot /usr/local/bin
 chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
@@ -1150,16 +1150,16 @@ if [ -n $BIN_PATH ]; then
 rm /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot 2>/dev/null
 if [ -f "${BIN_PATH%/*}"/wine64 ]; then
 echo -e "#!/bin/sh
-BOX64_LOG=0 box64 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
+BOX64_LOG=0 BOX64_NOBANNER=1 box64 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
 else
 echo -e "#!/bin/sh
-box86 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
+BOX86_NOBANNER=1 box86 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
 sed -i 's/wine64/wine/' /usr/local/bin/boxwine* 2>/dev/null
 fi
 echo -e "#!/bin/sh
 box86 "${BIN_PATH%/*}"/wine \"\$@\"" >/usr/local/bin/wine
 echo -e "#!/bin/sh
-BOX64_LOG=0 box64 "${BIN_PATH%/*}"/wine64 \"\$@\"" >/usr/local/bin/wine64
+BOX64_LOG=0 BOX64_NOBANNER=1 box64 "${BIN_PATH%/*}"/wine64 \"\$@\"" >/usr/local/bin/wine64
 ln -s "${BIN_PATH%/*}"/winecfg /usr/local/bin
 ln -s "${BIN_PATH%/*}"/wineboot /usr/local/bin
 chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
