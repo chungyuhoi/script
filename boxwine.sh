@@ -591,7 +591,7 @@ else
 if [[ $(echo "$(wine64 --version)"|tail -1|cut -b 6) == [4-9] ]]; then
 WINE="安装wine3.9"
 else
-WINE="安装wine-8.5"
+WINE="安装wine-8.9"
 fi
 fi
 if grep ^onboard /usr/local/bin/startwine; then
@@ -661,11 +661,11 @@ exit 0
 11)
 echo -e "\e[33m正在检测已安装wine版本并进行清除(仅对本脚本安装的wine文件有效)\e[0m"
 sleep 3
-rm -rvf PlayOnLinux* wine-8.5.tar.gz* /root/wine /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot 2>/dev/null
+rm -rvf PlayOnLinux* wine-8.9.tar.gz* /root/wine /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot 2>/dev/null
 mkdir -v /root/wine
 
 case $WINE in
-*8.5*)
+*8.9*)
 case $WINE_INSTALL in
 PLAYONLINUX)
 axel https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-amd64/PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz
@@ -673,15 +673,15 @@ tar zxvf PlayOnLinux-wine-6.17-upstream-linux-amd64.tar.gz -C /root/wine ./lib
 LXC=debian ROOTFS=bullseye WINE_URL="https://dl.winehq.org"; axel -o wine-devel-i386.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-i386/|grep wine-devel-i386_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o wine-devel-amd64.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel-amd64_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o wine-devel.deb  ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep wine-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); axel -o winehq-devel.deb ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/$(curl ${WINE_URL}/wine-builds/${LXC}/dists/${ROOTFS}/main/binary-amd64/|grep winehq-devel_8|awk -F 'href="' '{print $2}'|cut -d '"' -f 1|tail -n 1); for i in wine-devel-amd64.deb  winehq-devel.deb wine-devel.deb wine-devel-i386.deb; do dpkg -X $i /root/wine; done
 ;;
 *)
-wget https://shell.xb6868.com/wine/wine-8.5.tar.gz
-tar zxvf wine-8.5.tar.gz -C /root/wine
+wget https://shell.xb6868.com/wine/wine-8.9.tar.gz
+tar zxvf wine-8.9.tar.gz -C /root/wine
 esac
 echo '#!/bin/sh
-BOX64_LOG=0 BOX64_NOBANNER=1 box64 /root/wine/opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
+box64 /root/wine/opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
 echo '#!/bin/sh
-BOX86_NOBANNER=1 box86 /root/wine/opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
+box86 /root/wine/opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
 echo '#!/bin/sh
-BOX64_LOG=0 BOX64_NOBANNER=1 box64 /root/wine/opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
+box64 /root/wine/opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
 ln -s /root/wine/opt/wine-devel/bin/winecfg /usr/local/bin/
 ln -s /root/wine/opt/wine-devel/bin/wineboot /usr/local/bin/
 chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/wineboot
@@ -689,19 +689,9 @@ chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /u
 *)
 wget https://shell.xb6868.com/wine/PlayOnLinux-wine-3.9-upstream-linux-amd64.tar.gz
 tar zxvf PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz -C /root/wine
-echo '#!/bin/sh
-BOX64_LOG=0 BOX64_NOBANNER=1 box64 /root/wine/bin/wineserver "$@"' >/usr/local/bin/wineserver
-echo '#!/bin/sh
-BOX86_NOBANNER=1 box86 /root/wine/bin/wine "$@"' >/usr/local/bin/wine
-echo '#!/bin/sh
-BOX64_LOG=0 BOX64_NOBANNER=1 box64 /root/wine/bin/wine64 "$@"' >/usr/local/bin/wine64
-ln -s /root/wine/bin/winecfg /usr/local/bin
-ln -s /root/wine/bin/wineboot /usr/local/bin
-chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
-
 esac
 
-rm ${HOME}/桌面/explorer.desktop ${HOME}/Desktop/explorer.desktop PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz box86.tar.gz box64.tar.gz 2>/dev/null
+rm ${HOME}/桌面/explorer.desktop ${HOME}/Desktop/explorer.desktop PlayOnLinux-wine-*-upstream-linux-amd64.tar.gz box86.tar.gz box64.tar.gz 2>/dev/null wine-8.9.tar.gz*
 cp /usr/share/applications/xfce4-file-manager.desktop ${HOME}/Desktop/explorer.desktop 2>/dev/null
 cp /usr/share/applications/xfce4-file-manager.desktop ${HOME}/桌面/explorer.desktop 2>/dev/null
 sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop 2>/dev/null
@@ -792,7 +782,7 @@ sleep 1
 pstree | grep -q "services"
 done
 cp ${HOME}/Desktop/wine.desktop ${HOME}/Desktop/wine4.desktop
-sed -i 's@Exec.*@Exec=env BOX86_NOPULSE=1 WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine explorer /desktop,640x480 taskmgr %f@' ${HOME}/Desktop/wine4.desktop
+sed -i 's@Exec.*@Exec=env WINEPREFIX="/root/wine4/.wine" box86 /root/wine4/bin/wine explorer /desktop,640x480 taskmgr %f@' ${HOME}/Desktop/wine4.desktop
 sed -i 's/=wine/=wine4/' ${HOME}/Desktop/wine4.desktop
 chmod a+x ${HOME}/Desktop/wine4.desktop
 rm PlayOnLinux-wine-4.0.3-upstream-linux-x86.tar.gz*
@@ -850,14 +840,13 @@ sed -i '/onboard/s/#//g;/xfwm4/s/#//g' /usr/local/bin/startwine /usr/local/bin/s
 fi
 jp_
 
-cat >/usr/local/bin/aboutwine<<-'ABOUTWINE'
+cat >/usr/local/bin/aboutboxwine<<-'ABOUTWINE'
 #!/usr/bin/env bash
 clear
 echo -e "\e[33m关于box64+wine\e[0m\n"
-echo -e "由于box64+wine的bug比较多，所以大多数exe并不能运行，本脚本用的是proot容器更是如此。\n"
-echo -e "如果游戏只有声音没画面，请尝试用命令startxsdl，通过xsdl显示。\n"
+echo -e "由于box64+wine对设备访问权限要高，bug比较多，所以能运行的exe并不多，本脚本用的是proot容器更是如此。\n"
+echo -e "即时战略游戏用物理键鼠，请尝试用命令startxsdl或startvsdl，通过xsdl显示。\n"
 echo -e "如果觉得字体很难看，可以自行把windows的字体simsun.ttf放到/usr/share/wine/fonts文件夹内。\n"
-echo -e "本容器支持wine7，请自行从 https://www.playonlinux.com/wine/binaries/phoenicis/upstream-linux-x86/ 网页下载并解压到/usr文件夹内。"
 
 ABOUTWINE
 
@@ -893,7 +882,6 @@ cp /etc/skel/.bashrc /home/*/
 esac
 
 if [ ! $(command -v box64) ] || [ ! $(command -v box86) ]; then
-sed -i '2iexport BOX86_LOG=0 BOX86_NOBANNER=1 BOX64_LOG=0 BOX64_NOBANNER=1 WINEDEBUG=fixme-all' /etc/profile
 rm box86.tar.gz box64.tar.gz 2>/dev/null
 case $BOX_INSTALL in
 XB6868)
@@ -1087,11 +1075,11 @@ dpkg -i --force-overwrite winehq-devel.deb
 cd && rm -rf wine_tmp
 
 echo '#!/bin/sh
-BOX64_LOG=0 BOX64_NOBANNER=1 box64 /opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
+box64 /opt/wine-devel/bin/wineserver "$@"' >/usr/local/bin/wineserver
 echo '#!/bin/sh
-BOX86_NOBANNER=1 box86 /opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
+box86 /opt/wine-devel/bin/wine "$@"' >/usr/local/bin/wine
 echo '#!/bin/sh
-BOX64_LOG=0 BOX64_NOBANNER=1 box64 /opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
+box64 /opt/wine-devel/bin/wine64 "$@"' >/usr/local/bin/wine64
 ln -s /opt/wine-devel/bin/winecfg /usr/local/bin
 ln -s /opt/wine-devel/bin/wineboot /usr/local/bin
 chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
@@ -1148,22 +1136,22 @@ if [ -n $BIN_PATH ]; then
 rm /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot 2>/dev/null
 if [ -f "${BIN_PATH%/*}"/wine64 ]; then
 echo -e "#!/bin/sh
-BOX64_LOG=0 BOX64_NOBANNER=1 box64 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
+box64 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
 else
 echo -e "#!/bin/sh
-BOX86_NOBANNER=1 box86 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
+box86 "${BIN_PATH%/*}"/wineserver \"\$@\"" >/usr/local/bin/wineserver
 sed -i 's/wine64/wine/' /usr/local/bin/boxwine* 2>/dev/null
 fi
 echo -e "#!/bin/sh
 box86 "${BIN_PATH%/*}"/wine \"\$@\"" >/usr/local/bin/wine
 echo -e "#!/bin/sh
-BOX64_LOG=0 BOX64_NOBANNER=1 box64 "${BIN_PATH%/*}"/wine64 \"\$@\"" >/usr/local/bin/wine64
+box64 "${BIN_PATH%/*}"/wine64 \"\$@\"" >/usr/local/bin/wine64
 ln -s "${BIN_PATH%/*}"/winecfg /usr/local/bin
 ln -s "${BIN_PATH%/*}"/wineboot /usr/local/bin
 chmod a+x /usr/local/bin/wine /usr/local/bin/wine64 /usr/local/bin/wineserver /usr/local/bin/winecfg /usr/local/bin/wineboot
 fi
 
-echo -e "\e[33m进行wine初始化配置\e[0m"
+echo -e "\e[33m进行wine初始化配置，等待时间比较长…\e[0m"
 sleep 1
 rm -rf .wine 2>/dev/null
 sleep 5
@@ -1267,8 +1255,6 @@ sleep 3
 du -sh ${HOME}/.wine
 pstree | grep -q "wineboot"
 done
-#wget https://www.7-zip.org/$(curl https://www.7-zip.org/download.html|grep '7z.*-x64.exe'|head -n1|sed 's/-x64//'|awk -F 'href="' '{print $2}'|cut -d '"' -f1)
-#wget https://www.7-zip.org/$(curl https://www.7-zip.org/download.html|grep '7z.*-x64.exe'|head -n1|awk -F 'href="' '{print $2}'|cut -d '"' -f1)
 export BOX86_LOG=0 BOX86_NOBANNER=1 BOX64_LOG=0 BOX64_NOBANNER=1 WINEDEBUG=fixme-all
 echo -e "\n\e[33m配置完毕\e[0m\n"
 echo -e "\n如果上面的安装失败,请输\e[33mbash firstrun\e[0m重新安装"
@@ -1279,6 +1265,11 @@ esac
 echo -e "root用户登录容器\e[33m${START}\e[0m\n退出容器,在termux输\e[33mexit\e[0m即可\e[0m\n安装仿windows界面，输\e[33mbash undercover\e[0m\n多功能菜单\e[33mwine_menu\e[0m"
 
 if [ -f /opt/wine-devel/bin/wine ] || [ -f /root/wine/opt/wine-devel/bin/wine ] || [ -f /root/wine/bin/wine ] && [ $(command -v box64) ] && [ $(command -v box86) ]; then
+
+#wget https://www.7-zip.org/$(curl https://www.7-zip.org/download.html|grep '7z.*-x64.exe'|head -n1|sed 's/-x64//'|awk -F 'href="' '{print $2}'|cut -d '"' -f1)
+#wget https://www.7-zip.org/$(curl https://www.7-zip.org/download.html|grep '7z.*-x64.exe'|head -n1|awk -F 'href="' '{print $2}'|cut -d '"' -f1)
+#wget https://www.meggamusic.co.uk/winamp/$(curl -L http://www.meggamusic.co.uk/winamp/|grep full_all.*exe.*MB|awk -F './' '{print $2}'|cut -d "'" -f1|tail -n1) -O winampe.exe
+#wine64 /wait winampe.exe /S
 echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n使用图形winetricks(只支持32位exe)\e[33mstartricks\e[0m\n"
 fi
 read -p "确认请回车"
@@ -1349,6 +1340,7 @@ fi' >/etc/X11/xinit/Xsession && chmod +x /etc/X11/xinit/Xsession
 
 cat >/usr/local/bin/startvnc<<-'eom'
 #!/usr/bin/env bash
+
 export RUNLEVEL=5
 LENGTH=1024
 WIDTH=768
@@ -1465,6 +1457,7 @@ export PREFIX=${PREFIX-/data/data/com.termux/files/usr}
 export TERM=${TERM-xterm-256color}
 export TMPDIR=/tmp
 export PULSE_SERVER=tcp:127.0.0.1:4713
+export BOX86_LOG=0 BOX86_NOBANNER=1 BOX86_NOPULSE=1 BOX64_NOPULSE=1 BOX64_LOG=0 BOX64_NOBANNER=1 WINEDEBUG=fixme-all
 EOF
 :<<\eof
 if [[ $(id -u) = 0 ]];then
