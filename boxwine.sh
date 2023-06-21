@@ -48,7 +48,7 @@ ROOTFS=bullseye
 #box安装方式，可选 REPO GIT RELEASE XB6868 NOBOX
 BOX_INSTALL=XB6868
 #box_update box86最后更新时间:20230507
-#box_update box64最后更新时间:20230620
+#box_update box64最后更新时间:20230322
 
 #wine安装方式，注意：REPO仅对bullseye可用，可选 REPO PLAYONLINUX XB6868 NOWINE
 WINE_INSTALL=XB6868
