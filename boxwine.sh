@@ -16,6 +16,7 @@
 #export LIBGL_ALWAYS_SOFTWARE=1
 #native用的是arm的lib
 #DXVK_ASYNC=1 WINE_FULLSCREEN_FSR=1
+#for i in $(sed 's@\./@/@g' /usr/share/doc/wine/postrm | sed ':a;N;s/\n/ /g;ta'); do if [ -f "$i" ]; then rm -v $i; fi done
 :<<-eof
 高位色运行低位色
 Xephyr :1 -ac -screen 640x480x16 -reset -terminate &
@@ -47,7 +48,7 @@ ROOTFS=bullseye
 #box安装方式，可选 REPO GIT RELEASE XB6868 NOBOX
 BOX_INSTALL=XB6868
 #box_update box86最后更新时间:20230507
-#box_update box64最后更新时间:20230322
+#box_update box64最后更新时间:20230620
 
 #wine安装方式，注意：REPO仅对bullseye可用，可选 REPO PLAYONLINUX XB6868 NOWINE
 WINE_INSTALL=XB6868
@@ -266,7 +267,7 @@ fi
 DEPENDS="apt-utils python3 git busybox curl wget tar vim fonts-wqy-microhei gnupg2 dbus-x11 libxinerama1 libxrandr2 libxcomposite1 libxcursor1 libncurses5 libgtk2.0-0 tigervnc-standalone-server tigervnc-viewer pulseaudio axel x11vnc xvfb psmisc procps onboard xfwm4 whiptail libtcmalloc-minimal4 xserver-xephyr mesa-utils cabextract p7zip-full"
 #winbind
 
-DEPENDS0="zenity:armhf libegl-mesa0:armhf libgl1-mesa-dri:armhf libglapi-mesa:armhf libglx-mesa0:armhf libasound*:armhf libstdc++6:armhf libtcmalloc-minimal4:armhf gcc-arm-linux-gnueabihf sl:armhf -y"
+DEPENDS0="zenity:armhf libegl-mesa0:armhf libgl1-mesa-dri:armhf libglapi-mesa:armhf libglx-mesa0:armhf libasound*:armhf libstdc++6:armhf libtcmalloc-minimal4:armhf gcc-arm-linux-gnueabihf libncurses5:armhf sl:armhf -y"
 
 #zenity:armhf libstdc++6:armhf gcc-arm-linux-gnueabihf mesa*:armhf libasound*:armhf libncurses5:armhf libgtk2.0-0:armhf libsdl2-image-2.0-0:armhf gstreamer1.0-plugins-*:armhf
 
@@ -387,9 +388,10 @@ sudo service dbus start
 fi
 export XDG_RUNTIME_DIR="/tmp/runtime-$(id -u)"
 if ! grep '"SimSun"="wqy-microhei.ttc"' .wine/system.reg; then
-sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"\n\n' .wine/user.reg
+sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"\n\n\[Software\\\\Wine\\\\Drivers\]\n"Audio"="alsa"\n\n' ${HOME}/.wine/user.reg
 #"GrabFullscreen"="y"
-sed -i '/FontMapper/i \[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\FontLink\\\\SystemLink\]\n"Arial"="wqy-microhei.ttc"\n"Arial Black"="wqy-microhei.ttc"\n"Lucida Sans Unicode"="wqy-microhei.ttc"\n"MS Sans Serif"="wqy-microhei.ttc"\n"SimSun"="wqy-microhei.ttc"\n"Tahoma"="wqy-microhei.ttc"\n"Tahoma Bold"="wqy-microhei.ttc"\n\n' .wine/system.reg
+sed -i '/FontMapper/i \[Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\FontLink\\\\SystemLink\]\n"Arial"="wqy-microhei.ttc"\n"Arial Black"="wqy-microhei.ttc"\n"Lucida Sans Unicode"="wqy-microhei.ttc"\n"MS Sans Serif"="wqy-microhei.ttc"\n"SimSun"="wqy-microhei.ttc"\n"Tahoma"="wqy-microhei.ttc"\n"Tahoma Bold"="wqy-microhei.ttc"\n\n' ${HOME}/.wine/system.reg
+sed -i '/X11/i [Software\\Wine\\WineDbg]\n"ShowCrashDialog"=dword:00000000\n' ${HOME}/.wine/user.reg
 fi
 trap "killall Xvnc 2>/dev/null; killall x11vnc 2>/dev/null; killall Xvfb 2>/dev/null; exit" SIGINT EXIT
 wine64 taskmgr
@@ -600,8 +602,8 @@ else
 KB="开启桌面键盘"
 fi
 list=$(whiptail --title "运行菜单" --menu "请上下滑动选择\n\n" 0 0 0 \
-"1" "开启vnc wine" \
-"2" "开启xsdl wine" \
+"1" "开启wine vnc" \
+"2" "开启wine xsdl" \
 "3" "使用虚拟桌面" \
 "4" "关闭虚拟桌面" \
 "5" "修改分辨率(非仿windows桌面)" \
@@ -614,6 +616,7 @@ list=$(whiptail --title "运行菜单" --menu "请上下滑动选择\n\n" 0 0 0 
 "12" "安装linux版firefox浏览器、qq和vlc播放器" \
 "13" "32位wine4.0.3(该版本仅配置于仿windows桌面)" \
 "14" "检测更新box86 box64版本" \
+"15" "打开winetricks vnc" \
 "0" "退出" \
 3>&1 1>&2 2>&3)
 if [ -n "$list" ]; then
@@ -632,6 +635,7 @@ exit 0 ;;
 rm *.msi 2>/dev/null
 #gecko ie相关
 #mono .net程序相关
+#WINEDLLOVERRIDES关闭mscoree=d;mshtml=d
 case $WINE in
 	*3.9*)
 #最新版本
@@ -696,7 +700,7 @@ cp /usr/share/applications/xfce4-file-manager.desktop ${HOME}/Desktop/explorer.d
 cp /usr/share/applications/xfce4-file-manager.desktop ${HOME}/桌面/explorer.desktop 2>/dev/null
 sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop ${HOME}/桌面/explorer.desktop 2>/dev/null
 cp /root/wine/opt/wine-devel/share/applications/wine.desktop /usr/share/applications 2>/dev/null
-cp /root/wine/usr/share/applications/wine.desktop /usr/share/applications 2>/dev/null
+cp /root/wine/share/applications/wine.desktop /usr/share/applications 2>/dev/null
 chmod a+x /usr/share/applications/wine.desktop
 sed -i 's/^Icon.*$/Icon=utilities-system-monitor/' /usr/share/applications/wine.desktop 2>/dev/null
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/wine.desktop 2>/dev/null
@@ -810,6 +814,8 @@ esac
 fi
 WINE_MENU
 ;;
+15) startricks
+;;
 0) exit 0
 esac
 sleep 1.5
@@ -821,9 +827,43 @@ exit 0
 fi
 }
 WINE_MENU "$@"
-#VERSION=`curl https://kgithub.com/doitsujin/dxvk/releases|grep tag.*Version|sed -n 1p|awk -F 'Version ' '{print $2}'|cut -d '<' -f 1`; wget https://kgithub.com/doitsujin/dxvk/releases/download/v$VERSION/dxvk-$VERSION.tar.gz
-#cp dxvk-2.2/x64/* .wine/drive_c/windows/system32/
-#cp dxvk-2.2/x32/* .wine/drive_c/windows/syswow64/            #sed -i '/DllOverrides/a"d3d10core"="native"\n"d3d11"="native"\n"d3d9"="native"\n"dxgi"="native"' .wine/user.reg
+:<<\DXVK
+VERSION=`curl https://kgithub.com/doitsujin/dxvk/releases|grep tag.*Version|sed -n 1p|awk -F 'Version ' '{print $2}'|cut -d '<' -f 1`; wget https://kgithub.com/doitsujin/dxvk/releases/download/v$VERSION/dxvk-$VERSION.tar.gz
+cp dxvk-2.2/x64/* .wine/drive_c/windows/system32/
+cp dxvk-2.2/x32/* .wine/drive_c/windows/syswow64/
+if grep DllOverrides; then
+sed -i '/DllOverrides/a"d3d10core"="native"\n"d3d11"="native"\n"d3d9"="native"\n"dxgi"="native"' .wine/user.reg
+else
+sed -i '/Debug/i \[Software\\\\Wine\\\\DllOverrides\]\n"d3d10core"="native"\n"d3d11"="native"\n"d3d9"="native"\n"dxgi"="native"' .wine/user.reg
+fi
+
+[HKEY_CURRENT_USER\\Software\\Wine\\Direct3D] 1240428288
+#time=1c9c38000000000
+"DirectDrawRenderer"="opengl"
+键：opengl，gdi（如果系统有opengl支持，默认情况下打开opengl，如果没有，则gdi）
+说明：DirectDraw程序模式：opengl（有基于opengl32.dll的3d支持，但是有bug界面和更长的渲染）和gdi（没有3d支持，但界面运行完美，它用于没有opengl / directx / vulkan的游戏）。
+
+"OffScreenRenderingMode"="pbuffer"
+键：backbuffer，pbuffer，fbo（默认）
+说明：屏幕外渲染模式：fbo（使用帧缓冲对象，工作速度较慢），backbuffer（工作速度更快，但不是到处都是），pbuffer（前缓冲区）。
+
+"UseGLSL"="disabled"
+键：禁用，启用（默认情况下启用）
+说明：启用GLSL着色器（禁用可以提高某些游戏的性能，并修复一些错误）。
+
+"PixelShaderMode"="disabled"
+键：禁用，启用（启用，默认），数字
+说明：像素着色器，禁用可以修复某些游戏中的崩溃。
+
+"csmt"= 0x1
+键：0x0,0x1（启用，默认）
+说明：Direct3D多线程渲染。
+
+"RenderTargetLockMode"="readtex"
+readtex，texdraw，readdraw，textex，disabled，auto（默认，readdraw）
+描述：OpenGL加载方法：readtex（使用glReadPixels加载，但使用纹理发送），texdraw（使用纹理加载，使用glDrawPixels发送），readdraw（使用glReadPixels加载，使用glDrawPixels发送），textex（使用纹理加载和发送，修复Morrowind和Withcher中的工件），禁用（禁用），自动（自动模式选择）。
+DXVK
+
 menu
 sed -i "4i WINE_INSTALL=$WINE_INSTALL" /usr/local/bin/wine_menu
 
@@ -864,7 +904,8 @@ if ! grep -q termux /etc/bash.bashrc; then
 if [ -f /data/data/com.termux/files/usr/etc/motd.sh ]; then
 cat /data/data/com.termux/files/usr/etc/motd.sh|sed '/com.termux/d;s/pkg/apt/' >>/etc/bash.bashrc
 sed -i '/TERMUX_APP_PACKAGE_MANAGER/i clear\nTERMUX_VERSION=$(cat /etc/os-release|grep PRETTY | cut -d "=" -f 2)\nclear' /etc/bash.bashrc
-echo 'if [ -d ${HOME}/.wine/drive_c/users/*/Temp/*490 ]; then echo -e "\e[31m注意，有不明文件夹！谨慎中电脑病毒。\e[0m"; fi' >>/etc/bash.bashrc
+echo -e 'if [ -d ${HOME}/.wine/drive_c/users/*/Temp/*490 ]; then echo -e "\e[31m注意，有不明文件夹！谨慎中电脑病毒。\e[0m"; fi' >>/etc/bash.bashrc
+echo 'wine_menu' >>${HOME}/.bashrc
 fi
 fi
 case $NOR_USER in
@@ -1178,7 +1219,7 @@ while ! grep Desktops .wine/user.reg
 do
 sleep 1
 
-sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"' .wine/user.reg
+sed -i '/\[Environment/i \[Software\\\\Wine\\\\Explorer\]\n"Desktop"="Default"\n\n\[Software\\\\Wine\\\\Explorer\\\\Desktops\]\n"Default"="800x600"\n\n\[Software\\\\Wine\\\\X11 Driver\]\n"Decorated"="N"\n"Managed"="Y"\n\n\[Software\\\\Wine\\\\Drivers\]\n"Audio"="alsa"\n\n' .wine/user.reg
 #"GrabFullscreen"="y"
 
 #[Software\\Wine\\X11 Driver]
@@ -1235,14 +1276,14 @@ rm -rf box86* box64* wqy.reg wine.tar.gz PlayOnLinux-wine*.tar.gz ca.deb openssl
 if [ ! -f /etc/sysctl.conf ] || ! grep -q vm /etc/sysctl.conf; then
 echo 'vm.mmap_min_addr=0' >>/etc/sysctl.conf
 fi
-
+:<<\PUL
 if [ -f /usr/lib/wine/winepulse.drv.so ]; then
 mv /usr/lib/wine/winepulse.drv.so /usr/lib/wine/winepulse.drv.so.bak
 fi
 if [ -f /usr/lib64/wine/winepulse.drv.so ]; then
 mv /usr/lib64/wine/winepulse.drv.so /usr/lib64/wine/winepulse.drv.so.bak
 fi
-
+PUL
 pstree | grep -q "services"
 if [ $? == 0 ]; then
 pkill services
@@ -1256,6 +1297,7 @@ du -sh ${HOME}/.wine
 pstree | grep -q "wineboot"
 done
 export BOX86_LOG=0 BOX86_NOBANNER=1 BOX64_LOG=0 BOX64_NOBANNER=1 WINEDEBUG=fixme-all
+#WINEDEBUG=fps,fixme-all
 echo -e "\n\e[33m配置完毕\e[0m\n"
 echo -e "\n如果上面的安装失败,请输\e[33mbash firstrun\e[0m重新安装"
 case $NOR_USER in
@@ -1273,6 +1315,7 @@ if [ -f /opt/wine-devel/bin/wine ] || [ -f /root/wine/opt/wine-devel/bin/wine ] 
 echo -e "vnc打开wine请输\e[33mstartwine\e[0m，vnc viewer地址输127.0.0.1:0\nxsdl打开wine\e[33m请先打开xsdl\e[0m，再输\e[33mstartxsdl\e[0m\n修改分辨率适配游戏，请输\e[33mfbl\e[0m\n提高游戏优先级，游戏中在这界面回车出现光标输\e[33myy\e[0m\n使用图形winetricks(只支持32位exe)\e[33mstartricks\e[0m\n"
 fi
 read -p "确认请回车"
+exit 0
 eof
 
 #If no 'isolated_environment', the following host directories will be available:
@@ -1342,8 +1385,8 @@ cat >/usr/local/bin/startvnc<<-'eom'
 #!/usr/bin/env bash
 
 export RUNLEVEL=5
-LENGTH=1024
-WIDTH=768
+LENGTH=1440
+WIDTH=900
 DEPTH=24
 vncserver -kill $DISPLAY 2>/dev/null
 for i in Xtightvnc Xtigertvnc Xvnc vncsession; do pkill -9 $i 2>/dev/null; done
@@ -1361,6 +1404,7 @@ chmod +x /usr/local/bin/startvnc
 
 for i in 16x16 22x22 24x24 32x32 48x48 256x256; do cp -v /usr/share/icons/Windows-10-Icons/$i/apps/utilities-system-monitor.png /usr/share/icons/hicolor/$i/apps ; done
 gtk-update-icon-cache /usr/share/icons/hicolor
+curl https://shell.xb6868.com/wine/Windows10.jpg -o /usr/share/kali-undercover/backgrounds/Windows-10.jpg
 
 sed -i '/exit/s/^/#/' $(command -v kali-undercover)
 #sed -E -i 's/(\$USER_PROFILE \])/\1 || grep undercover ~\/.bashrc/' $(command -v kali-undercover)
@@ -1369,6 +1413,7 @@ cp $(command -v kali-undercover) /usr/bin/kali-undercover.bak
 #sed -i 's/disable_undercover/enable_undercover/' $(command -v kali-undercover)
 mkdir ${HOME}/Desktop 2>/dev/null
 mkdir ${HOME}/桌面 2>/dev/null
+mkdir ${HOME}/'[Invalid UTF-8]' 2>/dev/null
 sed -E -i '/root.*0:0/s/^.*$/root:x:0:0:Administrator:\/root:\/bin\/bash/' /etc/passwd
 cp /usr/share/applications/kali-undercover.desktop /etc/xdg/autostart/
 if ! grep -q autostart $(command -v kali-undercover) ; then
@@ -1389,7 +1434,7 @@ cp /usr/share/applications/xfce4-file-manager.desktop Desktop/explorer.desktop
 sed -E -i 's/Name=File\ Manager/Name=wine explorer/;s/(^Exec=).*$/\1wine64 explorer %U/;/\]=/d;/wine explorer/a Name[zh_CN]=wine资源管理器' ${HOME}/Desktop/explorer.desktop
 cp /opt/wine-devel/share/applications/wine.desktop /usr/share/applications 2>/dev/null
 cp /root/wine/opt/wine-devel/share/applications/wine.desktop /usr/share/applications 2>/dev/null
-cp /root/wine/usr/share/applications/wine.desktop /usr/share/applications 2>/dev/null
+cp /root/wine/share/applications/wine.desktop /usr/share/applications 2>/dev/null
 chmod a+x /usr/share/applications/wine.desktop
 
 sed -i 's/^Exec=wine/Exec=wine64/' /usr/share/applications/wine.desktop 2>/dev/null
@@ -1400,6 +1445,16 @@ sed -i '/^Name=Wine Windows Program Loader/a Name[zh_CN]=wine任务管理器' /u
 
 cp /usr/share/applications/wine.desktop ${HOME}/Desktop/
 sed -i 's/^Exec.*$/Exec=wine64 taskmgr %f/' ${HOME}/Desktop/wine.desktop
+
+cat >${HOME}/Desktop/windows.desktop<<-'win'
+[Desktop Entry]
+Type=Application
+Name=此电脑
+Exec=thunar /sdcard
+Icon=computer
+NoDisplay=true
+StartupNotify=true
+win
 
 if [[ $(echo "$(wine64 --version)"|tail -1|cut -b 6) == [4-7] ]]; then
 cp /usr/local/bin/boxwine /usr/local/bin/boxwinede
